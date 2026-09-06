@@ -1,0 +1,1649 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<style>
+    .container-box {
+        background: white;
+        padding: 30px;
+        margin-top: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* ── Dark Mode Overrides for User Management ── */
+    [data-theme="dark"] .container-box,
+    [data-theme="dark"] .modal-content {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border: 1px solid #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .modal-content h3,
+    [data-theme="dark"] .modal-content label,
+    [data-theme="dark"] .container-box h3,
+    [data-theme="dark"] .container-box label {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .modal-content input,
+    [data-theme="dark"] .modal-content select,
+    [data-theme="dark"] .modal-content textarea,
+    [data-theme="dark"] .container-box input,
+    [data-theme="dark"] .container-box select {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .add-btn {
+        padding: 10px 15px;
+        background: #0f3d2e;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+        margin-left: auto;
+    }
+
+    .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-top: 15px;
+    }
+
+    /* Premium scrollbar styling */
+    .table-wrapper::-webkit-scrollbar {
+        height: 8px;
+    }
+    .table-wrapper::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .table-wrapper::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .table-wrapper::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    table {
+        width: 100%;
+        min-width: 1200px;
+        border-collapse: collapse;
+    }
+
+    table th,
+    table td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        white-space: nowrap;
+    }
+
+    table th {
+        background: #f5f5f5;
+        text-align: center;
+    }
+
+    .table-wrapper thead th {
+        background: linear-gradient(135deg, #0f3d2e, #17563d);
+        color: #ffffff;
+        border-bottom: 1px solid #0b2f23;
+        text-align: center;
+    }
+
+    .img {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .profile-photo-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .profile-photo-wrapper.mfa-none .img {
+        border: 3px solid #ef4444;
+    }
+
+    .profile-photo-wrapper.mfa-partial .img {
+        border: 3px solid #3b82f6;
+    }
+
+    .profile-photo-wrapper.mfa-full .img {
+        border: 3px solid #10b981;
+    }
+
+    .mfa-shield-badge {
+        position: absolute;
+        bottom: -4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 18px;
+    }
+
+    .mfa-shield-badge img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    /* MODAL */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    #adminPasswordModal {
+        z-index: 1001;
+    }
+
+    .modal-content {
+        background: white;
+        width: 760px;
+        max-width: 95vw;
+        margin: 4% auto;
+        padding: 24px;
+        border-radius: 10px;
+        text-align: left;
+        max-height: 90vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
+    .modal-content h3 {
+        margin-top: 0;
+        margin-bottom: 18px;
+    }
+
+    .profile-upload-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 18px;
+    }
+
+    .field-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr);
+        gap: 10px 12px;
+        max-width: 720px;
+        margin: 0 auto;
+    }
+
+    .field-grid .field-span-2 {
+        grid-column: span 2;
+    }
+
+    .field-grid .field-full {
+        grid-column: 1 / -1;
+    }
+
+    .rfid-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .rfid-btn {
+        padding: 10px 12px;
+        border: 1px dashed #9aa7b4;
+        background: #f8fafc;
+        color: #243244;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        width: 100%;
+    }
+
+    .rfid-panel {
+        display: none;
+        margin-top: 8px;
+        padding: 12px;
+        border: 1px solid #d8e1ea;
+        border-radius: 8px;
+        background: #fbfdff;
+    }
+
+    .rfid-panel.visible {
+        display: block;
+    }
+
+    .rfid-panel .rfid-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .rfid-panel .rfid-row input {
+        flex: 1;
+        margin: 0;
+    }
+
+    .rfid-note {
+        margin: 6px 0 0;
+        font-size: 12px;
+        color: #667085;
+        line-height: 1.45;
+    }
+
+    .profile-upload {
+        width: 140px;
+        height: 140px;
+    }
+
+    .password-requirements {
+        margin: 0;
+        color: #555;
+        font-size: 13px;
+        line-height: 1.5;
+        text-align: left;
+    }
+
+    .password-requirements ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+    }
+
+    .password-requirements li {
+        margin-bottom: 4px;
+    }
+
+    .pw-req {
+        color: #8a8a8a;
+    }
+
+    .pw-req.valid {
+        color: #003107;
+        font-weight: 600;
+    }
+
+    .close {
+        float: right;
+        font-size: 22px;
+        cursor: pointer;
+    }
+
+    .profile-upload {
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid #ccc;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .profile-upload:hover {
+        opacity: 0.8;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 10px;
+        background: #2c3e50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        margin-top: 10px;
+    }
+
+    .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    input, select {
+        width: 100%;
+        padding: 10px;
+        margin: 8px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    @media (max-width: 768px) {
+        .modal-content {
+            width: 95vw;
+            margin: 6% auto;
+            padding: 16px;
+            max-height: 92vh;
+        }
+
+        .field-grid {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            padding: 0 6px;
+        }
+
+        .profile-upload {
+            width: 110px;
+            height: 110px;
+        }
+
+        .submit-btn {
+            padding: 12px;
+        }
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        white-space: normal;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: capitalize;
+    }
+
+    .status-active { background: #e8f7ee; color: #117a3d; }
+    .status-pending { background: #fff7e6; color: #9a6700; }
+    .status-resting { background: #e0e7ff; color: #3730a3; }
+    .status-disabled { background: #f3f4f6; color: #4b5563; }
+    .status-suspended { background: #fff1f2; color: #b42318; }
+
+    .edit-btn, .delete-btn, .resend-btn {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: 0.2s;
+    }
+
+    .edit-btn { background: #153e04; color: white; }
+    .edit-btn:hover { background: #127132; }
+    .delete-btn { background: #cf2f40; color: white; }
+    .delete-btn:hover { background: #a01f32; }
+    .resend-btn { background: #1d4ed8; color: white; }
+    .resend-btn:hover { background: #1e40af; }
+    .resend-btn:disabled, .resend-btn.disabled {
+        background: #94a3b8 !important;
+        color: #e2e8f0 !important;
+        cursor: not-allowed !important;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+    /* PERMISSIONS LAYOUT */
+    .perm-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 8px;
+    }
+
+    .perm-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: #fff;
+        border: 1px solid #dde3ea;
+        border-radius: 10px;
+        cursor: pointer;
+        user-select: none;
+        transition: 0.18s ease;
+        min-height: 48px;
+        text-align: left;
+        font: inherit;
+    }
+
+    .perm-card:hover {
+        border-color: #c7d2e0;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        transform: translateY(-1px);
+    }
+
+    .perm-card.selected.nav-card { border-color: #003709; background: #eef5ff; }
+    .perm-card.selected.action-card { border-color: #044916; background: #edf8f0; }
+
+    .perm-card .perm-label { font-size: 13px; font-weight: 600; color: #243244; line-height: 1.2; }
+    .perm-card .perm-subtle { display: block; font-size: 11px; font-weight: 500; color: #6b7280; margin-top: 2px; }
+
+    .modal-content label {
+        display: block;
+        text-align: left;
+        margin-bottom: 5px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    #editModal .modal-content {
+        width: 750px;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .edit-form-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 15px;
+        margin-bottom: 15px;
+        align-items: start;
+    }
+
+    .edit-span-1 { grid-column: span 1; }
+    .edit-span-2 { grid-column: span 2; }
+    .edit-span-3 { grid-column: span 3; }
+    .edit-span-full { grid-column: 1 / -1; }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: #2f80ed;
+        box-shadow: 0 0 5px rgba(47, 128, 237, 0.3);
+    }
+
+    /* TOGGLE PANEL SYSTEM */
+    .toggle-trigger {
+        width: 100%;
+        background: #f1f5f9;
+        color: #222222;
+        border: 1px solid #cbd5e1;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 14px;
+        transition: background 0.2s;
+        margin: 12px 0;
+    }
+
+    .toggle-trigger:hover {
+        background: #e2e8f0;
+    }
+
+    .toggle-trigger i {
+        transition: transform 0.2s ease;
+    }
+
+    .toggle-trigger.active i {
+        transform: rotate(180deg);
+    }
+
+    .toggle-content {
+        display: none;
+        border: 1px solid #e2e8f0;
+        padding: 14px;
+        border-radius: 8px;
+        background: #fafafa;
+        margin-bottom: 15px;
+    }
+
+    /* ID Card Preview Styles */
+    .id-card-preview-container {
+        width: 100%;
+        max-width: 520px;
+        margin: 0 auto 24px auto;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+        background: #ffffff;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .id-card-preview-header {
+        background: #060b26;
+        color: #ffffff;
+        text-align: center;
+        padding: 12px 16px;
+    }
+    .id-card-university {
+        font-size: 16px;
+        font-weight: 750;
+        letter-spacing: 0.5px;
+        color: #ffffff !important;
+        margin: 0 !important;
+    }
+    .id-card-branch {
+        font-size: 11px;
+        opacity: 0.85;
+        margin-top: 2px;
+        color: #ffffff !important;
+    }
+    .id-card-preview-body {
+        padding: 20px;
+        background: #f8fafc;
+    }
+    .id-card-title-line {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+    .id-card-title-line-bar {
+        height: 1px;
+        background: #cbd5e1;
+        flex-grow: 1;
+    }
+    .id-card-title-text {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        letter-spacing: 2px;
+    }
+    .id-card-content {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+    }
+    .id-card-photo-col {
+        flex-shrink: 0;
+    }
+    .id-card-photo {
+        width: 130px;
+        height: 130px;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        display: block;
+    }
+    .id-card-details-col {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .id-card-name {
+        font-size: 18px;
+        font-weight: 750;
+        color: #050505;
+        line-height: 1.2;
+        margin-bottom: 2px;
+    }
+    .id-card-badge {
+        display: inline-block;
+        align-self: flex-start;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #066e2a;
+        background: #dbeafe;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .id-card-info-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .id-card-info-item {
+        display: grid;
+        grid-template-columns: 24px 90px 1fr;
+        align-items: center;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    .id-card-info-item .info-icon {
+        color: #64748b;
+    }
+    .id-card-info-item .info-label {
+        color: #64748b;
+        font-weight: 500;
+    }
+    .id-card-info-item .info-value {
+        color: #222222;
+        font-weight: 600;
+    }
+    .id-card-preview-footer {
+        background: #060b26;
+        color: #ffffff;
+        text-align: center;
+        padding: 12px 16px;
+    }
+    .id-card-footer-title {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #ffffff !important;
+        margin: 0 !important;
+    }
+    .id-card-footer-subtitle {
+        font-size: 10px;
+        opacity: 0.85;
+        margin-top: 1px;
+        color: #ffffff !important;
+    }
+
+    /* Professional Form Layout Styles */
+    .form-layout-container {
+        display: grid;
+        grid-template-columns: 160px 1fr;
+        gap: 28px;
+        align-items: start;
+        max-width: 720px;
+        margin: 20px auto 0 auto;
+    }
+    .form-photo-side {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 12px;
+    }
+    .form-fields-side {
+        flex: 1;
+    }
+    .fields-grid-6 {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 12px 16px;
+    }
+    .col-span-2 {
+        grid-column: span 2;
+    }
+    .col-span-3 {
+        grid-column: span 3;
+    }
+    .col-span-6 {
+        grid-column: span 6;
+    }
+    .create-form-input {
+        border: 1.5px solid #7cb342 !important;
+        border-radius: 8px !important;
+        padding: 10px 12px !important;
+        background: #ffffff !important;
+        font-size: 14px !important;
+        transition: all 0.2s ease !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        margin: 4px 0 !important;
+    }
+    .create-form-input:focus {
+        outline: none !important;
+        border-color: #2e7d32 !important;
+        box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15) !important;
+    }
+    select.create-form-input {
+        height: 41px;
+    }
+
+    @media (max-width: 768px) {
+        .form-layout-container {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        .col-span-2, .col-span-3 {
+            grid-column: span 6;
+        }
+    }
+
+    /* ── MASTER DARK MODE OVERRIDES FOR USER MANAGEMENT ── */
+    [data-theme="dark"] .container-box,
+    [data-theme="dark"] .modal-content,
+    [data-theme="dark"] .rfid-panel {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border: 1px solid #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .modal-content h3,
+    [data-theme="dark"] .modal-content label,
+    [data-theme="dark"] .container-box h3,
+    [data-theme="dark"] .container-box label,
+    [data-theme="dark"] .rfid-note {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .create-form-input,
+    [data-theme="dark"] .modal-content input,
+    [data-theme="dark"] .modal-content select,
+    [data-theme="dark"] .modal-content textarea,
+    [data-theme="dark"] .container-box input,
+    [data-theme="dark"] .container-box select {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] div[style*="background:#fff7e6"],
+    [data-theme="dark"] div[style*="background: #fff7e6"] {
+        background: #78350f !important;
+        background-color: #78350f !important;
+        color: #fbbf24 !important;
+        border: 1px solid #b45309 !important;
+    }
+
+    [data-theme="dark"] .rfid-btn {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #38bdf8 !important;
+        border: 1px dashed #222222 !important;
+    }
+
+    [data-theme="dark"] .rfid-btn:hover {
+        background: #0284c7 !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] button[onclick="closeModal()"] {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #94a3b8 !important;
+        border: 1px solid #222222 !important;
+    }
+
+    [data-theme="dark"] button[onclick="closeModal()"]:hover {
+        background: #222222 !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .badge-released,
+    [data-theme="dark"] .badge-active,
+    [data-theme="dark"] .status-badge.active,
+    [data-theme="dark"] .status-active {
+        background: #064e3b !important;
+        color: #34d399 !important;
+        border: 1px solid #047857 !important;
+    }
+
+    [data-theme="dark"] .badge-pending,
+    [data-theme="dark"] .status-badge.pending,
+    [data-theme="dark"] .status-pending {
+        background: #78350f !important;
+        color: #fbbf24 !important;
+        border: 1px solid #b45309 !important;
+    }
+
+    [data-theme="dark"] .status-resting {
+        background: #1e1b4b !important;
+        color: #818cf8 !important;
+        border: 1px solid #3730a3 !important;
+    }
+
+    [data-theme="dark"] .badge-inactive,
+    [data-theme="dark"] .status-badge.inactive,
+    [data-theme="dark"] .status-disabled {
+        background: #111111 !important;
+        color: #94a3b8 !important;
+        border: 1px solid #222222 !important;
+    }
+
+    [data-theme="dark"] .status-suspended {
+        background: #7f1d1d !important;
+        color: #f87171 !important;
+        border: 1px solid #b91c1c !important;
+    }
+</style>
+
+<div class="container-box">
+    <div class="header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="ill-circle blue" style="width: 48px; height: 48px; font-size: 20px;">
+                <i class="fas fa-users"></i>
+            </div>
+            <div>
+                <h2 style="margin: 0; font-size: 1.3rem;">User Management</h2>
+                <p class="page-sub" style="margin: 2px 0 0; font-size: 13px;">Manage user accounts, roles, permissions, and access control.</p>
+            </div>
+        </div>
+        <button class="add-btn" onclick="openModal()">+ Add User</button>
+    </div>
+
+    {% if error %}
+    <div style="margin: 0 0 18px; padding: 12px 14px; border-radius: 8px; background: #fff1f2; color: #b42318; border: 1px solid #fda4af; font-weight: 600;">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Role</th>
+                    <th>Profile</th>
+                    <th>Emp ID</th>
+                    <th>Last Name</th>
+                    <th>First Name</th>
+                    <th>MI</th>
+                    <th>Email</th>
+                    <th>Username</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in cashiers %}
+                <tr data-user-id="{{ user.id }}" data-status="{{ user.profile.status }}" data-role="{{ user.profile.role }}" data-is-disbursing-officer="{{ user.profile.is_disbursing_officer|yesno:"true,false" }}" data-employee-id="{{ user.profile.employee_id|default:'' }}" data-department="{{ user.profile.department|default:'' }}" data-position="{{ user.profile.position|default:'' }}" data-rfid-uid="{{ user.profile.rfid_uid|default:'' }}" data-profile-picture-url="{% if user.profile.profile_picture %}{{ user.profile.profile_picture.url }}{% endif %}" data-last-name="{{ user.last_name }}" data-first-name="{{ user.first_name }}" data-middle-initial="{{ user.profile.middle_initial|default:'' }}" data-email="{{ user.email }}" data-username="{{ user.username }}">
+                    <td>
+                        <div class="profile-photo-wrapper{% if user.profile.totp_enabled and user.profile.email_otp_enabled %} mfa-full{% elif user.profile.totp_enabled or user.profile.email_otp_enabled %} mfa-partial{% else %} mfa-none{% endif %}">
+                            {% if user.profile.profile_picture %}
+                            <img src="{{ user.profile.profile_picture.url }}" class="img">
+                            {% else %}
+                                {% if user.profile.role == 'guest' %}
+                                <img src="/media/system_assets/guest.png" class="img">
+                                {% else %}
+                                <img src="/media/system_assets/2.png?v=2" class="img">
+                                {% endif %}
+                            {% endif %}
+                            {% if user.profile.totp_enabled or user.profile.email_otp_enabled %}
+                            <span class="mfa-shield-badge"><img src="/media/system_assets/badge.png" alt="MFA"></span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{ user.profile.employee_id|default:"-" }}</td>
+                    <td style="text-transform: capitalize;">{{ user.profile.role|default:"-" }}</td>
+                    <td>{{ user.last_name }}</td>
+                    <td>{{ user.first_name }}</td>
+                    <td>{{ user.profile.middle_initial }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>
+                        <span class="status-badge status-{{ user.profile.status|default:'active' }}">
+                            {{ user.profile.status|default:'active' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="edit-btn" title="Edit user" onclick="openEditModal({{ user.id }})"><i class="fas fa-pencil"></i> Edit</button>
+                            <button class="delete-btn" title="Delete user" onclick="openDeleteModal({{ user.id }})"><i class="fas fa-trash"></i> Delete</button>
+                            <button class="resend-btn{% if user.profile.status == 'active' %} disabled{% endif %}" title="{% if user.profile.status == 'active' %}Active users cannot have credentials resent{% else %}Resend credentials{% endif %}" {% if user.profile.status == 'active' %}disabled onclick="return false;"{% else %}onclick="resendCredentials({{ user.id }}, '{{ user.email|escapejs }}')"{% endif %}><i class="fas fa-paper-plane"></i> Resend</button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="cashierModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3>Create User</h3>
+
+        <form method="POST" enctype="multipart/form-data" id="createCashierForm" onsubmit="return confirmAdminPassword('create')">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+            <input type="hidden" name="admin_password" id="adminPasswordHidden">
+
+            <div style="display:none;">
+                <input type="file" id="fileInput" name="profile_picture" accept="image/*" onchange="previewFile(event)">
+            </div>
+
+            <!-- Professional Form Grid with Upload Photo on the side -->
+            <div class="form-layout-container">
+                <div class="form-photo-side">
+                    <div class="profile-upload-wrapper" style="margin: 0;">
+                        <img id="previewImage" src="/media/system_assets/2.png?v=2?v=2" class="profile-upload" style="border: 2px solid #7cb342; width: 130px; height: 130px;" alt="Profile preview" onclick="triggerFile()">
+                    </div>
+                    <span style="font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 600;">Upload Photo</span>
+                </div>
+                <div class="form-fields-side">
+                    <div class="fields-grid-6">
+                        <!-- Row 1: Last Name, First Name, Middle Initial -->
+                        <div class="form-group col-span-2">
+                            <label>Last Name:</label>
+                            <input type="text" name="last_name" class="create-form-input" required>
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label>First Name:</label>
+                            <input type="text" name="first_name" class="create-form-input" required>
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label>Middle Initial:</label>
+                            <input type="text" name="middle_initial" class="create-form-input" maxlength="1">
+                        </div>
+
+                        <!-- Row 2: Email Address -->
+                        <div class="form-group col-span-6">
+                            <label>Email Address:</label>
+                            <input type="email" name="email" class="create-form-input" required>
+                        </div>
+
+                        <!-- Row 3: Department, Position -->
+                        <div class="form-group col-span-3">
+                            <label>Department:</label>
+                            <input type="text" name="department" class="create-form-input" placeholder="Optional department">
+                        </div>
+                        <div class="form-group col-span-3">
+                            <label>Position:</label>
+                            <input type="text" name="position" class="create-form-input" placeholder="Optional position">
+                        </div>
+
+                        <!-- Row 4: Role + info note -->
+                        <div class="form-group col-span-3">
+                            <label>Role:</label>
+                            <select id="createRoleSelect" name="role" class="create-form-input">
+                                <option value="admin">Admin</option>
+                                <option value="cashier" selected>Cashier</option>
+                                <option value="guest">Guest Viewer</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-span-3">
+                            <p style="color:#6b7280; font-size:13px; margin-top:26px;">
+                                A username and temporary password will be auto-generated and emailed.
+                            </p>
+                        </div>
+
+                        <!-- Row 5: Status (always pending for new users), Disbursing Officer -->
+                        <div class="form-group col-span-3">
+                            <label>Status:</label>
+                            <div style="padding:10px 12px; background:#fff7e6; color:#9a6700; border-radius:8px; font-size:14px; font-weight:600;">Pending Activation</div>
+                        </div>
+                        <div class="form-group col-span-3" id="createIsDisbursingOfficerWrapper" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: auto; padding-bottom: 12px;">
+                            <input type="checkbox" name="is_disbursing_officer" id="createIsDisbursingOfficer" value="true" style="width: auto; margin: 0; transform: scale(1.2);">
+                            <label for="createIsDisbursingOfficer" style="margin: 0; cursor: pointer; font-weight: 600;">Set as Disbursing Officer</label>
+                        </div>
+
+                        <!-- RFID Card -->
+                        <div class="form-group col-span-6">
+                            <label>RFID Card:</label>
+                            <div class="rfid-actions">
+                                <button type="button" class="rfid-btn" onclick="promptEnableRfid()">Add RFID card (optional)</button>
+                            </div>
+                            <div id="rfidPanel" class="rfid-panel">
+                                <div class="rfid-row">
+                                    <input type="text" name="rfid_uid" id="rfidUidInput" class="create-form-input" placeholder="Enter or scan RFID UID">
+                                    <button type="button" class="rfid-btn" style="width:auto; padding-inline:14px;" onclick="focusRfidScanner()">Use scanner</button>
+                                </div>
+                                <p class="rfid-note">Scan the card into the field or type the UID manually. Leave it empty to skip RFID.</p>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-group col-span-6">
+                            <button type="submit" id="createCashierBtn" class="submit-btn">Create User</button>
+                            <button type="button" onclick="closeModal()" style="width:100%; padding:10px; margin-top:8px; background:#e5e7eb; color:#374151; border:none; border-radius:5px; cursor:pointer; font-size:14px;">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="rfidConfirmModal" class="modal">
+    <div class="modal-content" style="width: 420px; max-width: 92vw; text-align: center;">
+        <span class="close" onclick="closeRfidConfirmModal()">&times;</span>
+        <h3>Enable RFID?</h3>
+        <p style="color:#555; margin: 0 0 18px;">Would you like to add an RFID card for this user?</p>
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button type="button" onclick="closeRfidConfirmModal()" style="padding:10px 18px; background:#95a5a6; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:600;">No, skip</button>
+            <button type="button" class="submit-btn" onclick="confirmRfidEntry()" style="width:auto; padding:10px 18px; margin-top:0;">Yes, add RFID</button>
+        </div>
+    </div>
+</div>
+
+<div id="adminPasswordModal" class="modal">
+    <div class="modal-content" style="width: 400px; max-width: 90vw;">
+        <span class="close" onclick="closeAdminPasswordModal()">&times;</span>
+        <h3>Confirm Admin Password</h3>
+        <p style="margin-bottom: 10px; color: #555;">Enter your admin password to authorize this action.</p>
+        <form id="adminConfirmForm" onsubmit="submitAdminPassword(event)">
+            <input type="password" id="adminPasswordInput" placeholder="Admin Password" required>
+            <button type="submit" class="submit-btn" style="width:100%;">Confirm</button>
+        </form>
+        <p id="adminPasswordError" style="color:#cf2f40; margin-top:10px; display:none;"></p>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h3>Edit User</h3>
+
+        <form method="POST" enctype="multipart/form-data" id="editForm" action="{% url 'user_management' %}" onsubmit="return confirmAdminPassword('edit')">
+            {% csrf_token %}
+            <input type="hidden" id="editUserId" name="user_id">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="admin_password" id="adminPasswordHiddenEdit">
+
+            <!-- Edit ID Card Preview -->
+            <div class="id-card-preview-container" id="editIdCardContainer">
+                <div class="id-card-preview-header">
+                    <div class="id-card-university">Isabela State University</div>
+                    <div class="id-card-branch">Cauayan City Isabela</div>
+                </div>
+                <div class="id-card-preview-body">
+                    <div class="id-card-title-line">
+                        <span class="id-card-title-line-bar"></span>
+                        <span class="id-card-title-text">IDENTIFICATION CARD</span>
+                        <span class="id-card-title-line-bar"></span>
+                    </div>
+                    <div class="id-card-content">
+                        <div class="id-card-photo-col">
+                            <img id="editIdCardPhoto" src="/media/system_assets/2.png?v=2" class="id-card-photo" alt="Photo">
+                        </div>
+                        <div class="id-card-details-col">
+                            <div class="id-card-name" id="editIdCardName">Harry James E. Potter</div>
+                            <span class="id-card-badge" id="editIdCardBadge">SOFTWARE ENGINEER</span>
+                            
+                            <div class="id-card-info-list">
+                                <div class="id-card-info-item">
+                                    <span class="info-icon"><i class="fas fa-id-badge"></i></span>
+                                    <span class="info-label">Employee ID</span>
+                                    <span class="info-value" id="editIdCardEmpId">EMP-2024-00158</span>
+                                </div>
+                                <div class="id-card-info-item">
+                                    <span class="info-icon"><i class="fas fa-building"></i></span>
+                                    <span class="info-label">Department</span>
+                                    <span class="info-value" id="editIdCardDept">Information Technology</span>
+                                </div>
+                                <div class="id-card-info-item">
+                                    <span class="info-icon"><i class="fas fa-user-shield"></i></span>
+                                    <span class="info-label">Role</span>
+                                    <span class="info-value" id="editIdCardRole">Developer</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="id-card-preview-footer">
+                    <div class="id-card-footer-title" id="editIdCardFooterTitle">Administrative Officer</div>
+                    <div class="id-card-footer-subtitle">Position</div>
+                </div>
+            </div>
+
+            <div style="display:none;">
+                <input type="file" id="editFileInput" name="profile_picture" accept="image/*" onchange="editPreviewFile(event)">
+            </div>
+
+            <!-- Professional Form Grid with Upload Photo on the side -->
+            <div class="form-layout-container">
+                <div class="form-photo-side">
+                    <div class="profile-upload-wrapper" style="margin: 0;">
+                        <img id="editPreviewImage" src="/media/system_assets/2.png?v=2" class="profile-upload" style="border: 2px solid #7cb342; width: 130px; height: 130px;" alt="Profile preview" onclick="triggerEditFile()">
+                    </div>
+                    <span style="font-size: 11px; color: #64748b; margin-top: 8px; font-weight: 600;">Upload Photo</span>
+                </div>
+                <div class="form-fields-side">
+                    <div class="fields-grid-6">
+                        <!-- Row 1: Last Name, First Name, Middle Initial -->
+                        <div class="form-group col-span-2">
+                            <label>Last Name:</label>
+                            <input type="text" id="editLastName" name="last_name" class="create-form-input" required>
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label>First Name:</label>
+                            <input type="text" id="editFirstName" name="first_name" class="create-form-input" required>
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label>Middle Initial:</label>
+                            <input type="text" id="editMiddleInitial" name="middle_initial" class="create-form-input" maxlength="1">
+                        </div>
+
+                        <!-- Row 2: Email Address, Username -->
+                        <div class="form-group col-span-3">
+                            <label>Email Address:</label>
+                            <input type="email" id="editEmail" name="email" class="create-form-input" required>
+                        </div>
+                        <div class="form-group col-span-3">
+                            <label>Username:</label>
+                            <input type="text" id="editUsername" name="username" class="create-form-input" required>
+                        </div>
+
+                        <!-- Row 3: Employee ID, Department, Position -->
+                        <div class="form-group col-span-2">
+                            <label>Employee ID:</label>
+                            <input type="text" id="editEmployeeId" name="employee_id" class="create-form-input" placeholder="Optional employee ID">
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label>Department:</label>
+                            <input type="text" id="editDepartment" name="department" class="create-form-input" placeholder="Optional department">
+                        </div>
+                        <div class="form-group col-span-2">
+                            <label>Position:</label>
+                            <input type="text" id="editPosition" name="position" class="create-form-input" placeholder="Optional position">
+                        </div>
+
+                        <!-- Row 4: Password, Role -->
+                        <div class="form-group col-span-3">
+                            <label>Password (leave blank to keep current):</label>
+                            <input type="password" id="editPassword" name="password" class="create-form-input">
+                        </div>
+                        <div class="form-group col-span-3">
+                            <label>Role:</label>
+                            <select id="editRoleSelect" name="role" class="create-form-input">
+                                <option value="admin">Admin</option>
+                                <option value="cashier">Cashier</option>
+                                <option value="guest">Guest Viewer</option>
+                            </select>
+                        </div>
+
+                        <!-- Row 5: Status (auto-managed), Disbursing Officer -->
+                        <div class="form-group col-span-3">
+                            <label>Account Status:</label>
+                            <div id="editStatusDisplay" style="padding:10px 12px; border-radius:8px; font-size:14px; font-weight:600;"></div>
+                        </div>
+                        <div class="form-group col-span-3" id="editIsDisbursingOfficerWrapper" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: auto; padding-bottom: 12px;">
+                            <input type="checkbox" name="is_disbursing_officer" id="editIsDisbursingOfficer" value="true" style="width: auto; margin: 0; transform: scale(1.2);">
+                            <label for="editIsDisbursingOfficer" style="margin: 0; cursor: pointer; font-weight: 600;">Set as Disbursing Officer</label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-group col-span-6">
+                            <button type="submit" class="submit-btn">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="deleteModal" class="modal">
+    <div class="modal-content" style="text-align: center; width: 450px; max-width: 90vw;">
+        <span class="close" onclick="closeDeleteModal()">&times;</span>
+        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #cf2f40; margin: 20px 0;"></i>
+        <h3>Delete User</h3>
+        <form id="deleteForm" method="POST" action="{% url 'user_management' %}" onsubmit="return confirmAdminPassword('delete')">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="user_id" id="deleteUserId">
+            <input type="hidden" name="admin_password" id="adminPasswordHiddenDelete">
+            <p id="deleteWarningText" style="margin: 15px 0; color: #555;"></p>
+            <p style="color: #888; font-size: 14px; margin-bottom: 20px;">This action cannot be undone.</p>
+
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" onclick="closeDeleteModal()" style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button type="submit" style="padding: 10px 20px; background: #cf2f40; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">Yes, Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let activeAdminProtectedForm = null;
+    let activeAdminPasswordHiddenId = null;
+    let rfidEnabled = false;
+
+    // JavaScript Show/Hide Accordion Engine
+    function toggleAccordion(panelId, triggerButton) {
+        const panel = document.getElementById(panelId);
+        if (!panel) return;
+        
+        const isVisible = panel.style.display === "block";
+        panel.style.display = isVisible ? "none" : "block";
+        triggerButton.classList.toggle("active", !isVisible);
+    }
+
+    // Reset accordions to collapsed when opening new interactions
+    function resetAccordions() {
+        document.querySelectorAll('.toggle-content').forEach(panel => panel.style.display = "none");
+        document.querySelectorAll('.toggle-trigger').forEach(btn => btn.classList.remove("active"));
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function checkDisbursingOfficerAvailability(mode, currentUserId) {
+        let currentOfficerId = null;
+        let currentAdminId = null;
+        const rows = document.querySelectorAll('tr[data-user-id]');
+        rows.forEach(row => {
+            if (row.getAttribute('data-is-disbursing-officer') === 'true') {
+                currentOfficerId = row.getAttribute('data-user-id');
+            }
+            if (row.getAttribute('data-role') === 'admin') {
+                currentAdminId = row.getAttribute('data-user-id');
+            }
+        });
+
+        const createWrapper = document.getElementById("createIsDisbursingOfficerWrapper");
+        const editWrapper = document.getElementById("editIsDisbursingOfficerWrapper");
+        const createRoleSelect = document.getElementById("createRoleSelect");
+        const editRoleSelect = document.getElementById("editRoleSelect");
+
+        if (mode === 'create') {
+            if (createWrapper) {
+                if (currentOfficerId) {
+                    createWrapper.style.display = "none";
+                    const createCheck = document.getElementById("createIsDisbursingOfficer");
+                    if (createCheck) createCheck.checked = false;
+                } else {
+                    createWrapper.style.display = "";
+                }
+            }
+            if (createRoleSelect) {
+                const adminOption = createRoleSelect.querySelector('option[value="admin"]');
+                if (adminOption) {
+                    adminOption.style.display = currentAdminId ? "none" : "";
+                }
+            }
+        } else if (mode === 'edit') {
+            if (editWrapper) {
+                if (currentOfficerId && String(currentOfficerId) !== String(currentUserId)) {
+                    editWrapper.style.display = "none";
+                    const editCheck = document.getElementById("editIsDisbursingOfficer");
+                    if (editCheck) editCheck.checked = false;
+                } else {
+                    editWrapper.style.display = "";
+                }
+            }
+            if (editRoleSelect) {
+                const adminOption = editRoleSelect.querySelector('option[value="admin"]');
+                if (adminOption) {
+                    adminOption.style.display = (currentAdminId && String(currentAdminId) !== String(currentUserId)) ? "none" : "";
+                }
+            }
+        }
+    }
+
+    function openModal() {
+        resetAccordions();
+        activeAdminProtectedForm = document.getElementById("createCashierForm");
+        activeAdminPasswordHiddenId = "adminPasswordHidden";
+        document.getElementById("cashierModal").style.display = "block";
+        
+        document.getElementById("adminPasswordHidden").value = "";
+        document.getElementById("adminPasswordInput").value = "";
+        
+        const rfidPanel = document.getElementById("rfidPanel");
+        if (rfidPanel) rfidPanel.classList.remove("visible");
+        const rfidUidInput = document.getElementById("rfidUidInput");
+        if (rfidUidInput) rfidUidInput.value = "";
+        rfidEnabled = false;
+        
+        const createCheck = document.getElementById("createIsDisbursingOfficer");
+        if (createCheck) createCheck.checked = false;
+        
+        updateIdCardPreview();
+        checkDisbursingOfficerAvailability('create');
+    }
+
+    function closeModal() {
+        document.getElementById("cashierModal").style.display = "none";
+        closeRfidConfirmModal();
+        const defaultSrc = "/media/system_assets/2.png?v=2?v=2";
+        document.getElementById("previewImage").src = defaultSrc;
+        document.getElementById("idCardPhoto").src = defaultSrc;
+        document.getElementById("fileInput").value = "";
+    }
+
+    function openEditModal(userId) {
+        if (!userId) return;
+        const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+        if (!row) return;
+        resetAccordions();
+
+        const lastName = row.dataset.lastName;
+        const firstName = row.dataset.firstName;
+        const middleInitial = row.dataset.middleInitial;
+        const email = row.dataset.email;
+        const username = row.dataset.username;
+        const role = row.dataset.role || 'cashier';
+        const status = row.dataset.status || 'active';
+        const isDisbursingOfficer = row.dataset.isDisbursingOfficer === 'true';
+        const employeeId = row.dataset.employeeId || '';
+        const department = row.dataset.department || '';
+        const position = row.dataset.position || '';
+        const profilePictureUrl = row.dataset.profilePictureUrl || '';
+
+        document.getElementById("editUserId").value = userId;
+        document.getElementById("editFirstName").value = firstName;
+        document.getElementById("editLastName").value = lastName;
+        document.getElementById("editMiddleInitial").value = middleInitial;
+        document.getElementById("editEmail").value = email;
+        document.getElementById("editUsername").value = username;
+        document.getElementById("editPassword").value = "";
+        document.getElementById("editRoleSelect").value = role;
+        var statusDisplay = document.getElementById("editStatusDisplay");
+        var statusColors = {
+            'active': {bg:'#e8f7ee', color:'#117a3d'},
+            'pending': {bg:'#fff7e6', color:'#9a6700'},
+            'resting': {bg:'#e0e7ff', color:'#3730a3'},
+            'disabled': {bg:'#f3f4f6', color:'#4b5563'},
+            'suspended': {bg:'#fff1f2', color:'#b42318'}
+        };
+        var sc = statusColors[status] || statusColors['active'];
+        statusDisplay.style.background = sc.bg;
+        statusDisplay.style.color = sc.color;
+        statusDisplay.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        document.getElementById("editEmployeeId").value = employeeId;
+        document.getElementById("editDepartment").value = department;
+        document.getElementById("editPosition").value = position;
+        
+        const defaultSrc = role === 'guest' ? '/media/system_assets/guest.png' : '/media/system_assets/2.png?v=2';
+        const photoSrc = profilePictureUrl || defaultSrc;
+        document.getElementById("editPreviewImage").src = photoSrc;
+        document.getElementById("editIdCardPhoto").src = photoSrc;
+        
+        const editCheck = document.getElementById("editIsDisbursingOfficer");
+        if (editCheck) editCheck.checked = isDisbursingOfficer;
+
+        activeAdminProtectedForm = document.getElementById("editForm");
+        activeAdminPasswordHiddenId = "adminPasswordHiddenEdit";
+        document.getElementById("adminPasswordHiddenEdit").value = "";
+        document.getElementById("adminPasswordInput").value = "";
+
+        document.getElementById("editModal").style.display = "block";
+        updateEditIdCardPreview();
+        checkDisbursingOfficerAvailability('edit', userId);
+    }
+
+    function closeEditModal() {
+        document.getElementById("editModal").style.display = "none";
+        document.getElementById("adminPasswordHiddenEdit").value = "";
+    }
+
+    function resendCredentials(userId, email) {
+        if (!userId || !email) return;
+        if (!confirm('Resend login credentials to ' + email + '? A new temporary password will be generated and emailed.')) return;
+
+        const pwd = prompt('Enter your admin password to confirm:');
+        if (!pwd) return;
+
+        const csrfMatch = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+        const csrfToken = csrfMatch ? csrfMatch[1] : '';
+
+        const formData = new FormData();
+        formData.append('action', 'resend');
+        formData.append('user_id', userId);
+        formData.append('admin_password', pwd);
+
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrfToken }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                showToast('success', 'Credentials Sent', data.message || 'New login credentials have been emailed to ' + email + '.');
+            } else {
+                showToast('error', 'Failed', data.error || 'Could not resend credentials.');
+            }
+        })
+        .catch(() => showToast('error', 'Error', 'Network error. Please try again.'));
+    }
+
+    function openDeleteModal(userId) {
+        if (!userId) return;
+        const row = document.querySelector(`tr[data-user-id="${userId}"]`);
+        if (!row) return;
+
+        const firstName = row.dataset.firstName;
+        const lastName = row.dataset.lastName;
+        const username = row.dataset.username;
+
+        document.getElementById("deleteUserId").value = userId;
+        activeAdminProtectedForm = document.getElementById("deleteForm");
+        activeAdminPasswordHiddenId = "adminPasswordHiddenDelete";
+        document.getElementById("adminPasswordHiddenDelete").value = "";
+        document.getElementById("adminPasswordInput").value = "";
+        document.getElementById("deleteWarningText").innerText = `Are you sure you want to delete ${firstName} ${lastName} (${username})?`;
+        document.getElementById("deleteModal").style.display = "block";
+    }
+
+    function closeDeleteModal() {
+        document.getElementById("deleteModal").style.display = "none";
+    }
+
+    function promptEnableRfid() {
+        document.getElementById("rfidConfirmModal").style.display = "block";
+    }
+
+    function closeRfidConfirmModal() {
+        const modal = document.getElementById("rfidConfirmModal");
+        if (modal) modal.style.display = "none";
+    }
+
+    function confirmRfidEntry() {
+        closeRfidConfirmModal();
+        rfidEnabled = true;
+        const panel = document.getElementById("rfidPanel");
+        if (panel) panel.classList.add("visible");
+        const input = document.getElementById("rfidUidInput");
+        if (input) { input.focus(); input.select(); }
+    }
+
+    function focusRfidScanner() {
+        const input = document.getElementById("rfidUidInput");
+        if (input) { input.focus(); input.placeholder = "Scan the RFID card now..."; }
+    }
+
+    function triggerFile() {
+        document.getElementById("fileInput").click();
+    }
+
+    function triggerEditFile() {
+        document.getElementById("editFileInput").click();
+    }
+
+    function previewFile(event) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            document.getElementById("previewImage").src = reader.result;
+            document.getElementById("idCardPhoto").src = reader.result;
+        };
+        if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function editPreviewFile(event) {
+        const reader = new FileReader();
+        reader.onload = function () {
+            document.getElementById("editPreviewImage").src = reader.result;
+            document.getElementById("editIdCardPhoto").src = reader.result;
+        };
+        if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
+    }
+
+    function updateIdCardPreview() {
+        const form = document.getElementById("createCashierForm");
+        if (!form) return;
+
+        const firstName = form.querySelector('input[name="first_name"]').value.trim() || "John Michael";
+        const lastName = form.querySelector('input[name="last_name"]').value.trim() || "Dela Cruz";
+        const middleInitial = form.querySelector('input[name="middle_initial"]').value.trim();
+        const employeeId = form.querySelector('input[name="employee_id"]').value.trim() || "EMP-2024-00158";
+        const department = form.querySelector('input[name="department"]').value.trim() || "Information Technology";
+        const position = form.querySelector('input[name="position"]').value.trim() || "SOFTWARE ENGINEER";
+        
+        const roleSelect = form.querySelector('select[name="role"]');
+        const role = roleSelect ? roleSelect.options[roleSelect.selectedIndex].text : "Developer";
+        const roleValue = roleSelect ? roleSelect.value : 'cashier';
+
+        const fullName = `${firstName}${middleInitial ? ' ' + middleInitial + '.' : ''} ${lastName}`;
+
+        document.getElementById("idCardName").innerText = fullName;
+        document.getElementById("idCardBadge").innerText = position.toUpperCase() || "SOFTWARE ENGINEER";
+        document.getElementById("idCardEmpId").innerText = employeeId;
+        document.getElementById("idCardDept").innerText = department;
+        document.getElementById("idCardRole").innerText = role;
+        document.getElementById("idCardFooterTitle").innerText = position || "Administrative Officer";
+
+        const fileInput = document.getElementById("fileInput");
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            // file reader handles it
+        } else {
+            const defaultSrc = roleValue === 'guest' ? '/media/system_assets/guest.png' : '/media/system_assets/2.png?v=2';
+            document.getElementById("previewImage").src = defaultSrc;
+            document.getElementById("idCardPhoto").src = defaultSrc;
+        }
+    }
+
+    function updateEditIdCardPreview() {
+        const form = document.getElementById("editForm");
+        if (!form) return;
+
+        const firstName = form.querySelector('input[name="first_name"]').value.trim() || "John Michael";
+        const lastName = form.querySelector('input[name="last_name"]').value.trim() || "Dela Cruz";
+        const middleInitial = form.querySelector('input[name="middle_initial"]').value.trim();
+        const employeeId = form.querySelector('input[name="employee_id"]').value.trim() || "EMP-2024-00158";
+        const department = form.querySelector('input[name="department"]').value.trim() || "Information Technology";
+        const position = form.querySelector('input[name="position"]').value.trim() || "SOFTWARE ENGINEER";
+        
+        const roleSelect = form.querySelector('select[name="role"]');
+        const role = roleSelect ? roleSelect.options[roleSelect.selectedIndex].text : "Developer";
+        const roleValue = roleSelect ? roleSelect.value : 'cashier';
+
+        const fullName = `${firstName}${middleInitial ? ' ' + middleInitial + '.' : ''} ${lastName}`;
+
+        document.getElementById("editIdCardName").innerText = fullName;
+        document.getElementById("editIdCardBadge").innerText = position.toUpperCase() || "SOFTWARE ENGINEER";
+        document.getElementById("editIdCardEmpId").innerText = employeeId;
+        document.getElementById("editIdCardDept").innerText = department;
+        document.getElementById("editIdCardRole").innerText = role;
+        document.getElementById("editIdCardFooterTitle").innerText = position || "Administrative Officer";
+
+        const fileInput = document.getElementById("editFileInput");
+        const row = document.querySelector(`tr[data-user-id="${document.getElementById("editUserId").value}"]`);
+        const profilePictureUrl = row ? (row.dataset.profilePictureUrl || '') : '';
+
+        if (fileInput && fileInput.files && fileInput.files[0]) {
+            // file reader handles it
+        } else if (profilePictureUrl) {
+            document.getElementById("editPreviewImage").src = profilePictureUrl;
+            document.getElementById("editIdCardPhoto").src = profilePictureUrl;
+        } else {
+            const defaultSrc = roleValue === 'guest' ? '/media/system_assets/guest.png' : '/media/system_assets/2.png?v=2';
+            document.getElementById("editPreviewImage").src = defaultSrc;
+            document.getElementById("editIdCardPhoto").src = defaultSrc;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("createCashierForm");
+        if (form) {
+            form.querySelectorAll("input, select").forEach(input => {
+                input.addEventListener("input", updateIdCardPreview);
+                input.addEventListener("change", updateIdCardPreview);
+            });
+        }
+        const editForm = document.getElementById("editForm");
+        if (editForm) {
+            editForm.querySelectorAll("input, select").forEach(input => {
+                input.addEventListener("input", updateEditIdCardPreview);
+                input.addEventListener("change", updateEditIdCardPreview);
+            });
+        }
+    });
+
+    window.onclick = function (event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = "none";
+        }
+    }
+
+    function confirmAdminPassword(formType) {
+        if (formType === "edit") {
+            activeAdminProtectedForm = document.getElementById("editForm");
+            activeAdminPasswordHiddenId = "adminPasswordHiddenEdit";
+        } else if (formType === "delete") {
+            activeAdminProtectedForm = document.getElementById("deleteForm");
+            activeAdminPasswordHiddenId = "adminPasswordHiddenDelete";
+        } else {
+            activeAdminProtectedForm = document.getElementById("createCashierForm");
+            activeAdminPasswordHiddenId = "adminPasswordHidden";
+        }
+
+        const hiddenPassword = document.getElementById(activeAdminPasswordHiddenId);
+        if (hiddenPassword && !hiddenPassword.value) {
+            document.getElementById("adminPasswordModal").style.display = "block";
+            return false;
+        }
+        return true;
+    }
+
+    function submitAdminPassword(event) {
+        event.preventDefault();
+        const adminPassword = document.getElementById("adminPasswordInput").value.trim();
+        const errorEl = document.getElementById("adminPasswordError");
+        if (!adminPassword) {
+            errorEl.textContent = "Admin password is required.";
+            errorEl.style.display = "block";
+            return;
+        }
+        const hiddenInput = document.getElementById(activeAdminPasswordHiddenId);
+        if (hiddenInput) {
+            hiddenInput.value = adminPassword;
+        }
+        errorEl.style.display = "none";
+        if (activeAdminProtectedForm) {
+            activeAdminProtectedForm.submit();
+        }
+    }
+
+    function closeAdminPasswordModal() {
+        document.getElementById("adminPasswordModal").style.display = "none";
+        document.getElementById("adminPasswordInput").value = "";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const showAdminModal = {{ show_admin_password_modal|yesno:"true,false" }};
+        const pendingAdminFormType = "{{ pending_admin_form|default:'' }}";
+        if (showAdminModal) {
+            if (pendingAdminFormType === "edit") {
+                document.getElementById("editModal").style.display = "block";
+            } else {
+                document.getElementById("cashierModal").style.display = "block";
+            }
+            document.getElementById("adminPasswordModal").style.display = "block";
+        }
+    });
+</script>
+
+<script>
+(function() {
+    var editPw = document.getElementById('editPassword');
+    if (editPw) {
+        editPw.addEventListener('focus', function() { showPasswordReqs(editPw); });
+        editPw.addEventListener('input', function() { updatePasswordReqs(editPw.value); });
+    }
+    document.querySelectorAll('form').forEach(function(f) {
+        f.addEventListener('submit', function(e) {
+            var pw = editPw ? editPw.value : '';
+            if (pw) {
+                var err = validatePassword(pw);
+                if (err) { e.preventDefault(); alert(err); return; }
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}

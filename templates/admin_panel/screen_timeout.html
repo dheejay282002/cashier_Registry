@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% block title %}Screen Timeout{% endblock %}
+{% block content %}
+<style>
+    .page-center {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+        padding: 20px;
+    }
+    .timeout-wrap {
+        width: 100%;
+        max-width: 520px;
+        background: var(--card);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+        padding: 30px;
+        text-align: center;
+    }
+    .timeout-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 6px;
+        color: var(--ink);
+    }
+    .timeout-sub {
+        font-size: 13px;
+        color: var(--muted);
+        margin-bottom: 24px;
+    }
+    .field {
+        text-align: left;
+        margin-top: 20px;
+    }
+    .field label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+    }
+    .field select {
+        width: 100%;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-size: 14px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+    /* ── Dark Mode Overrides for Screen Timeout ── */
+    [data-theme="dark"] .timeout-wrap {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .ill-circle.amber {
+        background: #78350f !important;
+        border-color: #b45309 !important;
+        color: #fbbf24 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    [data-theme="dark"] .ill-badge {
+        border-color: #111111 !important;
+    }
+
+    [data-theme="dark"] .timeout-title,
+    [data-theme="dark"] .field label {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .timeout-sub {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] select,
+    [data-theme="dark"] input {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    .field p.hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 4px 0 10px;
+    }
+    .field p.info {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 6px;
+    }
+    .submit-btn {
+        width: 100%;
+        margin-top: 28px;
+        padding: 12px;
+        border: none;
+        border-radius: 10px;
+        background: var(--brand);
+        color: white;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .submit-btn:hover {
+        background: var(--brand-deep);
+    }
+    .submit-btn:disabled {
+        background: #95a5b2;
+        cursor: not-allowed;
+    }
+    .alert-error { color: #b00020; font-weight: 600; margin-bottom: 10px; }
+    .alert-success { color: #1f7a33; font-weight: 600; margin-bottom: 10px; }
+    .divider {
+        border: none;
+        border-top: 1px solid var(--line);
+        margin: 24px 0 0;
+    }
+    .wallpaper-preview {
+        width: 100%;
+        height: 180px;
+        border-radius: 10px;
+        border: 2px dashed var(--line);
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--card-bg);
+        cursor: pointer;
+        margin-bottom: 10px;
+        transition: border-color 0.2s;
+    }
+    .wallpaper-preview:hover {
+        border-color: var(--brand);
+    }
+    .wallpaper-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .wallpaper-preview .placeholder {
+        color: var(--muted);
+        font-size: 14px;
+        text-align: center;
+        padding: 20px;
+    }
+    .wallpaper-preview .placeholder i {
+        font-size: 32px;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    /* ── MASTER DARK MODE OVERRIDES FOR SCREEN TIMEOUT ── */
+    [data-theme="dark"] .timeout-wrap,
+    [data-theme="dark"] .wallpaper-preview {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .ill-circle.amber {
+        background: #78350f !important;
+        border-color: #b45309 !important;
+        color: #fbbf24 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    [data-theme="dark"] .ill-badge {
+        border-color: #111111 !important;
+    }
+
+    [data-theme="dark"] .timeout-title,
+    [data-theme="dark"] .field label {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .timeout-sub,
+    [data-theme="dark"] .wallpaper-preview .placeholder {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] select,
+    [data-theme="dark"] input {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+</style>
+
+<div class="page-center">
+    <div class="timeout-wrap">
+        <div class="timeout-title">Screen Timeout</div>
+        <div class="timeout-sub">Configure idle timers for automatic screen lock and logout</div>
+
+        {% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+        {% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="field">
+                <label><i class="fas fa-image" style="color:var(--brand);"></i> Lockscreen Wallpaper</label>
+                <p class="hint">Upload a personal lockscreen wallpaper (shows behind the login card)</p>
+                <div class="wallpaper-preview" id="lockPreview" onclick="document.getElementById('lockscreen_wallpaper').click()">
+                    {% if current_profile.lockscreen_wallpaper %}
+                    <img id="lockPreviewImg" src="{{ current_profile.lockscreen_wallpaper.url }}">
+                    {% else %}
+                    <div class="placeholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Click to upload your wallpaper
+                    </div>
+                    {% endif %}
+                </div>
+                <input type="file" id="lockscreen_wallpaper" name="lockscreen_wallpaper" accept="image/*" onchange="previewWallpaper(event)" style="display:none;">
+                <p class="info"><i class="fas fa-info-circle"></i> If unset, the system default wallpaper will be used.</p>
+            </div>
+
+            <hr class="divider" style="margin-top: 28px;">
+
+            <div class="field">
+                <label><i class="fas fa-user-lock" style="color:var(--brand);"></i> My Custom Screen Lock Timer</label>
+                <p class="hint">Override the default lockscreen idle timer for your account</p>
+                <select name="user_auto_lock_seconds" onchange="updateUserLockDisplay(this)">
+                    <option value="default" {% if profile.auto_lock_seconds is None %}selected{% endif %}>Use System Default ({{ system_setting.auto_lock_seconds }}s)</option>
+                    <option value="10"  {% if profile.auto_lock_seconds == 10  %}selected{% endif %}>10 seconds</option>
+                    <option value="30"  {% if profile.auto_lock_seconds == 30  %}selected{% endif %}>30 seconds</option>
+                    <option value="60"  {% if profile.auto_lock_seconds == 60  %}selected{% endif %}>1 minute</option>
+                    <option value="120" {% if profile.auto_lock_seconds == 120 %}selected{% endif %}>2 minutes</option>
+                    <option value="180" {% if profile.auto_lock_seconds == 180 %}selected{% endif %}>3 minutes</option>
+                    <option value="300" {% if profile.auto_lock_seconds == 300 %}selected{% endif %}>5 minutes</option>
+                    <option value="600" {% if profile.auto_lock_seconds == 600 %}selected{% endif %}>10 minutes</option>
+                    <option value="900" {% if profile.auto_lock_seconds == 900 %}selected{% endif %}>15 minutes</option>
+                    <option value="1800" {% if profile.auto_lock_seconds == 1800 %}selected{% endif %}>30 minutes</option>
+                    <option value="3600" {% if profile.auto_lock_seconds == 3600 %}selected{% endif %}>1 hour</option>
+                </select>
+                <p class="info"><i class="fas fa-info-circle"></i> Current: <strong id="userLockDisplay">{% if profile.auto_lock_seconds is None %}System Default{% else %}{{ profile.auto_lock_seconds }} seconds{% endif %}</strong></p>
+            </div>
+
+            <div class="field">
+                <label><i class="fas fa-right-from-bracket" style="color:var(--brand);"></i> My Custom Automatic Logout Timer</label>
+                <p class="hint">Override the default automatic logout idle timer for your account</p>
+                <select name="user_auto_logout_seconds" onchange="updateUserLogoutDisplay(this)">
+                    <option value="default" {% if profile.auto_logout_seconds is None %}selected{% endif %}>Use System Default ({{ system_setting.auto_logout_seconds }}s)</option>
+                    <option value="60"   {% if profile.auto_logout_seconds == 60   %}selected{% endif %}>1 minute</option>
+                    <option value="120"  {% if profile.auto_logout_seconds == 120  %}selected{% endif %}>2 minutes</option>
+                    <option value="180"  {% if profile.auto_logout_seconds == 180  %}selected{% endif %}>3 minutes</option>
+                    <option value="300"  {% if profile.auto_logout_seconds == 300  %}selected{% endif %}>5 minutes</option>
+                    <option value="600"  {% if profile.auto_logout_seconds == 600  %}selected{% endif %}>10 minutes</option>
+                    <option value="900"  {% if profile.auto_logout_seconds == 900  %}selected{% endif %}>15 minutes</option>
+                    <option value="1800" {% if profile.auto_logout_seconds == 1800 %}selected{% endif %}>30 minutes</option>
+                    <option value="2700" {% if profile.auto_logout_seconds == 2700 %}selected{% endif %}>45 minutes</option>
+                    <option value="3600" {% if profile.auto_logout_seconds == 3600 %}selected{% endif %}>1 hour</option>
+                    <option value="7200" {% if profile.auto_logout_seconds == 7200 %}selected{% endif %}>2 hours</option>
+                    <option value="14400" {% if profile.auto_logout_seconds == 14400 %}selected{% endif %}>4 hours</option>
+                    <option value="28800" {% if profile.auto_logout_seconds == 28800 %}selected{% endif %}>8 hours</option>
+                    <option value="43200" {% if profile.auto_logout_seconds == 43200 %}selected{% endif %}>12 hours</option>
+                    <option value="86400" {% if profile.auto_logout_seconds == 86400 %}selected{% endif %}>24 hours</option>
+                </select>
+                <p class="info"><i class="fas fa-info-circle"></i> Current: <strong id="userLogoutDisplay">{% if profile.auto_logout_seconds is None %}System Default{% else %}{{ profile.auto_logout_seconds }} seconds{% endif %}</strong></p>
+            </div>
+
+            <button type="submit" class="submit-btn" style="margin-top: 15px;">Save Preferences</button>
+
+            {% if is_admin %}
+            <hr class="divider" style="margin-top: 28px;">
+
+            <div class="field">
+                <label><i class="fas fa-globe" style="color:var(--brand);"></i> Login Wallpaper <span style="font-size:11px;color:var(--muted);font-weight:400;">(system-wide)</span></label>
+                <p class="hint">Default wallpaper shown behind the lock screen — used when no per-user wallpaper is set</p>
+                <div class="wallpaper-preview" id="loginPreview" onclick="document.getElementById('login_wallpaper').click()">
+                    {% if system_setting.lockscreen_wallpaper %}
+                    <img id="loginWallpaperPreviewImg" src="{{ system_setting.lockscreen_wallpaper.url }}">
+                    {% else %}
+                    <div class="placeholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Click to upload system login wallpaper
+                    </div>
+                    {% endif %}
+                </div>
+                <input type="file" id="login_wallpaper" name="login_wallpaper" accept="image/*" onchange="previewLoginWallpaper(event)" style="display:none;">
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+                <label><i class="fas fa-lock" style="color:var(--brand);"></i> Screen Lock Timer <span style="font-size:11px;color:var(--muted);font-weight:400;">(system-wide)</span></label>
+                <p class="hint">After how long of inactivity should the screen lock?</p>
+                <select name="auto_lock_seconds" onchange="updateLockDisplay(this)">
+                    <option value="10"  {% if system_setting.auto_lock_seconds == 10  %}selected{% endif %}>10 seconds</option>
+                    <option value="30"  {% if system_setting.auto_lock_seconds == 30  %}selected{% endif %}>30 seconds</option>
+                    <option value="60"  {% if system_setting.auto_lock_seconds == 60  %}selected{% endif %}>1 minute</option>
+                    <option value="120" {% if system_setting.auto_lock_seconds == 120 %}selected{% endif %}>2 minutes</option>
+                    <option value="180" {% if system_setting.auto_lock_seconds == 180 %}selected{% endif %}>3 minutes</option>
+                    <option value="300" {% if system_setting.auto_lock_seconds == 300 %}selected{% endif %}>5 minutes</option>
+                    <option value="600" {% if system_setting.auto_lock_seconds == 600 %}selected{% endif %}>10 minutes</option>
+                    <option value="900" {% if system_setting.auto_lock_seconds == 900 %}selected{% endif %}>15 minutes</option>
+                    <option value="1800" {% if system_setting.auto_lock_seconds == 1800 %}selected{% endif %}>30 minutes</option>
+                    <option value="3600" {% if system_setting.auto_lock_seconds == 3600 %}selected{% endif %}>1 hour</option>
+                </select>
+                <p class="info"><i class="fas fa-info-circle"></i> Current: <strong id="lockDisplay">{{ system_setting.auto_lock_seconds }} seconds</strong></p>
+            </div>
+
+            <hr class="divider">
+
+            <div class="field">
+                <label><i class="fas fa-right-from-bracket" style="color:var(--danger);"></i> Automatic Logout Timer <span style="font-size:11px;color:var(--muted);font-weight:400;">(system-wide)</span></label>
+                <p class="hint">After how long of complete inactivity should the system auto-logout? (Must be longer than screen lock timer)</p>
+                <select name="auto_logout_seconds" onchange="updateLogoutDisplay(this)">
+                    <option value="60"   {% if system_setting.auto_logout_seconds == 60   %}selected{% endif %}>1 minute</option>
+                    <option value="120"  {% if system_setting.auto_logout_seconds == 120  %}selected{% endif %}>2 minutes</option>
+                    <option value="180"  {% if system_setting.auto_logout_seconds == 180  %}selected{% endif %}>3 minutes</option>
+                    <option value="300"  {% if system_setting.auto_logout_seconds == 300  %}selected{% endif %}>5 minutes</option>
+                    <option value="600"  {% if system_setting.auto_logout_seconds == 600  %}selected{% endif %}>10 minutes</option>
+                    <option value="900"  {% if system_setting.auto_logout_seconds == 900  %}selected{% endif %}>15 minutes</option>
+                    <option value="1800" {% if system_setting.auto_logout_seconds == 1800 %}selected{% endif %}>30 minutes</option>
+                    <option value="2700" {% if system_setting.auto_logout_seconds == 2700 %}selected{% endif %}>45 minutes</option>
+                    <option value="3600" {% if system_setting.auto_logout_seconds == 3600 %}selected{% endif %}>1 hour</option>
+                    <option value="7200" {% if system_setting.auto_logout_seconds == 7200 %}selected{% endif %}>2 hours</option>
+                    <option value="14400" {% if system_setting.auto_logout_seconds == 14400 %}selected{% endif %}>4 hours</option>
+                    <option value="28800" {% if system_setting.auto_logout_seconds == 28800 %}selected{% endif %}>8 hours</option>
+                    <option value="43200" {% if system_setting.auto_logout_seconds == 43200 %}selected{% endif %}>12 hours</option>
+                    <option value="86400" {% if system_setting.auto_logout_seconds == 86400 %}selected{% endif %}>24 hours</option>
+                </select>
+                <p class="info"><i class="fas fa-info-circle"></i> Current: <strong id="logoutDisplay">{{ system_setting.auto_logout_seconds }} seconds</strong></p>
+            </div>
+
+            <button type="submit" class="submit-btn">Save Timeout Settings</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+    function fmt(secs) {
+        if (secs >= 3600) return (secs/3600) + ' hour' + (secs>=7200?'s':'');
+        if (secs >= 60) return (secs/60) + ' minute' + (secs>=120?'s':'');
+        return secs + ' seconds';
+    }
+    function updateLockDisplay(sel) { document.getElementById('lockDisplay').textContent = fmt(parseInt(sel.value)); }
+    function updateLogoutDisplay(sel) { document.getElementById('logoutDisplay').textContent = fmt(parseInt(sel.value)); }
+    function updateUserLockDisplay(sel) { 
+        document.getElementById('userLockDisplay').textContent = sel.value === "default" ? "System Default" : fmt(parseInt(sel.value)); 
+    }
+    function updateUserLogoutDisplay(sel) { 
+        document.getElementById('userLogoutDisplay').textContent = sel.value === "default" ? "System Default" : fmt(parseInt(sel.value)); 
+    }
+    function previewWallpaper(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('lockPreview').innerHTML = '<img src="' + ev.target.result + '">';
+        };
+        reader.readAsDataURL(file);
+    }
+    function previewLoginWallpaper(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            document.getElementById('loginPreview').innerHTML = '<img src="' + ev.target.result + '">';
+        };
+        reader.readAsDataURL(file);
+    }
+</script>
+{% endblock %}

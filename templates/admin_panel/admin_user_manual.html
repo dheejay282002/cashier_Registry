@@ -1,0 +1,2790 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin User Manual{% endblock %}
+
+{% block content %}
+<div class="manual-modal-overlay">
+<div class="manual-modal-container">
+<div class="manual-modal-topbar">
+    <span><i class="fas fa-book-open" style="margin-right:8px;"></i>Admin User Manual</span>
+    <a href="{% url 'admin_dashboard' %}" class="manual-modal-close" title="Close"><i class="fas fa-xmark"></i></a>
+</div>
+<style>
+    :root {
+        --primary: #1a3a2e;
+        --accent: #3b82f6;
+        --accent-light: #dbeafe;
+        --green: #16a34a;
+        --green-light: #dcfce7;
+        --orange: #d97706;
+        --orange-light: #fef3c7;
+        --red: #dc2626;
+        --red-light: #fee2e2;
+        --blue: #2563eb;
+        --blue-light: #dbeafe;
+        --purple: #7c3aed;
+        --purple-light: #ede9fe;
+        --teal: #0d9488;
+        --teal-light: #ccfbf1;
+    }
+
+    /* ── LAYOUT ── */
+    .manual-layout {
+        display: flex;
+        gap: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+
+    /* ── TABLE OF CONTENTS SIDEBAR ── */
+    .toc-sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 80px;
+        height: calc(100vh - 100px);
+        overflow-y: auto;
+        background: var(--card);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        padding: 20px 0;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    }
+
+    .toc-sidebar::-webkit-scrollbar { width: 4px; }
+    .toc-sidebar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+    .toc-header {
+        padding: 0 18px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .toc-header i { color: var(--accent); }
+
+    .toc-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 18px;
+        font-size: 13px;
+        color: var(--ink);
+        text-decoration: none;
+        transition: all 0.15s ease;
+        border-left: 3px solid transparent;
+        cursor: pointer;
+    }
+
+    .toc-item:hover {
+        background: #f1f5f9;
+        color: var(--accent);
+        border-left-color: var(--accent);
+    }
+
+    .toc-item i {
+        width: 18px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+        flex-shrink: 0;
+    }
+
+    .toc-item:hover i { color: var(--accent); }
+
+    .toc-divider {
+        height: 1px;
+        background: var(--line);
+        margin: 6px 18px;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .manual-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* ── HERO BANNER ── */
+    .manual-hero {
+        background: linear-gradient(135deg, #0e2d0a 0%, #1a5c2f 50%, #0e2d0a 100%);
+        border-radius: 18px;
+        padding: 48px 40px;
+        color: white;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .manual-hero::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: -60px;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.15);
+    }
+
+    .manual-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -40px;
+        left: 30%;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .manual-hero h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .manual-hero p {
+        font-size: 15px;
+        opacity: 0.8;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+        max-width: 600px;
+        line-height: 1.6;
+    }
+
+    .manual-hero .hero-icon {
+        position: absolute;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 80px;
+        opacity: 0.12;
+        z-index: 0;
+    }
+
+    .manual-hero .version-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,0.15);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 14px;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── SECTION STYLES ── */
+    .manual-section {
+        background: var(--card);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 22px;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--line);
+        cursor: pointer;
+        transition: background 0.15s;
+        user-select: none;
+    }
+
+    .section-header:hover { background: #f1f5f9; }
+
+    .section-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .section-icon.green { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .section-icon.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .section-icon.orange { background: linear-gradient(135deg, #d97706, #b45309); }
+    .section-icon.red { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .section-icon.purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+    .section-icon.teal { background: linear-gradient(135deg, #0d9488, #0f766e); }
+    .section-icon.indigo { background: linear-gradient(135deg, #4f46e5, #4338ca); }
+    .section-icon.pink { background: linear-gradient(135deg, #db2777, #be185d); }
+    .section-icon.cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+
+    .section-title-group { flex: 1; }
+
+    .section-title-group h2 {
+        font-size: 17px;
+        font-weight: 700;
+        margin: 0;
+        color: var(--ink);
+    }
+
+    .section-title-group .section-subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+    }
+
+    .section-toggle {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: white;
+        border: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: var(--muted);
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .section-header:hover .section-toggle {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .section-body {
+        padding: 24px;
+        display: none;
+    }
+
+    .section-body.open { display: block; }
+
+    /* ── STEP INDICATORS ── */
+    .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin: 16px 0;
+    }
+
+    .step {
+        display: flex;
+        gap: 14px;
+        position: relative;
+    }
+
+    .step-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .step-number.green { background: var(--green); }
+    .step-number.orange { background: var(--orange); }
+
+    .step-line {
+        width: 2px;
+        flex: 1;
+        background: #e2e8f0;
+        min-height: 16px;
+    }
+
+    .step:last-child .step-line { display: none; }
+
+    .step-content {
+        padding-bottom: 20px;
+        flex: 1;
+    }
+
+    .step-content h4 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 4px;
+        color: var(--ink);
+    }
+
+    .step-content p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    /* ── CALLOUT BOXES ── */
+    .callout {
+        display: flex;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        margin: 14px 0;
+        font-size: 13px;
+        line-height: 1.6;
+        border-left: 4px solid;
+    }
+
+    .callout-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .callout.tip {
+        background: var(--green-light);
+        border-color: var(--green);
+        color: #166534;
+    }
+
+    .callout.tip .callout-icon {
+        background: var(--green);
+        color: white;
+    }
+
+    .callout.warning {
+        background: var(--orange-light);
+        border-color: var(--orange);
+        color: #92400e;
+    }
+
+    .callout.warning .callout-icon {
+        background: var(--orange);
+        color: white;
+    }
+
+    .callout.info {
+        background: var(--blue-light);
+        border-color: var(--accent);
+        color: #1e40af;
+    }
+
+    .callout.info .callout-icon {
+        background: var(--accent);
+        color: white;
+    }
+
+    .callout.danger {
+        background: var(--red-light);
+        border-color: var(--red);
+        color: #991b1b;
+    }
+
+    .callout.danger .callout-icon {
+        background: var(--red);
+        color: white;
+    }
+
+    .callout-body { flex: 1; }
+    .callout-body strong { display: block; margin-bottom: 2px; font-size: 13px; }
+
+    /* ── MOCK UI ELEMENTS ── */
+    .mock-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+        margin: 12px 0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .mock-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .mock-card-header h4 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mock-stat {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .mock-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .mock-stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .mock-stat-label {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .mock-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin: 12px 0;
+    }
+
+    .mock-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    .mock-btn.primary { background: var(--primary); }
+    .mock-btn.accent { background: var(--accent); }
+    .mock-btn.success { background: var(--green); }
+    .mock-btn.warning { background: var(--orange); }
+    .mock-btn.danger { background: var(--red); }
+    .mock-btn.secondary { background: #6b7280; }
+
+    .mock-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin: 12px 0;
+    }
+
+    .mock-table th {
+        background: #f8fafc;
+        padding: 8px 12px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        border-bottom: 2px solid var(--line);
+    }
+
+    .mock-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .mock-table tr:hover td { background: #f9fafb; }
+
+    .mock-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .mock-badge.green { background: #dcfce7; color: #166534; }
+    .mock-badge.orange { background: #fef3c7; color: #92400e; }
+    .mock-badge.red { background: #fee2e2; color: #991b1b; }
+    .mock-badge.blue { background: #dbeafe; color: #1e40af; }
+    .mock-badge.gray { background: #f3f4f6; color: #374151; }
+
+    .mock-input {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--ink);
+        background: white;
+        margin: 6px 0;
+    }
+
+    .mock-form-group {
+        margin-bottom: 14px;
+    }
+
+    .mock-form-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 4px;
+    }
+
+    .mock-select {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 13px;
+        background: white;
+        margin: 6px 0;
+    }
+
+    .mock-checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 13px;
+    }
+
+    .mock-checkbox {
+        width: 16px;
+        height: 16px;
+        border: 2px solid #d1d5db;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .mock-checkbox.checked {
+        background: var(--accent);
+        border-color: var(--accent);
+        position: relative;
+    }
+
+    .mock-checkbox.checked::after {
+        content: '✓';
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 10px;
+        font-weight: 700;
+    }
+
+    /* ── FLOW DIAGRAM ── */
+    .flow-diagram {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        margin: 16px 0;
+        flex-wrap: wrap;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .flow-node {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 16px;
+        background: white;
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        min-width: 100px;
+        text-align: center;
+        position: relative;
+    }
+
+    .flow-node.active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .flow-node.success {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px var(--green-light);
+    }
+
+    .flow-node.warning {
+        border-color: var(--orange);
+        box-shadow: 0 0 0 3px var(--orange-light);
+    }
+
+    .flow-node i {
+        font-size: 20px;
+        color: var(--accent);
+    }
+
+    .flow-node.success i { color: var(--green); }
+    .flow-node.warning i { color: var(--orange); }
+
+    .flow-node span {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .flow-arrow {
+        font-size: 18px;
+        color: #94a3b8;
+        padding: 0 8px;
+        flex-shrink: 0;
+    }
+
+    /* ── MOCK NAVIGATION / SIDEBAR ── */
+    .mock-nav {
+        background: var(--primary);
+        border-radius: 10px;
+        padding: 12px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-width: 200px;
+    }
+
+    .mock-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: rgba(255,255,255,0.7);
+        font-weight: 500;
+    }
+
+    .mock-nav-item.active {
+        background: rgba(255,255,255,0.15);
+        color: white;
+    }
+
+    .mock-nav-item i {
+        width: 16px;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    /* ── MOCK MODAL ── */
+    .mock-modal {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        max-width: 500px;
+        margin: 12px 0;
+        overflow: hidden;
+        border: 1px solid var(--line);
+    }
+
+    .mock-modal-header {
+        background: linear-gradient(135deg, #0f3d2e, #17563d);
+        color: white;
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .mock-modal-body {
+        padding: 18px;
+    }
+
+    .mock-modal-footer {
+        padding: 12px 18px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    /* ── SUB-SECTION TITLES ── */
+    .sub-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        margin: 18px 0 10px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sub-title i {
+        color: var(--accent);
+        font-size: 14px;
+    }
+
+    /* ── TAGS / PILLS ── */
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .tag.green { background: #dcfce7; color: #166534; }
+    .tag.blue { background: #dbeafe; color: #1e40af; }
+    .tag.orange { background: #fef3c7; color: #92400e; }
+
+    /* ── PRINT BUTTON ── */
+    .print-fab {
+        position: fixed;
+        bottom: 28px;
+        left: 28px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), #17563d);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 4px 20px rgba(26, 58, 46, 0.35);
+        z-index: 9000;
+        transition: all 0.3s;
+    }
+
+    .print-fab:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 28px rgba(26, 58, 46, 0.45);
+    }
+
+    /* ── PRINT STYLES ── */
+    @media print {
+        .toc-sidebar,
+        .print-fab,
+        .mini-sidebar,
+        .navbar,
+        .header-line,
+        .chatbot-fab,
+        #chatbotWindow,
+        .overlay {
+            display: none !important;
+        }
+
+        .manual-layout {
+            display: block;
+        }
+
+        .manual-content {
+            width: 100%;
+        }
+
+        .manual-hero {
+            background: #1a3a2e !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .section-body {
+            display: block !important;
+        }
+
+        .section-toggle {
+            display: none;
+        }
+
+        .section-header {
+            background: #f8fafc !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .content {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        .step-number,
+        .section-icon,
+        .callout-icon,
+        .mock-stat-icon,
+        .flow-node i {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .callout.tip,
+        .callout.warning,
+        .callout.info,
+        .callout.danger {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .mock-btn,
+        .mock-badge,
+        .tag,
+        .mock-nav {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            font-size: 11pt;
+        }
+
+        h2, h3, h4 {
+            page-break-after: avoid;
+        }
+
+        .mock-card,
+        .mock-table,
+        .callout,
+        .flow-diagram {
+            page-break-inside: avoid;
+        }
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+        .toc-sidebar { display: none; }
+        .manual-layout { display: block; }
+    }
+
+    /* ── MASTER DARK MODE OVERRIDES FOR USER MANUAL ── */
+    [data-theme="dark"] .manual-modal-container,
+    [data-theme="dark"] .toc-sidebar,
+    [data-theme="dark"] .manual-section,
+    [data-theme="dark"] .manual-card,
+    [data-theme="dark"] .mock-card,
+    [data-theme="dark"] .mock-stat,
+    [data-theme="dark"] .mock-table,
+    [data-theme="dark"] .mock-table table,
+    [data-theme="dark"] .flow-diagram,
+    [data-theme="dark"] .flow-node,
+    [data-theme="dark"] .callout,
+    [data-theme="dark"] .section-header,
+    [data-theme="dark"] div[class*="box"],
+    [data-theme="dark"] div[class*="card"],
+    [data-theme="dark"] div[style*="background: #f8fafc"],
+    [data-theme="dark"] div[style*="background:#f8fafc"],
+    [data-theme="dark"] div[style*="background: white"],
+    [data-theme="dark"] div[style*="background:white"],
+    [data-theme="dark"] div[style*="background: #fff"],
+    [data-theme="dark"] div[style*="background:#fff"] {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .callout,
+    [data-theme="dark"] .callout.tip,
+    [data-theme="dark"] .callout.green {
+        background: #064e3b !important;
+        background-color: #064e3b !important;
+        border-color: #047857 !important;
+        color: #34d399 !important;
+    }
+
+    [data-theme="dark"] .callout.warning,
+    [data-theme="dark"] .callout.important,
+    [data-theme="dark"] .callout.orange {
+        background: #78350f !important;
+        background-color: #78350f !important;
+        border-color: #b45309 !important;
+        color: #fbbf24 !important;
+    }
+
+    [data-theme="dark"] .callout.info,
+    [data-theme="dark"] .callout.blue {
+        background: #0c4a6e !important;
+        background-color: #0c4a6e !important;
+        border-color: #0369a1 !important;
+        color: #38bdf8 !important;
+    }
+
+    [data-theme="dark"] .callout.danger,
+    [data-theme="dark"] .callout.red {
+        background: #7f1d1d !important;
+        background-color: #7f1d1d !important;
+        border-color: #b91c1c !important;
+        color: #f87171 !important;
+    }
+
+    [data-theme="dark"] .callout *,
+    [data-theme="dark"] .callout strong,
+    [data-theme="dark"] .callout p {
+        color: inherit !important;
+    }
+
+    [data-theme="dark"] .mock-stat {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .mock-stat-value {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .mock-stat-label {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] .flow-node {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .flow-node.active { background: #0c4a6e !important; border-color: #0284c7 !important; }
+    [data-theme="dark"] .flow-node.success { background: #064e3b !important; border-color: #16a34a !important; }
+    [data-theme="dark"] .flow-node.warning { background: #78350f !important; border-color: #d97706 !important; }
+
+    [data-theme="dark"] .flow-node i,
+    [data-theme="dark"] .flow-node span,
+    [data-theme="dark"] .flow-arrow {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] div[style*="background: #dcfce7"],
+    [data-theme="dark"] div[style*="background: #fef3c7"],
+    [data-theme="dark"] div[style*="background: #dbeafe"],
+    [data-theme="dark"] div[style*="background:#ecfdf5"],
+    [data-theme="dark"] div[style*="background: #ecfdf5"],
+    [data-theme="dark"] div[style*="background:#e2e8f0"],
+    [data-theme="dark"] div[style*="background: #e2e8f0"] {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        border: 1px solid #222222 !important;
+        color: #38bdf8 !important;
+    }
+
+    [data-theme="dark"] div[style*="background:#ecfdf5"] i,
+    [data-theme="dark"] div[style*="background: #ecfdf5"] i,
+    [data-theme="dark"] div[style*="background:#e2e8f0"] i,
+    [data-theme="dark"] div[style*="background: #e2e8f0"] i {
+        color: #38bdf8 !important;
+    }
+
+    [data-theme="dark"] .mock-input,
+    [data-theme="dark"] .mock-select {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .mock-form-group label {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .mock-table th,
+    [data-theme="dark"] .mock-table td,
+    [data-theme="dark"] .mock-table tr:hover td {
+        background: #111111 !important;
+        color: #f8fafc !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .mock-badge.green {
+        background: #064e3b !important;
+        background-color: #064e3b !important;
+        color: #34d399 !important;
+        border: 1px solid #047857 !important;
+    }
+
+    [data-theme="dark"] .mock-badge.orange {
+        background: #78350f !important;
+        background-color: #78350f !important;
+        color: #fbbf24 !important;
+        border: 1px solid #b45309 !important;
+    }
+
+    [data-theme="dark"] .mock-badge.red {
+        background: #7f1d1d !important;
+        background-color: #7f1d1d !important;
+        color: #f87171 !important;
+        border: 1px solid #b91c1c !important;
+    }
+
+    [data-theme="dark"] .mock-badge.blue {
+        background: #0c4a6e !important;
+        background-color: #0c4a6e !important;
+        color: #38bdf8 !important;
+        border: 1px solid #0369a1 !important;
+    }
+
+    [data-theme="dark"] .mock-badge.gray {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #94a3b8 !important;
+        border: 1px solid #222222 !important;
+    }
+
+    [data-theme="dark"] .toc-link,
+    [data-theme="dark"] .manual-section h2,
+    [data-theme="dark"] .manual-section h3,
+    [data-theme="dark"] .manual-section h4,
+    [data-theme="dark"] .manual-section p,
+    [data-theme="dark"] .manual-section li,
+    [data-theme="dark"] .manual-section td,
+    [data-theme="dark"] .manual-section th,
+    [data-theme="dark"] .mock-card * {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .toc-link:hover,
+    [data-theme="dark"] .toc-link.active {
+        background: #111111 !important;
+        color: #38bdf8 !important;
+    }
+</style>
+
+<div class="manual-layout">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TABLE OF CONTENTS SIDEBAR
+═══════════════════════════════════════════════════════════════ -->
+<aside class="toc-sidebar">
+    <div class="toc-header">
+        <i class="fas fa-book-open"></i> Table of Contents
+    </div>
+    <a class="toc-item" href="#hero"><i class="fas fa-home"></i> Introduction</a>
+    <div class="toc-divider"></div>
+    <a class="toc-item" href="#dashboard"><i class="fas fa-gauge-high"></i> Dashboard Overview</a>
+    <a class="toc-item" href="#cheques"><i class="fas fa-money-check-dollar"></i> Cheque Management</a>
+    <a class="toc-item" href="#fund-clusters"><i class="fas fa-piggy-bank"></i> Fund Clusters</a>
+    <a class="toc-item" href="#account-titles"><i class="fas fa-list"></i> Account Titles</a>
+    <a class="toc-item" href="#suppliers"><i class="fas fa-building"></i> Suppliers</a>
+    <a class="toc-item" href="#radai"><i class="fas fa-database"></i> RADAI Entries</a>
+    <a class="toc-item" href="#reports"><i class="fas fa-chart-bar"></i> Reports Generation</a>
+    <div class="toc-divider"></div>
+    <a class="toc-item" href="#user-management"><i class="fas fa-users"></i> User Management</a>
+    <a class="toc-item" href="#import-data"><i class="fas fa-file-import"></i> Import Data</a>
+    <a class="toc-item" href="#backup-restore"><i class="fas fa-database"></i> Backup & Restore</a>
+    <div class="toc-divider"></div>
+    <a class="toc-item" href="#system-info"><i class="fas fa-building"></i> System Information</a>
+    <a class="toc-item" href="#email-settings"><i class="fas fa-envelope"></i> Email Settings</a>
+    <a class="toc-item" href="#screen-timeout"><i class="fas fa-clock"></i> Screen Timeout</a>
+    <a class="toc-item" href="#mfa"><i class="fas fa-shield-halved"></i> MFA Security</a>
+    <a class="toc-item" href="#chatbot"><i class="fas fa-robot"></i> Chatbot Setup</a>
+    <div class="toc-divider"></div>
+    <a class="toc-item" href="#profile"><i class="fas fa-user-gear"></i> Profile Settings</a>
+    <a class="toc-item" href="#about"><i class="fas fa-circle-info"></i> About System</a>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-content">
+
+<!-- ── HERO BANNER ── -->
+<div class="manual-hero" id="hero">
+    <h1>Admin User Manual</h1>
+    <p>Complete guide to managing the Registry system. This manual covers every admin feature including cheque processing, user management, system configuration, and security settings.</p>
+    <div class="version-badge"><i class="fas fa-tag"></i> Version 2.0 &middot; Updated July 2026</div>
+    <div class="hero-icon"><i class="fas fa-book-open"></i></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 1: DASHBOARD OVERVIEW
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="dashboard">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon green"><i class="fas fa-gauge-high"></i></div>
+        <div class="section-title-group">
+            <h2>Dashboard Overview</h2>
+            <div class="section-subtitle">Your central command center for system monitoring</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Dashboard provides a real-time snapshot of your system's health and activity. It displays key metrics, recent activity, and quick-access shortcuts.</p>
+
+        <h3 class="sub-title"><i class="fas fa-layer-group"></i> Dashboard Layout</h3>
+
+        <div class="mock-stats-grid">
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #16a34a, #15803d);"><i class="fas fa-money-check-dollar"></i></div>
+                <div>
+                    <div class="mock-stat-value">1,248</div>
+                    <div class="mock-stat-label">Total Cheques</div>
+                </div>
+            </div>
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #d97706, #b45309);"><i class="fas fa-hourglass-half"></i></div>
+                <div>
+                    <div class="mock-stat-value">87</div>
+                    <div class="mock-stat-label">Pending Cheques</div>
+                </div>
+            </div>
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);"><i class="fas fa-building"></i></div>
+                <div>
+                    <div class="mock-stat-value">342</div>
+                    <div class="mock-stat-label">Suppliers</div>
+                </div>
+            </div>
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);"><i class="fas fa-piggy-bank"></i></div>
+                <div>
+                    <div class="mock-stat-value">15</div>
+                    <div class="mock-stat-label">Fund Clusters</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                Click any statistic card on the dashboard to drill down into detailed records for that category.
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-chart-line"></i> Activity Feed</h3>
+        <p>The right panel shows recent actions performed by all users. Each entry displays the user, action type, timestamp, and affected record.</p>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-clock-rotate-left"></i> Recent Activity</h4>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #f8fafc; border-radius: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; color: #16a34a; font-size: 12px;"><i class="fas fa-plus"></i></div>
+                    <div style="flex: 1;"><strong style="font-size: 13px;">Admin</strong> added cheque <span style="color: var(--accent); font-weight: 600;">CHQ-2024-0892</span></div>
+                    <div style="font-size: 11px; color: var(--muted);">2 min ago</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #f8fafc; border-radius: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 12px;"><i class="fas fa-pen"></i></div>
+                    <div style="flex: 1;"><strong style="font-size: 13px;">Cashier1</strong> updated supplier <span style="color: var(--accent); font-weight: 600;">ABC Corp</span></div>
+                    <div style="font-size: 11px; color: var(--muted);">15 min ago</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #f8fafc; border-radius: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #dbeafe; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 12px;"><i class="fas fa-file-export"></i></div>
+                    <div style="flex: 1;"><strong style="font-size: 13px;">Admin</strong> generated <span style="color: var(--accent); font-weight: 600;">Monthly Report</span></div>
+                    <div style="font-size: 11px; color: var(--muted);">1 hour ago</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Good to Know</strong>
+                The dashboard automatically refreshes every 30 seconds. You can also click the refresh icon in the top-right corner of any card.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 2: CHEQUE MANAGEMENT
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="cheques">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon blue"><i class="fas fa-money-check-dollar"></i></div>
+        <div class="section-title-group">
+            <h2>Cheque Management</h2>
+            <div class="section-subtitle">Add, edit, void, and track all cheque transactions</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Cheque Management is the core module for recording, tracking, and managing all cheque transactions in the system.</p>
+
+        <!-- Cheque Lifecycle Flow -->
+        <h3 class="sub-title"><i class="fas fa-arrows-spin"></i> Cheque Lifecycle</h3>
+        <div class="flow-diagram">
+            <div class="flow-node success">
+                <i class="fas fa-plus-circle"></i>
+                <span>Created</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node active">
+                <i class="fas fa-pen-to-square"></i>
+                <span>Draft</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node warning">
+                <i class="fas fa-hourglass-half"></i>
+                <span>Pending</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node success">
+                <i class="fas fa-check-circle"></i>
+                <span>Released</span>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-plus-circle"></i> Adding a New Cheque</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Navigate to Cheques</h4>
+                    <p>Click the <strong>Cheques</strong> icon in the left sidebar navigation to open the cheque list view.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Click "Add Cheque"</h4>
+                    <p>Click the green <strong>+ Add Cheque</strong> button in the top-right corner of the page.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Fill in the Form</h4>
+                    <p>Complete the cheque form including cheque number, amount, payee, date, fund cluster, and account title.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">4</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Save the Record</h4>
+                    <p>Click <strong>Save</strong> to create the cheque record. A success toast notification will appear.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mock Cheque Form -->
+        <div class="mock-modal">
+            <div class="mock-modal-header">
+                <span><i class="fas fa-money-check-dollar"></i> Add New Cheque</span>
+                <i class="fas fa-xmark" style="cursor: pointer;"></i>
+            </div>
+            <div class="mock-modal-body">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="mock-form-group">
+                        <label>Cheque Number *</label>
+                        <input type="text" class="mock-input" value="CHQ-2024-0893" readonly>
+                    </div>
+                    <div class="mock-form-group">
+                        <label>Date *</label>
+                        <input type="text" class="mock-input" value="07/29/2026">
+                    </div>
+                    <div class="mock-form-group">
+                        <label>Payee *</label>
+                        <input type="text" class="mock-input" placeholder="Enter payee name">
+                    </div>
+                    <div class="mock-form-group">
+                        <label>Amount *</label>
+                        <input type="text" class="mock-input" placeholder="0.00">
+                    </div>
+                    <div class="mock-form-group">
+                        <label>Fund Cluster *</label>
+                        <select class="mock-select">
+                            <option>Select fund cluster</option>
+                        </select>
+                    </div>
+                    <div class="mock-form-group">
+                        <label>Account Title *</label>
+                        <select class="mock-select">
+                            <option>Select account title</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mock-form-group">
+                    <label>Remarks</label>
+                    <input type="text" class="mock-input" placeholder="Optional remarks">
+                </div>
+            </div>
+            <div class="mock-modal-footer">
+                <span class="mock-btn secondary">Cancel</span>
+                <span class="mock-btn success"><i class="fas fa-check"></i> Save Cheque</span>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-ban"></i> Voiding a Cheque</h3>
+        <div class="callout warning">
+            <div class="callout-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="callout-body">
+                <strong>Important</strong>
+                Voiding a cheque is irreversible. Only void cheques that have not yet been released. Contact the system administrator if a released cheque needs to be reversed.
+            </div>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Find the Cheque</h4>
+                    <p>Use the search bar or filters to locate the cheque you want to void in the cheque list.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Actions Menu</h4>
+                    <p>Click the <strong>⋮ (kebab)</strong> menu icon in the Actions column of the target cheque row.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Select Void</h4>
+                    <p>Click <strong>Void Cheque</strong> from the dropdown. Confirm the void action in the confirmation dialog.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mock Cheque Table -->
+        <h3 class="sub-title"><i class="fas fa-table"></i> Cheque List View</h3>
+        <div class="mock-card" style="overflow-x: auto;">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-money-check-dollar"></i> All Cheques</h4>
+                <div style="display: flex; gap: 6px;">
+                    <span class="mock-btn accent" style="font-size: 11px; padding: 5px 10px;"><i class="fas fa-search"></i> Search</span>
+                    <span class="mock-btn success" style="font-size: 11px; padding: 5px 10px;"><i class="fas fa-plus"></i> Add Cheque</span>
+                </div>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr>
+                        <th>Cheque No.</th>
+                        <th>Date</th>
+                        <th>Payee</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">CHQ-2024-0890</td>
+                        <td>07/25/2026</td>
+                        <td>ABC Construction</td>
+                        <td style="font-weight: 600;">₱ 125,000.00</td>
+                        <td><span class="mock-badge green">Released</span></td>
+                        <td><span class="mock-btn secondary" style="font-size: 10px; padding: 3px 8px;">⋮</span></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">CHQ-2024-0891</td>
+                        <td>07/26/2026</td>
+                        <td>XYZ Supplies Inc.</td>
+                        <td style="font-weight: 600;">₱ 45,500.00</td>
+                        <td><span class="mock-badge orange">Pending</span></td>
+                        <td><span class="mock-btn secondary" style="font-size: 10px; padding: 3px 8px;">⋮</span></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">CHQ-2024-0892</td>
+                        <td>07/28/2026</td>
+                        <td>Office Depot</td>
+                        <td style="font-weight: 600;">₱ 12,750.00</td>
+                        <td><span class="mock-badge red">Voided</span></td>
+                        <td><span class="mock-btn secondary" style="font-size: 10px; padding: 3px 8px;">⋮</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 3: FUND CLUSTERS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="fund-clusters">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon purple"><i class="fas fa-piggy-bank"></i></div>
+        <div class="section-title-group">
+            <h2>Fund Clusters Management</h2>
+            <div class="section-subtitle">Organize and manage fund categories for cheque allocation</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Fund Clusters categorize your financial resources. Each cheque must be assigned to a fund cluster for proper accounting and budget tracking.</p>
+
+        <h3 class="sub-title"><i class="fas fa-plus-circle"></i> Adding a Fund Cluster</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Fund Clusters</h4>
+                    <p>Navigate to <strong>Fund Clusters</strong> from the sidebar menu.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Click "Add Fund Cluster"</h4>
+                    <p>Click the <strong>+ Add Fund Cluster</strong> button to open the creation form.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Enter Details</h4>
+                    <p>Provide the Fund Cluster code, name, description, and any initial budget allocation.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">4</div>
+                </div>
+                <div class="step-content">
+                    <h4>Save</h4>
+                    <p>Click <strong>Save</strong> to create the fund cluster record.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                Use consistent naming conventions for fund cluster codes (e.g., FC-001, FC-002) for easier reference throughout the system.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 4: ACCOUNT TITLES
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="account-titles">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon teal"><i class="fas fa-list"></i></div>
+        <div class="section-title-group">
+            <h2>Account Titles Management</h2>
+            <div class="section-subtitle">Maintain account title classifications for financial tracking</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Account Titles define the classification of financial transactions. They are used to categorize cheques for reporting and auditing purposes.</p>
+
+        <h3 class="sub-title"><i class="fas fa-cog"></i> Managing Account Titles</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Access Account Titles</h4>
+                    <p>Go to <strong>System Settings → Account Titles</strong> from the sidebar.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Add or Edit Titles</h4>
+                    <p>Click <strong>+ Add Account Title</strong> to create new entries, or click the edit icon on existing titles to modify them.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                </div>
+                <div class="step-content">
+                    <h4>Save Changes</h4>
+                    <p>Click <strong>Save</strong> to apply your changes. Account titles will appear in cheque forms immediately.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-list"></i> Account Titles</h4>
+                <span class="mock-btn success" style="font-size: 11px; padding: 5px 10px;"><i class="fas fa-plus"></i> Add</span>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr><th>Code</th><th>Title</th><th>Description</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td style="font-weight:600;">AT-001</td><td>Regular Disbursement</td><td>Standard payment disbursements</td><td><span class="mock-badge green">Active</span></td><td><span class="mock-btn secondary" style="font-size:10px;padding:3px 8px;">Edit</span></td></tr>
+                    <tr><td style="font-weight:600;">AT-002</td><td>Special Account</td><td>Special purpose fund allocations</td><td><span class="mock-badge green">Active</span></td><td><span class="mock-btn secondary" style="font-size:10px;padding:3px 8px;">Edit</span></td></tr>
+                    <tr><td style="font-weight:600;">AT-003</td><td>Trust Fund</td><td>Trust fund disbursements</td><td><span class="mock-badge gray">Inactive</span></td><td><span class="mock-btn secondary" style="font-size:10px;padding:3px 8px;">Edit</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 5: SUPPLIERS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="suppliers">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon indigo"><i class="fas fa-building"></i></div>
+        <div class="section-title-group">
+            <h2>Suppliers Management</h2>
+            <div class="section-subtitle">Register and manage vendor and supplier information</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Suppliers module maintains your vendor database. Each supplier record stores contact details, payment terms, and transaction history.</p>
+
+        <h3 class="sub-title"><i class="fas fa-user-plus"></i> Adding a Supplier</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Suppliers Page</h4>
+                    <p>Click <strong>Suppliers</strong> in the sidebar navigation.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Click "Add Supplier"</h4>
+                    <p>Click the <strong>+ Add Supplier</strong> button to open the registration form.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Complete Supplier Details</h4>
+                    <p>Fill in the supplier name, contact person, address, phone, email, and TIN number.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">4</div>
+                </div>
+                <div class="step-content">
+                    <h4>Save Supplier</h4>
+                    <p>Click <strong>Save</strong> to add the supplier to the database.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Note</strong>
+                Suppliers can be flagged as <span class="mock-badge green" style="font-size: 10px;">Active</span>, <span class="mock-badge gray" style="font-size: 10px;">Inactive</span>, or <span class="mock-badge red" style="font-size: 10px;">Blacklisted</span>. Use the status filter to view specific supplier groups.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 6: RADAI ENTRIES
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="radai">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon cyan"><i class="fas fa-database"></i></div>
+        <div class="section-title-group">
+            <h2>RADAI Entries</h2>
+            <div class="section-subtitle">Manage Registry of Allotments, Disbursements, and Internal transactions</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>RADAI (Registry of Allotments, Disbursements, and Allotment Inquiries) tracks internal financial allocations and disbursement records.</p>
+
+        <h3 class="sub-title"><i class="fas fa-file-circle-plus"></i> Creating RADAI Entries</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Navigate to RADAI</h4>
+                    <p>Click <strong>RADAI</strong> in the sidebar to access the RADAI entries list.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Add New Entry</h4>
+                    <p>Click <strong>+ Add RADAI Entry</strong> and fill in the allotment reference, amount, fund source, and disbursement details.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">3</div>
+                </div>
+                <div class="step-content">
+                    <h4>Submit Entry</h4>
+                    <p>Click <strong>Save</strong> to record the RADAI entry. It will appear in reports and allotment summaries.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout warning">
+            <div class="callout-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="callout-body">
+                <strong>Important</strong>
+                Double-check allotment amounts before saving. RADAI entries that have been included in reports cannot be edited directly — you must reverse the entry first.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 7: REPORTS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="reports">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon orange"><i class="fas fa-chart-bar"></i></div>
+        <div class="section-title-group">
+            <h2>Reports Generation</h2>
+            <div class="section-subtitle">Generate, preview, and export financial and system reports</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Reports module provides powerful tools for generating financial summaries, cheque registers, and audit reports.</p>
+
+        <h3 class="sub-title"><i class="fas fa-file-pdf"></i> Generating a Report</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Reports</h4>
+                    <p>Click <strong>Reports</strong> in the sidebar navigation to see available report types.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Select Report Type</h4>
+                    <p>Choose from available report categories: Cheque Register, Fund Summary, Supplier Report, or RADAI Summary.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Set Date Range & Filters</h4>
+                    <p>Configure the date range, fund cluster, and other filters to narrow the report data.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">4</div>
+                </div>
+                <div class="step-content">
+                    <h4>Generate & Export</h4>
+                    <p>Click <strong>Generate Report</strong>. Preview on screen, then export as PDF or print directly.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-diagram">
+            <div class="flow-node">
+                <i class="fas fa-filter"></i>
+                <span>Set Filters</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node active">
+                <i class="fas fa-cogs"></i>
+                <span>Generate</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node">
+                <i class="fas fa-eye"></i>
+                <span>Preview</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node success">
+                <i class="fas fa-download"></i>
+                <span>Export</span>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                Use the "Save as Favorite" option on frequently used report configurations to quickly regenerate them without re-entering filters each time.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 8: USER MANAGEMENT
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="user-management">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon pink"><i class="fas fa-users"></i></div>
+        <div class="section-title-group">
+            <h2>User Management</h2>
+            <div class="section-subtitle">Create, edit, and manage user accounts and role assignments</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>User Management allows admins to control access to the system by creating accounts, assigning roles, and managing permissions.</p>
+
+        <h3 class="sub-title"><i class="fas fa-user-plus"></i> Creating a New User</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open User Management</h4>
+                    <p>Click <strong>User Management</strong> from the sidebar (under More menu if collapsed).</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Click "Add User"</h4>
+                    <p>Click the <strong>+ Add User</strong> button to open the user creation form.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Fill User Details</h4>
+                    <p>Enter the username, email, first/last name, employee ID, department, and assign a role (Admin or Cashier).</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">4</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Set Password</h4>
+                    <p>Enter a temporary password or click <strong>Generate Password</strong> for a secure random password.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">5</div>
+                </div>
+                <div class="step-content">
+                    <h4>Activate Account</h4>
+                    <p>Click <strong>Save</strong> to create the user. The user can now log in with the provided credentials.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout danger">
+            <div class="callout-icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="callout-body">
+                <strong>Security Warning</strong>
+                Never share admin credentials. Each admin account has full system access. Always use strong, unique passwords and enable MFA for all admin accounts.
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-shield-halved"></i> Role-Based Access</h3>
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-user-shield"></i> Permission Matrix</h4>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr><th>Feature</th><th>Admin</th><th>Cashier</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Dashboard</td><td><span class="mock-badge green">Full</span></td><td><span class="mock-badge green">Full</span></td></tr>
+                    <tr><td>Cheque Management</td><td><span class="mock-badge green">Full</span></td><td><span class="mock-badge orange">View Only</span></td></tr>
+                    <tr><td>User Management</td><td><span class="mock-badge green">Full</span></td><td><span class="mock-badge red">No Access</span></td></tr>
+                    <tr><td>Reports</td><td><span class="mock-badge green">Full</span></td><td><span class="mock-badge green">Full</span></td></tr>
+                    <tr><td>Backup & Restore</td><td><span class="mock-badge green">Full</span></td><td><span class="mock-badge red">No Access</span></td></tr>
+                    <tr><td>System Settings</td><td><span class="mock-badge green">Full</span></td><td><span class="mock-badge red">No Access</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 9: IMPORT DATA
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="import-data">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon green"><i class="fas fa-file-import"></i></div>
+        <div class="section-title-group">
+            <h2>Import Data</h2>
+            <div class="section-subtitle">Bulk import records from CSV and Excel files</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Import Data allows you to bulk-load records into the system from CSV or Excel (.xlsx) files, saving time on large data entries.</p>
+
+        <div class="mock-card" style="text-align:center; padding:20px; margin-bottom:16px;">
+            <div style="width:48px; height:48px; border-radius:12px; background:#ecfdf5; display:flex; align-items:center; justify-content:center; margin:0 auto 10px;">
+                <i class="fas fa-file-import" style="font-size:20px; color:#059669;"></i>
+            </div>
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Import Data</div>
+            <div style="font-size:12px; color:var(--muted);">Upload Excel files to import suppliers, cheques, and other transactional data</div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-upload"></i> Import Process</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Import Data</h4>
+                    <p>Navigate to <strong>Import Data</strong> from the sidebar menu. You'll see a centered Upload File card with Import Type dropdown and file picker.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Select Import Type</h4>
+                    <p>Choose the data type to import: Suppliers, Fund Clusters, or RADAI.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Download Template</h4>
+                    <p>Click <strong>Download Template</strong> (XLSX) or <strong>CSV</strong> to get the correctly formatted template with column headers.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">4</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Fill & Upload</h4>
+                    <p>Fill in the template with your data, then select the file using the file picker.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">5</div>
+                </div>
+                <div class="step-content">
+                    <h4>Review & Confirm</h4>
+                    <p>Preview the imported data in the modal, select the sheet (for Excel files), then click <strong>Confirm Import</strong> to finalize.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card" style="margin-top:12px;">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                <div>
+                    <h4 style="font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;"><i class="fas fa-info-circle" style="color:var(--muted);"></i> File Format Requirements</h4>
+                    <div style="font-size:12px; color:var(--muted); line-height:1.6;">
+                        <p><strong>Suppliers:</strong> Check Serial, Check Date, OR Number, Series/Day, DV/Payroll No., ORS/BURS No., Responsibility Center, UACS Object Code, Payee, Nature of Payments, Gross Amount, Professional Tax, Tax (5%/3%), Tax (2%/1%), Net Amount, Other Deductions, Fund Cluster, Remarks</p>
+                        <p><strong>Fund Clusters:</strong> code, name, description, balance, is_active</p>
+                        <p><strong>RADAI:</strong> Date, Serial No., Payee, Amount, ORS/BURS No. & Responsibility Center, Nature of Payment, DV/Payroll No., UACS Object Code, Fund Cluster, Remarks</p>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="font-size:13px; font-weight:700; color:var(--ink); margin-bottom:8px;"><i class="fas fa-check-circle" style="color:var(--muted);"></i> Import Rules</h4>
+                    <ul style="font-size:12px; color:var(--muted); padding-left:16px; line-height:1.8;">
+                        <li>Supplier imports create a new row for each imported record</li>
+                        <li>RADAI imports create a new row for each imported record</li>
+                        <li>Fund cluster imports are matched by code and updated if they already exist</li>
+                        <li>All imports are logged in the Audit Log</li>
+                        <li>Preview is shown before final import</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout warning">
+            <div class="callout-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="callout-body">
+                <strong>Data Validation</strong>
+                The system will highlight rows with validation errors before import. Fix all errors in your file and re-upload. Duplicate records will be skipped with a warning.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 10: BACKUP & RESTORE
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="backup-restore">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon red"><i class="fas fa-database"></i></div>
+        <div class="section-title-group">
+            <h2>Backup & Restore</h2>
+            <div class="section-subtitle">Protect your data with regular backups and disaster recovery</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Regular backups protect your data from loss. The system supports both automatic scheduled backups and manual backup/restore operations.</p>
+
+        <h3 class="sub-title"><i class="fas fa-download"></i> Creating a Manual Backup</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Backup & Restore</h4>
+                    <p>Navigate to <strong>Backup & Restore</strong> from the sidebar.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Click "Create Backup"</h4>
+                    <p>Click the <strong>Create Backup</strong> button. The system will generate a complete database backup.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">3</div>
+                </div>
+                <div class="step-content">
+                    <h4>Download Backup File</h4>
+                    <p>Once complete, click <strong>Download</strong> to save the backup file (.sql or .zip) to your local machine.</p>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-upload"></i> Restoring from Backup</h3>
+        <div class="callout danger">
+            <div class="callout-icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="callout-body">
+                <strong>Caution</strong>
+                Restoring a backup will <strong>overwrite all current data</strong>. This action is irreversible. Always create a backup of the current state before restoring.
+            </div>
+        </div>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Upload Backup File</h4>
+                    <p>In the Backup & Restore page, click <strong>Upload Backup</strong> and select your .sql or .zip backup file.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Confirm Restore</h4>
+                    <p>Review the backup details (date, size). Click <strong>Restore</strong> and confirm the warning dialog.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">3</div>
+                </div>
+                <div class="step-content">
+                    <h4>System Restart</h4>
+                    <p>The system will briefly restart after restore. All users will be logged out during this process.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 11: SYSTEM INFORMATION
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="system-info">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon indigo"><i class="fas fa-building"></i></div>
+        <div class="section-title-group">
+            <h2>System Information Settings</h2>
+            <div class="section-subtitle">Configure business identity and system branding</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>System Information stores your organization's identity. This data appears on reports, receipts, and the system header.</p>
+
+        <h3 class="sub-title"><i class="fas fa-pen"></i> Editing System Information</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open System Information</h4>
+                    <p>Go to <strong>System Settings → System Information</strong> from the sidebar.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Update Organization Details</h4>
+                    <p>Edit the organization name, address, contact details, and system name as needed.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                </div>
+                <div class="step-content">
+                    <h4>Upload Logo</h4>
+                    <p>Click the logo placeholder to upload your organization's logo. Recommended size: 200×60px.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-building"></i> Organization Profile</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="mock-form-group">
+                    <label>Organization Name</label>
+                    <input type="text" class="mock-input" value="Department of Finance">
+                </div>
+                <div class="mock-form-group">
+                    <label>System Name</label>
+                    <input type="text" class="mock-input" value="Registry Management System">
+                </div>
+                <div class="mock-form-group">
+                    <label>Address</label>
+                    <input type="text" class="mock-input" value="123 Government Center, Manila">
+                </div>
+                <div class="mock-form-group">
+                    <label>Contact Email</label>
+                    <input type="text" class="mock-input" value="admin@registry.gov.ph">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 12: EMAIL SETTINGS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="email-settings">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon orange"><i class="fas fa-envelope"></i></div>
+        <div class="section-title-group">
+            <h2>Email Settings</h2>
+            <div class="section-subtitle">Configure SMTP for system email notifications</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Email Settings configure the outgoing mail server (SMTP) used by the system to send notifications, password resets, and reports.</p>
+
+        <h3 class="sub-title"><i class="fas fa-server"></i> SMTP Configuration</h3>
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-envelope"></i> Email Server Configuration</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="mock-form-group">
+                    <label>SMTP Host</label>
+                    <input type="text" class="mock-input" value="smtp.gmail.com">
+                </div>
+                <div class="mock-form-group">
+                    <label>SMTP Port</label>
+                    <input type="text" class="mock-input" value="587">
+                </div>
+                <div class="mock-form-group">
+                    <label>Email Address</label>
+                    <input type="text" class="mock-input" value="noreply@registry.gov.ph">
+                </div>
+                <div class="mock-form-group">
+                    <label>Password</label>
+                    <input type="password" class="mock-input" value="••••••••">
+                </div>
+                <div class="mock-form-group">
+                    <label>Encryption</label>
+                    <select class="mock-select">
+                        <option>TLS (Recommended)</option>
+                        <option>SSL</option>
+                        <option>None</option>
+                    </select>
+                </div>
+                <div class="mock-form-group">
+                    <label>From Name</label>
+                    <input type="text" class="mock-input" value="Registry System">
+                </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                <span class="mock-btn accent"><i class="fas fa-paper-plane"></i> Send Test Email</span>
+                <span class="mock-btn success"><i class="fas fa-check"></i> Save Settings</span>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                Always click "Send Test Email" after changing SMTP settings to verify the configuration works before saving.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 13: SCREEN TIMEOUT
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="screen-timeout">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon teal"><i class="fas fa-clock"></i></div>
+        <div class="section-title-group">
+            <h2>Screen Timeout Settings</h2>
+            <div class="section-subtitle">Configure automatic screen lock and session timeout</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Screen Timeout settings protect the system by automatically locking the screen and logging out inactive users.</p>
+
+        <h3 class="sub-title"><i class="fas fa-sliders"></i> Timeout Configuration</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Screen Timeout</h4>
+                    <p>Navigate to <strong>Screen Timeout</strong> from the sidebar menu.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Set Values</h4>
+                    <p>Configure the <strong>Screen Lock Timeout</strong> (inactivity warning) and <strong>Auto-Logout Timeout</strong> (forced logout) in minutes.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">3</div>
+                </div>
+                <div class="step-content">
+                    <h4>Save Settings</h4>
+                    <p>Click <strong>Save</strong> to apply the timeout settings system-wide.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-clock"></i> Timeout Settings</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="mock-form-group">
+                    <label>Screen Lock Warning (seconds)</label>
+                    <input type="number" class="mock-input" value="30">
+                    <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Warning shown before screen locks</div>
+                </div>
+                <div class="mock-form-group">
+                    <label>Auto-Logout (seconds)</label>
+                    <input type="number" class="mock-input" value="3600">
+                    <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">Forced logout after inactivity</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>How It Works</strong>
+                After the screen lock timeout, a countdown overlay appears. Moving the mouse or pressing a key cancels the lock. If no activity is detected before the auto-logout timeout, the user is automatically logged out.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 14: MFA SECURITY
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="mfa">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon green"><i class="fas fa-shield-halved"></i></div>
+        <div class="section-title-group">
+            <h2>MFA Security Setup</h2>
+            <div class="section-subtitle">Enable multi-factor authentication for enhanced security</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Multi-Factor Authentication (MFA) adds an extra layer of security by requiring a verification code in addition to the password during login.</p>
+
+        <h3 class="sub-title"><i class="fas fa-mobile-screen-button"></i> Enabling MFA</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open MFA Setup</h4>
+                    <p>Navigate to <strong>MFA Setup</strong> from the sidebar (under More menu).</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Scan QR Code</h4>
+                    <p>Open your authenticator app (Google Authenticator, Authy, etc.) and scan the displayed QR code.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Enter Verification Code</h4>
+                    <p>Type the 6-digit code from your authenticator app into the verification field.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">4</div>
+                </div>
+                <div class="step-content">
+                    <h4>Enable MFA</h4>
+                    <p>Click <strong>Enable MFA</strong> to activate multi-factor authentication for your account.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-diagram">
+            <div class="flow-node active">
+                <i class="fas fa-qrcode"></i>
+                <span>Scan QR</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node">
+                <i class="fas fa-keyboard"></i>
+                <span>Enter Code</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node success">
+                <i class="fas fa-shield-check"></i>
+                <span>MFA Active</span>
+            </div>
+        </div>
+
+        <div class="callout danger">
+            <div class="callout-icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="callout-body">
+                <strong>Backup Codes</strong>
+                After enabling MFA, save the provided backup codes in a secure location. These codes can be used to access your account if you lose your authenticator device.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 15: CHATBOT SETUP
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="chatbot">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon purple"><i class="fas fa-robot"></i></div>
+        <div class="section-title-group">
+            <h2>Chatbot Setup</h2>
+            <div class="section-subtitle">Configure the AI assistant chatbot for user support</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Chatbot Setup allows admins to configure the AI assistant that appears as a floating widget in the bottom-right corner of the screen.</p>
+
+        <h3 class="sub-title"><i class="fas fa-gear"></i> Configuring the Chatbot</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Chatbot Setup</h4>
+                    <p>Navigate to <strong>Chatbot Setup</strong> from the sidebar.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Enable Chatbot</h4>
+                    <p>Toggle the <strong>Enable Chatbot</strong> switch to activate the AI assistant.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Set Bot Name & Welcome Message</h4>
+                    <p>Enter a custom name for the bot and configure the welcome message users will see.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">4</div>
+                </div>
+                <div class="step-content">
+                    <h4>Configure API Key</h4>
+                    <p>Enter your AI API key and select the model to power the chatbot responses.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Preview</strong>
+                The chatbot appears as a floating action button (blue circle) in the bottom-right corner. Users can click it to open the chat window and ask questions about system usage.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 16: PROFILE SETTINGS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="profile">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon indigo"><i class="fas fa-user-gear"></i></div>
+        <div class="section-title-group">
+            <h2>Profile Settings</h2>
+            <div class="section-subtitle">Manage your personal account and profile information</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Profile Settings allow each user to manage their personal account information, change passwords, and update their profile picture.</p>
+
+        <div class="mock-card" style="text-align:center; padding:20px; margin-bottom:16px;">
+            <div style="width:48px; height:48px; border-radius:12px; background:#ecfdf5; display:flex; align-items:center; justify-content:center; margin:0 auto 10px;">
+                <i class="fas fa-user-gear" style="font-size:20px; color:#059669;"></i>
+            </div>
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Profile Settings</div>
+            <div style="font-size:12px; color:var(--muted);">Manage your personal account information, profile picture, and password</div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-user-pen"></i> Editing Your Profile</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Profile Settings</h4>
+                    <p>Click <strong>Profile Settings</strong> in the sidebar or click your avatar in the top-right corner. You'll see a centered card with your profile photo at the top.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Change Profile Photo</h4>
+                    <p>Click the circular avatar to select a new profile picture from your computer. The photo updates immediately after saving.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Update Information</h4>
+                    <p>Edit your last name, given name, middle initial, email address, and username. The Save Changes button enables only when you make edits.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">4</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Save Changes</h4>
+                    <p>Click <strong>Save Changes</strong> to update your profile. A success toast confirms the update.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">5</div>
+                </div>
+                <div class="step-content">
+                    <h4>Change Password</h4>
+                    <p>Click <strong>Change Password</strong> to open the password flow. Verify your current password first, then enter and confirm your new password.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-user"></i> Profile Card Layout</h4>
+            </div>
+            <div style="text-align:center; padding:12px 0;">
+                <div style="width:60px; height:60px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; font-size:22px; color:var(--muted);">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">Click to change photo</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;">
+                    <div class="mock-form-group"><label>Last Name</label><input type="text" class="mock-input" value="Dela Cruz"></div>
+                    <div class="mock-form-group"><label>Given Name</label><input type="text" class="mock-input" value="Juan"></div>
+                    <div class="mock-form-group"><label>MI</label><input type="text" class="mock-input" value="M"></div>
+                    <div class="mock-form-group"><label>Email</label><input type="text" class="mock-input" value="juan@example.com"></div>
+                    <div class="mock-form-group"><label>Username</label><input type="text" class="mock-input" value="jdelacruz"></div>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+                    <span class="mock-btn success"><i class="fas fa-check"></i> Save Changes</span>
+                    <span class="mock-btn"><i class="fas fa-lock"></i> Change Password</span>
+                    <span class="mock-btn"><i class="fas fa-shield-alt"></i> Multi-Factor Auth</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 17: ABOUT SYSTEM
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="about">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon blue"><i class="fas fa-circle-info"></i></div>
+        <div class="section-title-group">
+            <h2>About System</h2>
+            <div class="section-subtitle">System version information and technical details</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The About page displays system version information, build details, and technology stack used in the application.</p>
+
+        <h3 class="sub-title"><i class="fas fa-tag"></i> System Details</h3>
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-circle-info"></i> About Registry Management System</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">System Name</div>
+                    <div style="font-size: 14px; font-weight: 600;">Registry Management System</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Version</div>
+                    <div style="font-size: 14px; font-weight: 600;">2.0.0</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Framework</div>
+                    <div style="font-size: 14px; font-weight: 600;">Django 4.2+</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Database</div>
+                    <div style="font-size: 14px; font-weight: 600;">SQLite3 / PostgreSQL</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Frontend</div>
+                    <div style="font-size: 14px; font-weight: 600;">HTML5 / CSS3 / Vanilla JS</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Icons</div>
+                    <div style="font-size: 14px; font-weight: 600;">FontAwesome 6</div>
+                </div>
+            </div>
+            <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted);">
+                <i class="fas fa-shield-halved" style="color: var(--green);"></i> Security features include auto-lock, single-device enforcement, MFA support, and comprehensive audit logging.
+            </div>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Support</strong>
+                For technical issues or feature requests, contact the system administrator or refer to the development team's documentation portal.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 18: NAVIGATION GUIDE
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon green"><i class="fas fa-compass"></i></div>
+        <div class="section-title-group">
+            <h2>Navigation Guide</h2>
+            <div class="section-subtitle">How to navigate the system sidebar and menus</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The system uses a collapsible sidebar navigation. On desktop, the sidebar is always visible. On mobile, it opens as an overlay.</p>
+
+        <h3 class="sub-title"><i class="fas fa-bars"></i> Desktop Sidebar</h3>
+        <div class="mock-card">
+            <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div class="mock-nav">
+                    <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.4); padding: 4px 12px; letter-spacing: 0.08em;">Navigation</div>
+                    <div class="mock-nav-item active"><i class="fas fa-house"></i> Dashboard</div>
+                    <div class="mock-nav-item"><i class="fas fa-money-check-dollar"></i> Cheques</div>
+                    <div class="mock-nav-item"><i class="fas fa-piggy-bank"></i> Fund Clusters</div>
+                    <div class="mock-nav-item"><i class="fas fa-list"></i> Account Titles</div>
+                    <div class="mock-nav-item"><i class="fas fa-building"></i> Suppliers</div>
+                    <div class="mock-nav-item"><i class="fas fa-database"></i> RADAI</div>
+                    <div class="mock-nav-item"><i class="fas fa-chart-bar"></i> Reports</div>
+                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 12px;"></div>
+                    <div class="mock-nav-item"><i class="fas fa-users"></i> Users</div>
+                    <div class="mock-nav-item"><i class="fas fa-database"></i> Backup</div>
+                    <div class="mock-nav-item"><i class="fas fa-cog"></i> Settings</div>
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 13px; color: var(--ink); margin: 0 0 10px;"><strong>Hover to Expand:</strong> Hover over the sidebar on desktop to see full navigation labels.</p>
+                    <p style="font-size: 13px; color: var(--ink); margin: 0 0 10px;"><strong>Click to Pin:</strong> Click the hamburger menu icon to pin the sidebar open.</p>
+                    <p style="font-size: 13px; color: var(--muted); margin: 0;"><strong>More Menu:</strong> Additional settings and tools are under the "More" section at the bottom of the sidebar.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- /manual-content -->
+</div><!-- /manual-layout -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FLOATING PRINT BUTTON
+═══════════════════════════════════════════════════════════════ -->
+<button class="print-fab" onclick="window.print()" title="Print Manual">
+    <i class="fas fa-print"></i>
+</button>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle sections
+    var headers = document.querySelectorAll('.section-header');
+    headers.forEach(function(header) {
+        var body = header.nextElementSibling;
+        if (body && body.classList.contains('section-body')) {
+            // Open first 3 sections by default
+            var section = header.closest('.manual-section');
+            var allSections = document.querySelectorAll('.manual-section');
+            var index = Array.prototype.indexOf.call(allSections, section);
+            if (index < 3) {
+                body.classList.add('open');
+                var toggle = header.querySelector('.section-toggle');
+                if (toggle) toggle.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+});
+
+function toggleSection(header) {
+    var body = header.nextElementSibling;
+    if (!body || !body.classList.contains('section-body')) return;
+    var toggle = header.querySelector('.section-toggle');
+    var isOpen = body.classList.contains('open');
+    if (isOpen) {
+        body.classList.remove('open');
+        if (toggle) toggle.style.transform = 'rotate(0deg)';
+    } else {
+        body.classList.add('open');
+        if (toggle) toggle.style.transform = 'rotate(180deg)';
+    }
+}
+
+// Smooth scroll for TOC links
+document.querySelectorAll('.toc-item').forEach(function(item) {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        var targetId = this.getAttribute('href').substring(1);
+        var target = document.getElementById(targetId);
+        if (target) {
+            // Open the section if collapsed
+            var sectionBody = target.querySelector('.section-body');
+            if (sectionBody && !sectionBody.classList.contains('open')) {
+                var header = target.querySelector('.section-header');
+                if (header) toggleSection(header);
+            }
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+</script>
+
+</div><!-- manual-modal-container -->
+</div><!-- manual-modal-overlay -->
+
+<style>
+.manual-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99990;
+    background: #f1f5f9;
+    overflow-y: auto;
+}
+.manual-modal-container {
+    min-height: 100vh;
+    background: #f8fafc;
+}
+.manual-modal-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #1a3a2e, #2d5a47);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.manual-modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+.manual-modal-close:hover { background: rgba(255,255,255,0.3); }
+.manual-layout { margin-top: 0 !important; }
+@media print {
+    .manual-modal-topbar { display: none; }
+    .manual-modal-overlay { position: static; background: #fff; }
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% block title %}Email Settings - {{ system_name|default:"Registry" }}{% endblock %}
+
+{% block nav_email %}active{% endblock %}
+
+{% block content %}
+<style>
+:root {
+  --primary: #166534;
+  --primary-hover: #14532d;
+  --line: #e2e8f0;
+  --muted: #64748b;
+  --ink: #111111;
+}
+
+.email-container {
+  max-width: 680px;
+  margin: 40px auto;
+  padding: 0 16px;
+  text-align: center;
+}
+
+.email-illustration {
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+.illustration-circle {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0284c7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  box-shadow: 0 8px 24px rgba(2, 132, 199, 0.06);
+}
+
+.sync-badge {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  background: #0284c7;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  animation: spinSlow 12s linear infinite;
+}
+
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Dark Mode Overrides for Email Settings ── */
+[data-theme="dark"] .illustration-circle {
+  background: #0c4a6e !important;
+  border-color: #0369a1 !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .sync-badge {
+  border-color: #111111 !important;
+}
+
+[data-theme="dark"] div[style*="background:white"],
+[data-theme="dark"] div[style*="background: white"],
+[data-theme="dark"] div[style*="background:#fff"],
+[data-theme="dark"] div[style*="background: #fff"] {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border-color: #1a1a1a !important;
+}
+
+[data-theme="dark"] .email-container h2,
+[data-theme="dark"] .email-container p,
+[data-theme="dark"] .email-container label {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .email-container input,
+[data-theme="dark"] .email-container select {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #222222 !important;
+}
+
+.email-container h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.email-container p.subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 auto 36px;
+  max-width: 500px;
+}
+
+.email-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+  text-align: left;
+}
+
+.email-card + .email-card {
+  margin-top: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color .2s;
+}
+
+.form-control:focus {
+  border-color: #166534;
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.btn {
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: .2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn:hover { transform: translateY(-1px); }
+
+.btn-primary {
+  background: #166534;
+  color: white;
+}
+
+.btn-primary:hover { background: #14532d; }
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-secondary:hover { background: #e2e8f0; }
+
+.status-card {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px 28px;
+  text-align: left;
+}
+
+.status-card h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-card h3 i {
+  opacity: 0.5;
+}
+
+.status-details {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+</style>
+
+<div class="email-container">
+
+  <!-- Animated Illustration -->
+  <div class="email-illustration">
+    <div class="illustration-circle">
+      <i class="fas fa-envelope"></i>
+      <div class="sync-badge">
+        <i class="fas fa-paper-plane"></i>
+      </div>
+    </div>
+  </div>
+
+  <h2>Email Settings</h2>
+  <p class="subtitle">Configure the SMTP email server used for sending OTP codes, password reset links, and other system notifications.</p>
+
+  {% if success %}
+  <script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>
+  {% endif %}
+  {% if error %}
+  <script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>
+  {% endif %}
+
+  <!-- SMTP Configuration Card -->
+  <div class="email-card">
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>SMTP Host</label>
+        <input type="text" name="email_host" class="form-control" value="{{ email_host }}" placeholder="smtp.gmail.com">
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <div class="form-group">
+          <label>SMTP Port</label>
+          <input type="number" name="email_port" class="form-control" value="{{ email_port }}" placeholder="587">
+        </div>
+        <div class="form-group">
+          <label>Use TLS</label>
+          <select name="email_use_tls" class="form-control">
+            <option value="1" {% if email_use_tls %}selected{% endif %}>Yes</option>
+            <option value="0" {% if not email_use_tls %}selected{% endif %}>No</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Email Address (Username)</label>
+        <input type="email" name="email_host_user" class="form-control" value="{{ email_host_user }}" placeholder="your@gmail.com">
+      </div>
+
+      <div class="form-group">
+        <label>App Password</label>
+        <input type="text" name="email_host_password" class="form-control" value="{{ email_host_password }}" placeholder="xxxx xxxx xxxx xxxx">
+        <p class="form-hint">For Gmail, use an App Password (not your regular password).</p>
+      </div>
+
+      <div class="form-group">
+        <label>Default From Name</label>
+        <input type="text" name="default_from_email" class="form-control" value="{{ default_from_email }}" placeholder="System Name">
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:20px;">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Save Settings
+        </button>
+        <button type="submit" name="test_email" value="1" class="btn btn-secondary">
+          <i class="fas fa-paper-plane"></i> Send Test Email
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Current Status Card -->
+  <div class="status-card">
+    <h3><i class="fas fa-circle-info"></i> Current Status</h3>
+    <div class="status-details">
+      <div>Host: <strong>{{ email_host }}:{{ email_port }}</strong></div>
+      <div>TLS: <strong>{% if email_use_tls %}Enabled{% else %}Disabled{% endif %}</strong></div>
+      <div>From: <strong>{{ default_from_email }}</strong></div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

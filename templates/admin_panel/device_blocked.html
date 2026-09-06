@@ -1,0 +1,204 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Device Blocked</title>
+    <link href="{% static 'fonts/inter-500.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+    <style>
+        :root {
+            --bg: #050505;
+            --card: rgba(30, 41, 59, 0.7);
+            --line: #ef4444;
+            --ink: #f8fafc;
+            --muted: #94a3b8;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            font-family: 'Inter', sans-serif;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .blocked-container {
+            width: 90%;
+            max-width: 460px;
+            background: var(--card);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 16px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            position: relative;
+            animation: bounceIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .blocked-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: var(--line);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .lock-icon {
+            width: 72px;
+            height: 72px;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--line);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        p.warning-text {
+            font-size: 14px;
+            color: var(--muted);
+            line-height: 1.5;
+            margin: 0 0 28px 0;
+        }
+
+        .info-box {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid #111111;
+            border-radius: 8px;
+            padding: 14px;
+            font-size: 13px;
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-row span.label {
+            color: var(--muted);
+        }
+
+        .info-row span.val {
+            font-weight: 600;
+        }
+
+        .status-msg {
+            font-size: 11px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        @keyframes bounceIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="blocked-container">
+    <div class="lock-icon">
+        <i class="fas fa-lock"></i>
+    </div>
+    <h1>Device Blocked</h1>
+    <p class="warning-text">This device has been temporarily blocked by the system administrator. You cannot perform any actions until access is restored.</p>
+    
+    <div class="info-box">
+        <div class="info-row">
+            <span class="label">User Account</span>
+            <span class="val">{{ username }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Connection IP</span>
+            <span class="val">{{ device_ip }}</span>
+        </div>
+        <div class="info-row">
+            <span class="label">Status</span>
+            <span class="val" style="color:var(--line);">Blocked</span>
+        </div>
+    </div>
+
+    <div class="status-msg">
+        <i class="fas fa-circle-notch fa-spin"></i> Checking connection status...
+    </div>
+</div>
+
+<script>
+    // Poll the session-check API. If the admin unblocks the device, session-check
+    // will return {"ok": true} and not {"blocked": true}. When that happens,
+    // we instantly reload the page to restore access.
+    (function() {
+        const POLL_INTERVAL = 1500; // Check every 1.5 seconds
+
+        async function checkBlockStatus() {
+            try {
+                const res = await fetch('/session-check/', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // If kicked, redirect to home page
+                    if (data.kicked) {
+                        window.location.href = '/?kicked=1';
+                        return;
+                    }
+
+                    // If not blocked anymore, reload page to restore access!
+                    if (!data.blocked) {
+                        window.location.reload();
+                        return;
+                    }
+                } else if (res.status === 401 || res.status === 403) {
+                    // If session expired or kicked
+                    window.location.href = '/';
+                    return;
+                }
+            } catch (e) {
+                // Ignore network errors
+            }
+            setTimeout(checkBlockStatus, POLL_INTERVAL);
+        }
+
+        setTimeout(checkBlockStatus, POLL_INTERVAL);
+    })();
+</script>
+
+</body>
+</html>

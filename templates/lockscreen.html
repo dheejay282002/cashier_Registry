@@ -1,0 +1,707 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Locked 🔒︎</title>
+
+    {% if system_logo %}
+    <link rel="icon" type="image/png" href="{{ system_logo.url }}">
+    {% endif %}
+
+    <link href="{% static 'fonts/inter-400.css' %}" rel="stylesheet">
+    <style>
+        .ico { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em; flex-shrink: 0; }
+    </style>
+
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            
+            /* ── SECURITY: Disable context selection globally ── */
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-drag: none;
+            -webkit-user-drag: none;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        /* ── shared background ───────────────────────────────────── */
+        .bg {
+            position: fixed;
+            inset: 0;
+            background: url("{% if lockscreen_wallpaper %}{{ lockscreen_wallpaper.url }}{% else %}/media/system_assets/bg.jpeg{% endif %}") center / cover no-repeat;
+            z-index: 0;
+            pointer-events: none; /* Make background untargetable */
+        }
+
+        .bg::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.38);
+        }
+
+        /* ── lock screen (clock) ─────────────────────────────────── */
+        #lockScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            text-align: center;
+            will-change: transform, opacity;
+            transition: transform 0.55s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.55s ease;
+        }
+
+        .clock-time {
+            font-size: clamp(64px, 10vw, 108px);
+            font-weight: 300;
+            letter-spacing: -3px;
+            line-height: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .clock-date {
+            margin-top: 12px;
+            font-size: 20px;
+            opacity: .88;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hint {
+            margin-top: 42px;
+            font-size: 13px;
+            opacity: .55;
+            letter-spacing: .04em;
+            position: relative;
+            z-index: 1;
+            animation: pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: .3 }
+            50% { opacity: .75 }
+        }
+
+        /* ── login overlay ───────────────────────────────────────── */
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
+
+        #loginOverlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ── glass card ──────────────────────────────────────────── */
+        .login-box {
+            width: 340px;
+            padding: 40px 36px;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.10);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            color: #fff;
+            text-align: center;
+            transform: scale(0.82) translateY(24px);
+            transition: transform 0.38s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.38s ease;
+            opacity: 0;
+        }
+
+        #loginOverlay.visible .login-box {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        /* avatar */
+        .avatar {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            overflow: visible;
+            border: 2.5px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .avatar.mfa-none {
+            border-color: #ef4444;
+        }
+
+        .avatar.mfa-partial {
+            border-color: #3b82f6;
+        }
+
+        .avatar.mfa-full {
+            border-color: #10b981;
+        }
+
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            pointer-events: none;
+            border-radius: 50%;
+        }
+
+        .lock-mfa-shield {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            z-index: 2;
+        }
+
+        .lock-mfa-shield img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 0;
+        }
+
+        .user-name {
+            font-size: 22px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        #softHint {
+            font-size: 13px;
+            opacity: .65;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        /* password input */
+        #passwordField {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-size: 15px;
+            text-align: center;
+            outline: none;
+            letter-spacing: .08em;
+            transition: background .2s;
+            
+            /* Re-enable input visibility targeting */
+            user-select: text !important;
+            -webkit-user-select: text !important;
+        }
+
+        #passwordField::placeholder {
+            color: rgba(255, 255, 255, .5);
+            letter-spacing: normal;
+        }
+
+        #passwordField:focus {
+            background: rgba(255, 255, 255, .22);
+        }
+
+        /* unlock button */
+        #unlockBtn {
+            width: 100%;
+            padding: 13px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 12px;
+            background: #fff;
+            color: #1a1a1a;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s, transform .15s;
+        }
+
+        #unlockBtn:hover {
+            background: #f0f0f0;
+        }
+
+        #unlockBtn:active {
+            transform: scale(.97);
+        }
+
+        #errorMsg {
+            font-size: 12.5px;
+            color: #ff8080;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            15% { transform: translateX(-9px); }
+            35% { transform: translateX(9px); }
+            55% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+            90% { transform: translateX(-3px); }
+        }
+
+        .shake {
+            animation: shake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
+
+        @media(max-width:480px) {
+            .login-box {
+                width: 92vw;
+                padding: 32px 24px;
+            }
+        }
+
+        #unlockLoadingOverlay {
+            position: fixed; inset: 0; z-index: 99999;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.75); backdrop-filter: blur(30px);
+            color: white; text-align: center;
+        }
+        .unlock-ring-loader {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+        .unlock-ring-logo {
+            width: 64px;
+            height: 64px;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+        .unlock-ring-line {
+            width: 160px;
+            height: 3px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+            position: relative;
+        }
+        .unlock-ring-line::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -40%;
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, #ffffff, transparent);
+            border-radius: 3px;
+            animation: unlockLineSlide 1.2s ease-in-out infinite;
+        }
+        @keyframes unlockLineSlide {
+            0% { left: -40%; }
+            100% { left: 100%; }
+        }
+        .unlock-ring-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            animation: unlockPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes unlockPulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="bg"></div>
+    <div id="unlockLoadingOverlay">
+        <div class="unlock-ring-loader">
+            {% if system_logo %}<img src="{{ system_logo.url }}" alt="Logo" class="unlock-ring-logo">{% endif %}
+            <div class="unlock-ring-line"></div>
+            <p class="unlock-ring-text">Logging in...</p>
+        </div>
+    </div>
+
+    <div id="lockScreen">
+        <div class="clock-time" id="clockTime">--:--</div>
+        <div class="clock-date" id="clockDate"></div>
+    </div>
+
+    <div id="loginOverlay">
+        <div class="login-box">
+
+            <div class="avatar{% if current_profile.totp_enabled and current_profile.email_otp_enabled %} mfa-full{% elif current_profile.totp_enabled or current_profile.email_otp_enabled %} mfa-partial{% else %} mfa-none{% endif %}">
+                {% if current_profile and current_profile.profile_picture %}
+                <img src="{{ current_profile.profile_picture.url }}" alt="" draggable="false">
+                {% else %}
+                {{ request.user.first_name|default:request.user.username|slice:":1"|upper }}
+                {% endif %}
+                {% if current_profile.totp_enabled or current_profile.email_otp_enabled %}
+                <span class="lock-mfa-shield"><img src="/media/system_assets/badge.png" alt="MFA"></span>
+                {% endif %}
+            </div>
+
+            <div class="user-name">
+                {{ request.user.first_name|default:request.user.username }}
+            </div>
+
+            <p id="softHint">Enter to continue</p>
+
+            <form id="loginForm" method="POST" action="{% url 'lockscreen' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <input type="hidden" name="hard" id="hardField" value="{{ hard_lock|yesno:'1,0' }}">
+                <div id="passwordContainer" style="display: none; position: relative; width: 100%; margin-bottom: 10px;">
+                    <input type="password" id="passwordField" name="password" placeholder="Password" autocomplete="current-password" style="width: 100%; padding-right: 42px; margin-bottom: 0;">
+                    <span class="toggle-password" onclick="togglePasswordVisibility('passwordField', this)" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; color: rgba(255,255,255,0.7); z-index: 10; display: flex; align-items: center; justify-content: center; height: 100%;">
+                        <svg class="ico" id="lsEyeOpen" viewBox="0 0 576 512" style="width:16px;height:16px"><path d="M288 256a96 96 0 1 0 0-192 96 96 0 1 0 0 192zm-18.3 64.5l-47-28.2c-7.7-4.6-16.5-7.3-25.7-7.3-30.9 0-56 25.1-56 56v16c0 8.8 7.2 16 16 16h112.7c8.8 0 16-7.2 16-16v-8.8c0-11.3-4-21.9-11.2-30.2l-23.5-26.5zM577.5 241.7C527.7 162.3 433.8 96 288 96S48.3 162.3-1.5 241.7c-6.3 10.2-6.3 23.2 0 33.4C48.3 354.7 142.2 416 288 416s239.7-61.3 289.5-140.9c6.3-10.2 6.3-23.2 0-33.4zM288 384c-70.6 0-128-57.4-128-128s57.4-128 128-128 128 57.4 128 128-57.4 128-128 128z"/></svg>
+                        <svg class="ico" id="lsEyeClosed" style="display:none;width:16px;height:16px" viewBox="0 0 640 512"><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 7.4S-3.1 27.7 5.1 38.1l592 512c8.3 9.4 23.4 11.2 32.7 3 9.4-8.3 11.2-23.4 3-32.7L513.3 312.7c43.3-34.5 95.8-54.7 149.7-54.7l-20.4 20.4C635 284.1 640 300.2 640 317.4V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-17.1 5-33.2 14.3-47.1L38.8 5.1zM288 256a96 96 0 1 0 0-192 96 96 0 1 0 0 192zm-18.3 64.5l-47-28.2c-7.7-4.6-16.5-7.3-25.7-7.3-30.9 0-56 25.1-56 56v16c0 8.8 7.2 16 16 16h112.7c8.8 0 16-7.2 16-16v-8.8c0-11.3-4-21.9-11.2-30.2l-23.5-26.5z"/></svg>
+                    </span>
+                </div>
+                <button type="submit" id="unlockBtn">Unlock</button>
+                <div id="errorMsg"></div>
+            </form>
+
+        </div>
+    </div>
+
+    <script>
+        /* ── SECURITY LAYER: Block inspection, shortcut keys & context hooks ── */
+        document.addEventListener('contextmenu', e => e.preventDefault()); // Blocks standard right-clicks
+        
+        document.addEventListener('keydown', function(e) {
+            // Block F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+S
+            if (
+                e.key === 'F12' || 
+                (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+                (e.ctrlKey && (e.key === 'u' || e.key === 'U' || e.key === 's' || e.key === 'S' || e.key === 'p' || e.key === 'P'))
+            ) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        /* ── BACK-BUTTON TRAP ────────────────────────────────────── */
+        history.pushState(null, '', window.location.href);
+        window.addEventListener('popstate', function () {
+            history.pushState(null, '', window.location.href);
+        });
+
+        /* ── HARD vs SOFT LOCK ───────────────────────────────────── */
+        const IS_HARD = {{ hard_lock|yesno:'true,false' }};
+        let hardNow = IS_HARD;
+
+        /* ── CLOCK ───────────────────────────────────────────────── */
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clockTime').textContent =
+                now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+            document.getElementById('clockDate').textContent =
+                now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        /* ─── IDLE LOGOUT ENFORCEMENT ON LOCKSCREEN ──────────────── */
+        const LOGOUT_IDLE = {{ auto_logout_seconds|default:3600 }} * 1000;
+        const LS_KEY = 'registry_last_activity';
+
+        let lastActivity = (function(){
+            try {
+                const val = parseInt(localStorage.getItem(LS_KEY));
+                const now = Date.now();
+                if (val && (now - val) < LOGOUT_IDLE) {
+                    return val;
+                }
+                localStorage.setItem(LS_KEY, String(now));
+                return now;
+            } catch(e) {
+                return Date.now();
+            }
+        })();
+
+        function touchActivity() {
+            const now = Date.now();
+            lastActivity = now;
+            try { localStorage.setItem(LS_KEY, String(now)); } catch(e) {}
+        }
+
+        function getIdleMs() {
+            try {
+                const val = parseInt(localStorage.getItem(LS_KEY));
+                if (val) {
+                    lastActivity = Math.max(lastActivity, val);
+                }
+            } catch(e) {}
+            return Date.now() - lastActivity;
+        }
+
+        function checkIdle() {
+            const idle = getIdleMs();
+            if (idle >= LOGOUT_IDLE) {
+                window.location.replace('{% url "logout" %}');
+            }
+        }
+
+        const _EVENTS = [
+            'mousedown','mouseup','mousemove','wheel','keydown',
+            'touchstart','touchmove','touchend','click','scroll'
+        ];
+        _EVENTS.forEach(ev => document.addEventListener(ev, touchActivity, true));
+
+        setInterval(checkIdle, 1000);
+
+        /* ─── DOM REFS ────────────────────────────────────────────── */
+        const lockScreen = document.getElementById('lockScreen');
+        const loginOverlay = document.getElementById('loginOverlay');
+        const passwordField = document.getElementById('passwordField');
+        const passwordContainer = document.getElementById('passwordContainer');
+        const softHint = document.getElementById('softHint');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const hardField = document.getElementById('hardField');
+        let loginVisible = false;
+        let submitting = false;
+
+        /* ─── SHOW / HIDE CARD ────────────────────────────────────── */
+        function applyLockMode() {
+            if (hardNow) {
+                softHint.style.display = 'none';
+                passwordContainer.style.display = 'block';
+                unlockBtn.textContent = 'Unlock';
+                hardField.value = '1';
+            } else {
+                softHint.style.display = 'block';
+                passwordContainer.style.display = 'none';
+                unlockBtn.textContent = 'Continue';
+                hardField.value = '0';
+            }
+        }
+
+        function showLoginCard() {
+            if (loginVisible) return;
+            loginVisible = true;
+            applyLockMode();
+            lockScreen.style.transform = 'translateY(-100%)';
+            lockScreen.style.opacity = '0';
+            lockScreen.style.pointerEvents = 'none';
+            loginOverlay.classList.add('visible');
+            if (hardNow) setTimeout(() => passwordField.focus(), 160);
+        }
+
+        function hideLoginCard() {
+            if (!loginVisible) return;
+            loginVisible = false;
+            loginOverlay.classList.remove('visible');
+            lockScreen.style.transition = 'none';
+            lockScreen.style.transform = 'translateY(0)';
+            lockScreen.style.opacity = '1';
+            lockScreen.style.pointerEvents = '';
+            requestAnimationFrame(() =>
+                requestAnimationFrame(() => { lockScreen.style.transition = ''; })
+            );
+        }
+
+        /* ── UPGRADE TO HARD LOCK after 30 s on the lock screen ─── */
+        let upgradeTimer = null;
+        if (!IS_HARD) {
+            upgradeTimer = setTimeout(() => {
+                hardNow = true;
+                hardField.value = '1';
+                if (loginVisible) { applyLockMode(); setTimeout(() => passwordField.focus(), 80); }
+
+                const fd = new FormData();
+                fd.append('hard', '1');
+                fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                if (navigator.sendBeacon) {
+                    navigator.sendBeacon('{% url "trigger_lock" %}', fd);
+                } else {
+                    fetch('{% url "trigger_lock" %}', {
+                        method: 'POST',
+                        body: fd,
+                        keepalive: true
+                    });
+                }
+            }, 30000);
+        }
+
+        /* ── KEYBOARD & TOGGLE ROUTERS ──────────────────────────────── */
+        document.addEventListener('keydown', function (e) {
+            if (!loginVisible) { showLoginCard(); return; }
+            if (!hardNow && e.key === 'Enter') { e.preventDefault(); attemptUnlock(e); }
+        });
+        lockScreen.addEventListener('click', showLoginCard);
+        loginOverlay.addEventListener('click', function (e) {
+            if (!hardNow && e.target === loginOverlay) attemptUnlock(e);
+        });
+
+        /* ── DRAG TO UNLOCK ──────────────────────────────────────── */
+        let dragStartY = 0, dragCurrentY = 0, dragging = false;
+
+        function onDragStart(y) { if (loginVisible) return; dragStartY = y; dragCurrentY = y; dragging = true; }
+        function onDragMove(y) {
+            if (!dragging) return;
+            dragCurrentY = y;
+            const diff = Math.max(0, dragStartY - y);
+            lockScreen.style.transition = 'none';
+            lockScreen.style.transform = `translateY(-${diff}px)`;
+            lockScreen.style.opacity = String(1 - Math.min(diff / 280, 1) * 0.7);
+        }
+        function onDragEnd() {
+            if (!dragging) return;
+            dragging = false;
+            if (dragStartY - dragCurrentY > 100) {
+                showLoginCard();
+            } else {
+                lockScreen.style.transition = '0.35s ease';
+                lockScreen.style.transform = 'translateY(0)';
+                lockScreen.style.opacity = '1';
+                setTimeout(() => { lockScreen.style.transition = ''; }, 400);
+            }
+        }
+
+        lockScreen.addEventListener('mousedown', e => onDragStart(e.clientY));
+        document.addEventListener('mousemove', e => onDragMove(e.clientY));
+        document.addEventListener('mouseup', () => onDragEnd());
+        lockScreen.addEventListener('touchstart', e => onDragStart(e.touches[0].clientY), { passive: true });
+        lockScreen.addEventListener('touchmove', e => onDragMove(e.touches[0].clientY), { passive: true });
+        lockScreen.addEventListener('touchend', () => onDragEnd());
+
+        /* ── PASSWORD UNLOCK MECHANICS ──────────────────────────────── */
+        const loginForm = document.getElementById('loginForm');
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            passwordField.classList.remove('shake');
+            void passwordField.offsetWidth;
+            passwordField.classList.add('shake');
+            passwordField.addEventListener('animationend', function h() {
+                passwordField.classList.remove('shake');
+                passwordField.removeEventListener('animationend', h);
+                setTimeout(() => { passwordField.value = ''; passwordField.focus(); }, 50);
+            });
+        }
+
+        async function attemptUnlock(e) {
+            if (e && e.preventDefault) e.preventDefault();
+            if (submitting) return;
+            if (hardNow && !passwordField.value) { passwordField.focus(); return; }
+            submitting = true;
+            unlockBtn.textContent = 'Logging in...';
+            const unlockOverlay = document.getElementById('unlockLoadingOverlay');
+            if (unlockOverlay) unlockOverlay.style.display = 'flex';
+            try {
+                const fd = new FormData(loginForm);
+                const res = await fetch(loginForm.action, {
+                    method: 'POST', body: fd,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await res.json();
+                if (data.status === 'success' && data.redirect_url) {
+                    clearTimeout(upgradeTimer);
+                    window.location.replace(data.redirect_url);
+                } else {
+                    showError(data.error || 'Wrong password. Try again.');
+                    unlockBtn.textContent = hardNow ? 'Unlock' : 'Continue';
+                    if (unlockOverlay) unlockOverlay.style.display = 'none';
+                    submitting = false;
+                }
+            } catch (err) {
+                showError('Connection error. Try again.');
+                unlockBtn.textContent = hardNow ? 'Unlock' : 'Continue';
+                const unlockOverlay2 = document.getElementById('unlockLoadingOverlay');
+                if (unlockOverlay2) unlockOverlay2.style.display = 'none';
+                submitting = false;
+            }
+        }
+
+        loginForm.addEventListener('submit', attemptUnlock);
+        passwordField.addEventListener('input', () => { if (errorMsg.textContent) errorMsg.textContent = ''; });
+
+        /* ─── IDLE BACK-TO-CLOCK ──────────────────────────────────── */
+        let idleBack = null;
+        function resetIdleBack() {
+            clearTimeout(idleBack);
+            idleBack = setTimeout(hideLoginCard, 15000);
+        }
+        ['click', 'keydown', 'mousemove', 'touchstart'].forEach(ev =>
+            loginOverlay.addEventListener(ev, resetIdleBack, { passive: true })
+        );
+
+
+        /* ─── PASSWORD VISIBILITY TOGGLE ───────────────────────────── */
+        function togglePasswordVisibility(fieldId, iconEl) {
+            const field = document.getElementById(fieldId);
+            const eyeOpen = document.getElementById('lsEyeOpen');
+            const eyeClosed = document.getElementById('lsEyeClosed');
+            if (field.type === 'password') {
+                field.type = 'text';
+                eyeOpen.style.display = 'none';
+                eyeClosed.style.display = '';
+            } else {
+                field.type = 'password';
+                eyeOpen.style.display = '';
+                eyeClosed.style.display = 'none';
+            }
+        }
+
+        /* ─── DOM CONTENT LOADED - FIX AUDIO SYNTAX FALLBACK ───────── */
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                // Fixed your typo call: dynamically synthesizing the start tones
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(330, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (err) {
+                console.log("Audio lock initialization quieted.");
+            }
+        });
+
+        {% if error %}
+        window.addEventListener('DOMContentLoaded', () => {
+            showLoginCard();
+            showError('{{ error|escapejs }}');
+        });
+        {% endif %}
+    </script>
+</body>
+
+</html>

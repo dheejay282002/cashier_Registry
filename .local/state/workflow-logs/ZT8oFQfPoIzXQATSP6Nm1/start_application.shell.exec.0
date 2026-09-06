@@ -1,0 +1,16 @@
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 25, 2026 - 05:01:57
+Django version 6.0.4, using settings 'registry.settings'
+Starting development server at http://0.0.0.0:5000/
+Quit the server with CONTROL-C.
+
+[33;1mWARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/[0m
+[25/May/2026 05:01:57] [m"GET / HTTP/1.1" 200 13385[0m
+[25/May/2026 05:02:13] [32m"GET /user-management/ HTTP/1.1" 302 0[0m
+[25/May/2026 05:02:13] [m"GET /?next=/user-management/ HTTP/1.1" 200 13385[0m
+[25/May/2026 05:02:13] [m"GET /media/bg.png HTTP/1.1" 200 4030572[0m
+[25/May/2026 05:02:14] [m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 200 94501[0m

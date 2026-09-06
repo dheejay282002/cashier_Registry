@@ -1,0 +1,425 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Cheques{% endblock %}
+{% block nav_cheques %}active{% endblock %}
+{% block nav_cheques_c %}active{% endblock %}
+{% block content %}
+
+<style>
+    .page-header {
+        position: relative;
+        margin-bottom: 16px;
+    }
+
+    .table-scroll-container {
+        position: relative;
+        max-height: calc(100vh - 185px);
+        overflow-y: auto;
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 61, 46, 0.12);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+
+    .cheques-table {
+        width: 100%;
+        table-layout: auto;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .cheques-table th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 20 !important;
+        background: linear-gradient(135deg, #0f3d2e, #17563d) !important;
+        color: #ffffff !important;
+        border-bottom: 1px solid #0b2f23 !important;
+        text-align: center !important;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .cheques-table td {
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .cheque-actions {
+        display: flex;
+        gap: 4px;
+        flex-wrap: nowrap;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .cheque-action-warning {
+        width: 100%;
+        font-size: 11px;
+        color: var(--danger);
+        white-space: normal;
+        margin-top: 4px;
+    }
+
+    .cheque-section-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: var(--text);
+    }
+
+    .cheque-section-subtitle {
+        font-size: 14px;
+        color: rgba(31, 38, 34, 0.84);
+    }
+
+    @media (max-width: 900px) {
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .cheques-table {
+            min-width: 1100px;
+        }
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .page-header > div {
+            width: 100%;
+        }
+        .page-header form {
+            flex: 1;
+            min-width: 0;
+        }
+        .page-header select {
+            width: 100%;
+        }
+    }
+
+    .cheque-card {
+        background: #ffffff;
+        border: 1px solid rgba(15, 61, 46, 0.08);
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow:
+            0 4px 10px rgba(0, 0, 0, 0.04),
+            0 12px 24px rgba(15, 61, 46, 0.06);
+        overflow: visible !important;
+        transition: 0.25s ease;
+    }
+
+    .cheque-card:hover {
+        transform: translateY(-2px);
+        box-shadow:
+            0 8px 18px rgba(0, 0, 0, 0.06),
+            0 18px 38px rgba(15, 61, 46, 0.08);
+    }
+
+    .cheque-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .cheque-card-count {
+        font-size: 13px;
+        color: var(--muted);
+        background: #f5f7f8;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 600;
+    }
+
+    .table-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 28px;
+    }
+
+    .cheques-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: visible !important;
+    }
+
+    .cheques-table th:first-child {
+        border-top-left-radius: 10px;
+    }
+
+    .cheques-table th:last-child {
+        border-top-right-radius: 10px;
+    }
+
+    .cheques-table td {
+        background: #fff;
+        border-bottom: 1px solid #eef1f3;
+        padding: 14px 12px;
+    }
+
+    .cheques-table tbody tr:hover td {
+        background: #f8fbf9;
+    }
+
+    .cheques-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+</style>
+
+{% if error %}<div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
+
+<div class="page-header">   
+    <h2><i class="fas fa-money-check-dollar"></i> Cheques</h2>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <select id="chequeStatusFilter"
+            style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px;">
+            <option value="">All Statuses</option>
+            {% for val, label in status_choices %}
+            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        {% if is_admin %}
+        <a href="{% url 'export_cheques' %}" class="btn btn-secondary btn-sm"><i class="fas fa-file-excel"></i>
+            Export</a>
+        {% endif %}
+       <!--<a href="{% url 'cheque_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> New Cheque</a>-->
+    </div>
+</div>
+
+<div class="table-wrap">
+    <div class="table-scroll-container">
+        <table class="cheques-table">
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Cheque NO.</th>
+                    <th>Payee</th>
+                    <th>Fund Cluster</th>
+                    <th>Amount</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Created By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="chequesTableBody">
+                {% for c in cheques %}
+                <tr id="cheque-row-{{ c.pk }}">
+                    <td>{{ c.desc_index }}</td>
+                    <td><strong>{{ c.real_cheque_number|default:c.pk }}</strong></td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                            <span>{{ c.payee_name|default:"—" }}</span>
+                            {% if not c.payee and not c.payee_id %}
+                            <span class="badge badge-custom-cheque" title="Custom Cheque (Not linked to Supplier Registry)" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%); color: #34d399; border: 1px solid #059669; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                                <i class="fas fa-file-signature" style="font-size:10px; color:#34d399;"></i> Custom Cheque
+                            </span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>{{ c.fund_cluster.code|default:"—" }}</td>
+                    <td><strong>₱{{ c.amount|floatformat:2|intcomma }}</strong></td>
+                    <td>{{ c.date }}</td>
+                    <td>
+                        {% if c.status == 'released' %}
+                        <span class="badge badge-released"><i class="fas fa-check-circle"></i> Released / Claimed</span>
+                        {% else %}
+                        <span class="badge badge-{{ c.status }}">{{ c.get_status_display }}</span>
+                        {% endif %}
+                        {% if c.stale_at and c.status != 'released' and c.status != 'voided' %}
+                        <div style="font-size:11px; margin-top:4px; font-weight:600; color:{% if c.stale_is_overdue %}#dc2626{% else %}var(--muted){% endif %};">
+                            {% if c.stale_is_overdue %}<i class="fas fa-exclamation-triangle"></i> Already Stale{% else %}Stale on {{ c.stale_at }}{% endif %}
+                        </div>
+                        {% elif c.printed_at and c.stale_after_days and c.status != 'released' and c.status != 'voided' %}
+                        <div style="font-size:11px; color:var(--muted); margin-top:4px;">Stale after {{ c.stale_after_days }} days</div>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:12px; color:var(--muted);">
+                        {% if c.created_by %}
+                            {{ c.created_by.get_full_name|default:c.created_by.username }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="cheque-actions">
+                            {% if c.status == 'released' or c.status == 'voided' %}
+                            <button class="btn btn-sm btn-secondary" disabled title="{% if c.status == 'released' %}Released - editing disabled{% else %}Voided - editing disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-sm btn-primary" disabled title="{% if c.status == 'released' %}Released - printing disabled{% else %}Voided - printing disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-print"></i></button>
+                            <button class="btn btn-sm btn-danger" disabled title="{% if c.status == 'released' %}Released - voiding disabled{% else %}Voided - voiding disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-ban"></i></button>
+                            <button class="btn btn-sm btn-danger" disabled title="{% if c.status == 'released' %}Released - deletion disabled{% else %}Voided - deletion disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-trash"></i></button>
+                            {% else %}
+                            <a href="{% url 'cheque_edit' c.pk %}" class="btn btn-sm btn-secondary" title="Edit" onclick="disableRowActions(this)"><i class="fas fa-pen"></i></a>
+                            <a href="{% url 'cheque_print' c.pk %}" class="btn btn-sm btn-primary" title="Print" onclick="disableRowActions(this)"><i class="fas fa-print"></i></a>
+                            {% if is_admin %}
+                            <button class="btn btn-sm btn-danger" title="Void" onclick="disableRowActions(this); openVoid({{ c.pk }});"><i class="fas fa-ban"></i></button>
+                            {% endif %}
+                            <button class="btn btn-sm btn-danger" title="Delete" onclick="disableRowActions(this); openDelete({{ c.pk }}, '{{ c.real_cheque_number|default:c.pk }}');"><i class="fas fa-trash"></i></button>
+                            {% endif %}
+                        </div>
+                        {% if c.action_blocked %}
+                        <div class="cheque-action-warning">{{ c.action_block_reason }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align:center; padding:30px; color:var(--muted);">No cheques found. <a href="{% url 'cheque_create' %}">Create one.</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div id="deleteModal"
+    style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; padding:24px; width:420px; max-width:95vw;">
+        <h3 style="margin-bottom:14px; font-size:16px; color:var(--danger);"><i class="fas fa-trash"></i> Delete Cheque
+        </h3>
+        <p id="deleteModalText" style="font-size:14px; color:var(--muted); margin-bottom:14px;">Delete this cheque
+            permanently?</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" class="btn btn-secondary" onclick="closeDelete()">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="confirmDelete()"><i class="fas fa-trash"></i>
+                Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- VOID MODAL -->
+<div id="voidModal"
+    style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+    <div style="background:white; border-radius:12px; padding:24px; width:420px; max-width:95vw;">
+        <h3 style="margin-bottom:14px; font-size:16px; color:var(--danger);"><i class="fas fa-ban"></i> Void Cheque</h3>
+        <p style="font-size:14px; color:var(--muted); margin-bottom:14px;">This action cannot be undone. Please provide
+            a reason.</p>
+        <form method="post" id="voidForm">
+            {% csrf_token %}
+            <textarea name="reason" placeholder="Reason for voiding..." required rows="3"
+                style="width:100%;padding:9px;border:1px solid #ddd;border-radius:7px;margin-bottom:14px;resize:vertical;"></textarea>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary"
+                    onclick="document.getElementById('voidModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-danger"><i class="fas fa-ban"></i> Void Cheque</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function disableRowActions(el) {
+        if (!el) return;
+        const container = el.closest('.cheque-actions') || el.closest('tr');
+        if (!container) return;
+        const items = container.querySelectorAll('button, a');
+        items.forEach(btn => {
+            btn.setAttribute('disabled', 'disabled');
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.4';
+            btn.style.cursor = 'not-allowed';
+        });
+    }
+
+    const deleteUrlTemplate = '{% url "cheque_delete" 0 %}'.replace('/0/delete/', '/__PK__/delete/');
+    let deleteTargetPk = null;
+
+    function getCsrfToken() {
+        const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function openVoid(pk) {
+        document.getElementById('voidForm').action = '/cheques/' + pk + '/void/';
+        document.getElementById('voidModal').style.display = 'flex';
+    }
+
+    function openDelete(pk, numberLabel) {
+        deleteTargetPk = pk;
+        const btn = document.querySelector('#deleteModal .btn-danger');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        }
+        document.getElementById('deleteModalText').textContent = 'Delete cheque ' + numberLabel + ' permanently? This cannot be undone.';
+        document.getElementById('deleteModal').style.display = 'flex';
+    }
+
+    function closeDelete() {
+        deleteTargetPk = null;
+        const btn = document.querySelector('#deleteModal .btn-danger');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+        }
+        document.getElementById('deleteModal').style.display = 'none';
+    }
+
+    function confirmDelete() {
+        if (!deleteTargetPk) return;
+        const btn = document.querySelector('#deleteModal .btn-danger');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...'; }
+        const url = deleteUrlTemplate.replace('__PK__', deleteTargetPk);
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+            .then(response => response.json().then(data => ({ ok: response.ok, data })))
+            .then(({ ok, data }) => {
+                if (!ok || !data.ok) {
+                    showToast('error', 'Delete Failed', (data && data.error) ? data.error : 'Could not delete cheque.');
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash"></i> Delete'; }
+                    return;
+                }
+                const row = document.getElementById('cheque-row-' + deleteTargetPk);
+                if (row) row.remove();
+                closeDelete();
+                showToast('success', 'Deleted', 'Cheque has been deleted.');
+            })
+            .catch(function() {
+                showToast('error', 'Delete Failed', 'Network error. Please try again.');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash"></i> Delete'; }
+            });
+    }
+
+    const CHEQUES_URL = '{% url "cheque_list" %}';
+
+    function loadCheques(status) {
+        const tbody = document.getElementById('chequesTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Loading…</td></tr>';
+        fetch(CHEQUES_URL + '?status=' + encodeURIComponent(status), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.ok) {
+                    tbody.innerHTML = data.html;
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--danger);">Error: ' + (data.error || 'unknown') + ' <a href="#" onclick="loadCheques(\'' + status + '\'); return false;" style="color:var(--brand);font-weight:600;">Retry</a></td></tr>';
+                }
+            })
+            .catch(function () {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--danger);">Failed to load cheques. <a href="#" onclick="loadCheques(\'' + status + '\'); return false;" style="color:var(--brand);font-weight:600;">Retry</a></td></tr>';
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const sel = document.getElementById('chequeStatusFilter');
+        if (!sel) return;
+        sel.addEventListener('change', function () {
+            loadCheques(this.value);
+        });
+    });
+</script>
+{% endblock %}

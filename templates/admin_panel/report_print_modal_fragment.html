@@ -1,0 +1,53 @@
+<!--
+<div class="cheque-report">
+    <div class="cheque-top">
+        <div>
+            <div><strong>Entity Name</strong></div>
+            <div style="margin-top:6px;">{{ entity_name|default:'' }}</div>
+            <div class="cheque-info"><strong>Fund Cluster</strong> {{ data.fund_cluster_display|default:'' }}</div>
+            <div><strong>Bank Name/Account No.</strong> {{ data.account_number|default:'' }}</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="text-align:right; font-size:12px;">
+            <div>{{ report.generated_at|date:"F d, Y" }}</div>
+            <div style="margin-top:8px;"><strong>Report No.</strong> {{ report.data_snapshot.report_no|default:report.pk }}</div>
+            <div><strong>No. Of Sheets</strong> {{ report.data_snapshot.sheet_count|default:1 }}</div>
+        </div>
+    </div>
+    <div class="cheque-title">REPORTS OF CHECK ISSUED</div>
+    <div style="text-align:center; font-size:18px; color:#333; margin-top:6px;">Period Covered: {{ period_covered }}</div>
+
+    <table class="cheque-table">
+        <thead>
+            <tr>
+                {% for h in table_headers %}
+                <th>{{ h }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table_rows %}
+            <tr>
+                {% for v in row %}
+                <td>{% if v == "" %}—{% else %}{{ v }}{% endif %}</td>
+                {% endfor %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{{ table_headers|length }}" style="text-align:center; padding:20px;">No data in this report.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="cert-box">
+        <div style="text-align:center; font-weight:700; margin-bottom:12px;">CERTIFICATION</div>
+        <div style="text-align:center; font-size:12px; color:#333; max-width:900px; margin:0 auto;">
+            I hereby certify on my official oath that this Report of Checks issued is a full, true and correct statement of all checks
+            issued by me during the period stated above for which Check Nos. are inclusive, were actually issued by me in payment of
+            obligations shown in the attached disbursement vouchers/payroll.
+        </div>
+        <div class="cert-name">{{ certification_name }}</div>
+        <div class="cert-role">Name and Signature of Disbursing Officer/Cashier</div>
+    </div>
+</div>
+<div class="report-page-footer print-only"></div>
+-->

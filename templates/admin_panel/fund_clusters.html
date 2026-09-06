@@ -1,0 +1,416 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Fund Clusters{% endblock %}
+{% block nav_funds %}active{% endblock %}
+{% block content %}
+
+{% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+{% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+<style>
+.table-wrap thead th {
+    background: linear-gradient(135deg, #0f3d2e, #17563d);
+    color: #ffffff;
+    border-bottom: 1px solid #0b2f23;
+    text-align: center;
+}
+
+/* ── Dark Mode Overrides for Fund Clusters Modals & Form Controls ── */
+[data-theme="dark"] #addModal > div,
+[data-theme="dark"] #editModal > div {
+    background: #111827 !important;
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border: 1px solid #1a1a1a !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] #addModal h3,
+[data-theme="dark"] #editModal h3,
+[data-theme="dark"] #addModal label,
+[data-theme="dark"] #editModal label {
+    color: #f8fafc !important;
+}
+
+[data-theme="dark"] #addModal input,
+[data-theme="dark"] #addModal textarea,
+[data-theme="dark"] #editModal input,
+[data-theme="dark"] #editModal textarea,
+[data-theme="dark"] #addModal select,
+[data-theme="dark"] #editModal select {
+    background: #111111 !important;
+    background-color: #111111 !important;
+    color: #ffffff !important;
+    border: 1px solid #222222 !important;
+}
+
+[data-theme="dark"] #addModal input::placeholder,
+[data-theme="dark"] #editModal input::placeholder,
+[data-theme="dark"] #addModal textarea::placeholder,
+[data-theme="dark"] #editModal textarea::placeholder {
+    color: #94a3b8 !important;
+}
+</style>
+
+<div class="page-header">
+    <h2><i class="fas fa-piggy-bank"></i> Fund Clusters</h2>
+    {% if is_admin %}
+    <button class="btn btn-primary" onclick="document.getElementById('addModal').style.display='flex'">
+        <i class="fas fa-plus"></i> Add Fund Cluster
+    </button>
+    {% endif %}
+</div>
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Cluster Code</th>
+                <th>Name</th>
+                <th>Bank Name</th>
+                <th>Account No.</th>
+                <th>Cheques</th>
+                <th>Released</th>
+                <th>Total Disbursed</th>
+                <th>Description</th>
+                <th>Status</th>
+                {% if is_admin %}<th>Actions</th>{% endif %}
+            </tr>
+        </thead>
+
+        <tbody>
+        {% for fc in clusters %}
+        <tr>
+            <td><strong>{{ fc.code }}</strong></td>
+            <td>{{ fc.name }}</td>
+            <td>{{ fc.bank_name|default:"—" }}</td>
+            <td>{{ fc.account_number }}</td>
+            <td><strong>{{ fc.cheque_count|default:0 }}</strong></td>
+            <td><strong>{{ fc.released_count|default:0 }}</strong></td>
+
+            <!-- TOTAL DISBURSED (STRING SAFE) -->
+            <td><strong>₱{{ fc.total_released|default:0|floatformat:2|intcomma }}</strong></td>
+
+            <td style="color:var(--muted);">
+                {{ fc.description|default:"—"|truncatechars:60 }}
+            </td>
+
+            <td>
+                <span class="badge {% if fc.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                    {% if fc.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+            </td>
+
+            {% if is_admin %}
+            <td>
+                <button class="btn btn-sm btn-secondary"
+                        onclick="editFC(
+                            {{ fc.pk }},
+                            '{{ fc.code|escapejs }}',
+                            '{{ fc.name|escapejs }}',
+                            '{{ fc.description|escapejs }}',
+                            '{{ fc.bank_name|escapejs }}',
+                            '{{ fc.account_number|escapejs }}',
+                            {{ fc.is_active|yesno:'true,false' }}
+                        )">
+                    <i class="fas fa-pen"></i>
+                </button>
+
+                <form method="post" style="display:inline;" onsubmit="requestDeleteConfirmation(event, this, 'Please enter an admin password to confirm deletion of this fund cluster:')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="fc_id" value="{{ fc.pk }}">
+
+                    <button type="submit" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+
+        {% empty %}
+        <tr>
+            {% if is_admin %}
+            <td colspan="10" style="text-align:center; padding:30px; color:var(--muted);">
+            {% else %}
+            <td colspan="9" style="text-align:center; padding:30px; color:var(--muted);">
+            {% endif %}
+                No fund clusters yet.
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ADD MODAL -->
+<div id="addModal" style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+
+    <div style="background:white; border-radius:12px; padding:24px; width:460px; max-width:95vw;">
+
+        <h3 style="margin-bottom:18px; font-size:16px;">Add Fund Cluster</h3>
+
+        <form method="post" id="fundClusterForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+
+                <!-- CODE -->
+                <div>
+                    <label style="font-size:13px; font-weight:600;">Cluster Code *</label>
+                    <input type="text"
+                           id="code"
+                           name="code"
+                           required
+                           oninput="validateForm()"
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; margin-top:4px;">
+                </div>
+
+                <!-- ACCOUNT NUMBER -->
+                <div>
+                    <label style="font-size:13px; font-weight:600;">Account Number *</label>
+                    <input type="text"
+                           id="account_number"
+                           name="account_number"
+                           required
+                           maxlength="12"
+                           placeholder="0000 0000 00"
+                           oninput="formatAccountNumber(this)"
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; margin-top:4px;">
+                </div>
+
+                <!-- BANK NAME -->
+                <div style="grid-column:1 / -1;">
+                    <label style="font-size:13px; font-weight:600;">Bank Name</label>
+                    <input type="text"
+                           name="bank_name"
+                           placeholder="Enter Bank Name"
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; margin-top:4px;">
+                </div>
+
+            </div>
+
+            <!-- NAME -->
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:600;">Name *</label>
+                <input type="text"
+                       name="name"
+                       required
+                       style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; margin-top:4px;">
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div style="margin-bottom:18px;">
+                <label style="font-size:13px; font-weight:600;">Description</label>
+                <textarea name="description"
+                          rows="3"
+                          style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; margin-top:4px; resize:vertical;"></textarea>
+            </div>
+
+            <!-- BUTTONS -->
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+
+                <button type="button"
+                        class="btn btn-secondary"
+                        onclick="document.getElementById('addModal').style.display='none'">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        id="createBtn"
+                        class="btn btn-primary"
+                        disabled
+                        style="opacity:0.5; cursor:not-allowed;">
+                    <i class="fas fa-check"></i> Create
+                </button>
+
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script>
+function validateForm() {
+    const code = document.getElementById('code').value.trim();
+    const account = document.getElementById('account_number').value.trim();
+    const btn = document.getElementById('createBtn');
+
+    if (code !== '' && account !== '') {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor = 'pointer';
+    } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+        btn.style.cursor = 'not-allowed';
+    }
+}
+
+function formatAccountNumber(input) {
+    let digits = input.value.replace(/\D/g, '').substring(0, 10);
+    let formatted = '';
+    for (let i = 0; i < digits.length; i++) {
+        if (i === 4 || i === 8) formatted += ' ';
+        formatted += digits[i];
+    }
+    input.value = formatted;
+}
+</script>
+
+<!-- EDIT MODAL -->
+<div id="editModal" style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+
+    <div style="background:white; border-radius:12px; padding:24px; width:460px; max-width:95vw;">
+
+        <h3 style="margin-bottom:18px; font-size:16px;">Edit Fund Cluster</h3>
+
+        <form method="post" id="editForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="fc_id" id="editFcId">
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+
+                <div>
+                    <label style="font-size:13px; font-weight:600;">Code *</label>
+                    <input type="text" name="code" id="editCode" required
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
+                </div>
+
+                <div>
+                    <label style="font-size:13px; font-weight:600;">Account Number *</label>
+                    <input type="text" name="account_number" id="editAccount" required maxlength="12"
+                           placeholder="0000 0000 00"
+                           oninput="formatAccountNumber(this)"
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
+                </div>
+
+                <div style="grid-column:1 / -1;">
+                    <label style="font-size:13px; font-weight:600;">Bank Name</label>
+                    <input type="text" name="bank_name" id="editBank"
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
+                </div>
+
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:600;">Name *</label>
+                <input type="text" name="name" id="editName" required
+                       style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:600;">Description</label>
+                <textarea name="description" id="editDesc" rows="3"
+                          style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;"></textarea>
+            </div>
+
+            <div style="margin-bottom:18px;">
+                <label>
+                    <input type="checkbox" name="is_active" id="editActive">
+                    Active
+                </label>
+            </div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('editModal').style.display='none'">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+<script>
+function editFC(id, code, name, desc, bankName, account, isActive) {
+    document.getElementById('editFcId').value = id;
+    document.getElementById('editCode').value = code;
+    document.getElementById('editName').value = name;
+    document.getElementById('editDesc').value = desc;
+    document.getElementById('editBank').value = bankName;
+    document.getElementById('editAccount').value = account;
+    document.getElementById('editActive').checked = isActive;
+
+    document.getElementById('editModal').style.display = 'flex';
+}
+</script>
+
+<!-- Deletion Password Confirmation Modal -->
+<div id="deleteConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: white; border-radius: 12px; padding: 24px; width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid var(--line); color: var(--ink);">
+        <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> Confirm Deletion
+        </h3>
+        <p id="deleteConfirmPromptText" style="font-size: 14px; margin-bottom: 16px; color: var(--muted);"></p>
+        <div style="margin-bottom: 16px;">
+            <input type="password" id="deleteConfirmPassword" placeholder="Enter password to confirm" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; outline: none;">
+            <div id="deleteConfirmError" style="color: var(--danger); font-size: 12px; margin-top: 4px; display: none;">Password is required.</div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Cancel</button>
+            <button type="button" class="btn btn-danger" onclick="submitDeleteConfirm()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Delete</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let pendingDeleteForm = null;
+
+    function requestDeleteConfirmation(event, form, promptText) {
+        event.preventDefault();
+        pendingDeleteForm = form;
+        document.getElementById('deleteConfirmPromptText').textContent = promptText;
+        document.getElementById('deleteConfirmPassword').value = '';
+        document.getElementById('deleteConfirmError').style.display = 'none';
+        document.getElementById('deleteConfirmModal').style.display = 'flex';
+        setTimeout(() => document.getElementById('deleteConfirmPassword').focus(), 80);
+    }
+
+    function closeDeleteConfirmModal() {
+        document.getElementById('deleteConfirmModal').style.display = 'none';
+        pendingDeleteForm = null;
+    }
+
+    function submitDeleteConfirm() {
+        const password = document.getElementById('deleteConfirmPassword').value;
+        if (!password) {
+            const err = document.getElementById('deleteConfirmError');
+            err.textContent = "Password is required.";
+            err.style.display = 'block';
+            return;
+        }
+        
+        let pwdField = pendingDeleteForm.querySelector('input[name="password"]');
+        if (!pwdField) {
+            pwdField = document.createElement('input');
+            pwdField.type = 'hidden';
+            pwdField.name = 'password';
+            pendingDeleteForm.appendChild(pwdField);
+        }
+        pwdField.value = password;
+        
+        pendingDeleteForm.submit();
+    }
+
+    document.getElementById('deleteConfirmPassword').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitDeleteConfirm();
+        }
+    });
+
+    // Format account numbers in table: 0000 0000 00
+    document.querySelectorAll('td').forEach(td => {
+        const text = td.textContent.trim();
+        if (/^\d{10,13}$/.test(text)) {
+            td.textContent = text.replace(/(\d{4})(\d{4})(\d+)/, '$1 $2 $3');
+        }
+    });
+</script>
+{% endblock %}

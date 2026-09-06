@@ -1,0 +1,1200 @@
+{% extends 'base.html' %}
+{% block title %}{% if cheque %}Edit Cheque{% else %}New Cheque{% endif %}{% endblock %}
+{% block nav_cheques %}active{% endblock %}
+{% block nav_cheques_c %}active{% endblock %}
+{% block content %}
+<style>
+    .editor-layout {
+        display: grid;
+        grid-template-columns: 1fr 1.6fr;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .editor-form {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 24px;
+    }
+
+    .editor-preview {
+        position: sticky;
+        top: 75px;
+    }
+
+    .cheque-scaler {
+        width: 100%;
+        overflow: hidden;
+    }
+
+    .cheque-paper {
+        background: white;
+        border: 2px solid #c8a96e;
+        border-radius: 6px;
+        padding: 24px 28px;
+        font-family: 'Courier New', monospace;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        box-sizing: border-box;
+        width: 8in;
+        height: 3in;
+        position: relative;
+        background-image:
+            repeating-linear-gradient(45deg, rgba(200, 169, 110, 0.03) 0px, rgba(200, 169, 110, 0.03) 1px, transparent 1px, transparent 8px);
+    }
+
+    .cheque-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
+
+    .cheque-bank {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1a1a2e;
+    }
+
+    .cheque-num {
+        font-size: 13px;
+        color: #555;
+        text-align: right;
+    }
+
+    .cheque-date-line {
+        text-align: right;
+        font-size: 13px;
+        margin-bottom: 14px;
+    }
+
+    .cheque-date-line span {
+        border-bottom: 1px solid #333;
+        display: inline-block;
+        min-width: 120px;
+        text-align: center;
+        padding: 0 4px;
+    }
+
+    .cheque-payto {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 12px;
+        font-size: 13px;
+    }
+
+    .cheque-payto label {
+        white-space: nowrap;
+        font-weight: 600;
+        font-size: 12px;
+    }
+
+    .cheque-payto-line {
+        flex: 1;
+        border-bottom: 1px solid #333;
+        min-height: 20px;
+        padding: 0 4px;
+        font-size: 14px;
+        font-weight: 600;
+        margin-right: 140px;
+        max-width: calc(100% - 160px);
+        box-sizing: border-box;
+    }
+
+    .cheque-amount-box {
+        float: right;
+        border: 2px solid #333;
+        padding: 5px 12px;
+        font-size: 15px;
+        font-weight: 700;
+        min-width: 120px;
+        text-align: right;
+        margin-bottom: 12px;
+        box-sizing: border-box;
+    }
+
+    .cheque-words-line {
+        clear: both;
+        border-bottom: 1px solid #333;
+        margin-bottom: 6px;
+        min-height: 24px;
+        font-size: 13px;
+        padding: 2px 4px;
+        margin-right: 40px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: calc(100% - 160px);
+        box-sizing: border-box;
+    }
+
+    .cheque-words-line2 {
+        border-bottom: 1px solid #333;
+        margin-bottom: 14px;
+        min-height: 20px;
+        font-size: 12px;
+        color: #555;
+        padding: 2px 4px;
+        max-width: calc(100% - 40px);
+        box-sizing: border-box;
+    }
+
+    .cheque-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: 10px;
+    }
+
+    .cheque-sig {
+        border-top: 1px solid #333;
+        min-width: 160px;
+        text-align: center;
+        font-size: 11px;
+        padding-top: 14px;
+        margin-top: 10px;
+        color: #555;
+    }
+
+    .cheque-sig .sig-title {
+        font-weight: 700;
+    }
+
+    .cheque-sig .sig-sub {
+        font-size: 10px;
+        color: #666;
+        margin-top: 4px;
+        font-weight: 600;
+    }
+
+    .cheque-micr {
+        margin-top: 28px;
+        text-align: center;
+        font-size: 12px;
+        letter-spacing: 0.1em;
+        color: #888;
+        border-top: 1px dashed #ddd;
+        padding-top: 8px;
+        width: calc(100% - 40px);
+        margin-left: 20px;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ensure micr doesn't overlap signature/footer */
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: var(--ink);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        font-size: 14px;
+        transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--nav);
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .status-flow {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .status-step {
+        padding: 4px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #94a3b8;
+    }
+
+    .status-step.current {
+        background: var(--nav);
+        color: white;
+    }
+
+    .status-step.done {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    @media(max-width:900px) {
+        .editor-layout {
+            grid-template-columns: 1fr;
+        }
+        .editor-preview {
+            position: static;
+        }
+    }
+
+    @media(max-width:640px) {
+        .editor-layout {
+            gap: 16px;
+        }
+        .editor-form {
+            padding: 16px;
+        }
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        .form-group label {
+            font-size: 12px;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            font-size: 13px;
+            padding: 8px 10px;
+        }
+        .cheque-paper {
+            width: 100% !important;
+            height: auto !important;
+            min-height: 200px;
+            padding: 16px;
+            transform: none;
+            position: relative !important;
+            overflow: hidden;
+        }
+        .cheque-header {
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+        .cheque-num {
+            text-align: left;
+        }
+        .cheque-date-line {
+            text-align: left;
+        }
+        .cheque-payto {
+            flex-wrap: wrap;
+        }
+        .cheque-payto-line {
+            margin-right: 0;
+            max-width: 100%;
+            min-height: 18px;
+        }
+        .cheque-amount-box {
+            float: none;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .cheque-words-line {
+            margin-right: 0;
+            max-width: 100%;
+        }
+        .cheque-words-line2 {
+            max-width: 100%;
+        }
+        .cheque-footer {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .cheque-sig {
+            min-width: 100%;
+        }
+        .cheque-micr {
+            width: 100%;
+            margin-left: 0;
+            font-size: 10px;
+        }
+        /* Tax row 3-col → stack */
+        .form-row[style*="1fr 1fr 1fr"] {
+            grid-template-columns: 1fr !important;
+        }
+        /* summary row stack */
+        [style*="background:#f0fdf4"][style*="justify-content:space-between"] {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 6px;
+        }
+        .status-flow {
+            font-size: 11px;
+        }
+        .status-step {
+            font-size: 11px;
+            padding: 3px 8px;
+        }
+        /* Button row */
+        [style*="gap:10px;flex-wrap:wrap"] {
+            flex-direction: column;
+        }
+        [style*="gap:10px;flex-wrap:wrap"] .btn {
+            width: 100%;
+            text-align: center;
+        }
+        /* Live preview section */
+        .editor-preview h3 {
+            font-size: 13px;
+        }
+        /* Disbursement toggle */
+        #btnToggleDisb {
+            font-size: 11px !important;
+        }
+        /* Amount words display */
+        #pvWordsDisplay {
+            font-size: 12px;
+        }
+    }
+</style>
+
+<div id="alertContainer">
+    {% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+    {% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+</div>
+
+<div class="page-header">
+    <h2>{% if cheque %}<i class="fas fa-pen"></i> Edit Cheque #{{ cheque.cheque_number|default:cheque.pk }}{% else %}<i
+            class="fas fa-plus"></i> New Cheque{% endif %}</h2>
+    <a href="{% url 'cheque_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+{% if cheque %}
+<div class="status-flow">
+    {% with s=cheque.status %}
+    <span
+        class="status-step {% if s == 'draft' %}current{% elif s in 'pending released voided stale' %}done{% endif %}">Draft</span>
+    <i class="fas fa-chevron-right" style="color:#ccc; font-size:10px;"></i>
+    <span class="status-step {% if s == 'pending' %}current{% elif s in 'released' %}done{% endif %}">Pending</span>
+    <i class="fas fa-chevron-right" style="color:#ccc; font-size:10px;"></i>
+    <span class="status-step {% if s == 'released' %}current{% endif %}">Released</span>
+    {% if s == 'voided' %}<i class="fas fa-chevron-right" style="color:#ccc; font-size:10px;"></i><span
+        class="status-step current" style="background:var(--danger);color:white;">Voided</span>{% endif %}
+    {% if s == 'stale' %}<i class="fas fa-chevron-right" style="color:#ccc; font-size:10px;"></i><span
+        class="status-step current" style="background:#6b7280;color:white;">Stale</span>{% endif %}
+    {% endwith %}
+</div>
+{% endif %}
+
+<div class="editor-layout">
+    <!-- FORM -->
+    <div class="editor-form">
+        <form method="post" id="chequeForm">
+            {% csrf_token %}
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Cheque Number</label>
+
+                    <input type="text" name="cheque_number" id="fChequeNum" value="{{ cheque_number_value|default:'' }}"
+                        placeholder="Cheque number" autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                    <label>Date *</label>
+                    <input type="date" name="date" id="fDate"
+                        value="{% if cheque %}{{ cheque.date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Payee Name *</label>
+                <input type="text" name="payee_name" id="fPayee" value="{{ cheque.payee_name|default:'' }}"
+                    placeholder="Pay to the order of..." required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group" style="display:flex; gap:8px; align-items:center;">
+                    <div style="flex:1;">
+                        <label>Supplier (optional)</label>
+                        <select name="payee_id" id="fPayeeId" onchange="autofillSupplier(this)">
+                            <option value="">— Select Supplier —</option>
+                            {% for s in suppliers %}
+                            <option value="{{ s.pk }}" {% if cheque and cheque.payee_id == s.pk %}selected{% endif %}
+                                data-name="{{ s.account_name }}" data-acc="{{ s.account_number }}"
+                                data-amount="{{ s.amount|floatformat:2 }}"
+                                data-check-serial="{{ s.mr_or|default:'' }}"
+                                data-dv-payroll="{{ s.x_dv_payroll|default:'' }}"
+                                data-ors-burs="{{ s.x_ors_burs|default:'' }}"
+                                data-resp-center="{{ s.x_resp_center|default:'' }}"
+                                data-uacs="{{ s.x_uacs|default:'' }}" data-nature="{{ s.x_nature|default:'' }}"
+                                data-prof-tax="{{ s.x_prof_tax|default:'' }}" data-tax5="{{ s.x_tax5|default:'' }}"
+                                data-tax2="{{ s.x_tax2|default:'' }}" data-gross="{{ s.x_gross|default:'' }}"
+                                data-fund-cluster-id="{{ s.x_fund_cluster_id|default:'' }}"
+                                data-fund-cluster-label="{{ s.fund_cluster_label|default:'' }}">{{ s.account_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Fund Cluster</label>
+                    <select id="fFund" tabindex="-1"
+                        style="background:#f3f4f6; cursor:not-allowed;" disabled>
+                        <option value="">— Select Fund Cluster —</option>
+                        {% for fc in funds %}
+                        <option value="{{ fc.pk }}" {% if cheque and cheque.fund_cluster_id == fc.pk %}selected{% endif %}
+                            data-code="{{ fc.code }}">{{ fc.code }} — {{ fc.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="fund_cluster_id" id="fFundHidden"
+                        value="{% if cheque %}{{ cheque.fund_cluster_id|default:'' }}{% endif %}">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Amount (₱) *</label>
+                    <input type="text" name="amount" id="fAmount" value="{{ cheque.amount|default:'0.00' }}"
+                        placeholder="₱0.00" required autocomplete="off"
+                        readonly aria-readonly="true" style="background:#f3f4f6; cursor:not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label>Bank Name</label>
+                    <input type="text" name="bank_name" id="fBank" value="{{ cheque.bank_name|default:'' }}"
+                        placeholder="e.g. Land Bank of the Philippines" readonly aria-readonly="true">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Account Number</label>
+                <input type="text" name="account_number" id="fAccNum" value="{{ cheque.account_number|default:'' }}"
+                    placeholder="Bank account number" readonly aria-readonly="true">
+            </div>
+
+            <div class="form-group">
+                <label>Purpose / Particulars</label>
+                <textarea name="purpose" id="fPurpose" rows="3"
+                    placeholder="Description of payment...">{{ cheque.purpose|default:'' }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status" id="fStatus">
+                    <option value="draft" {% if not cheque or cheque.status == 'draft' %}selected{% endif %}>Draft
+                    </option>
+                    <option value="pending" {% if cheque and cheque.status == 'pending' %}selected{% endif %}>Pending
+                    </option>
+                    <option value="released" {% if cheque and cheque.status == 'released' %}selected{% endif %}>Released
+                    </option>
+                    <option value="voided" {% if cheque and cheque.status == 'voided' %}selected{% endif %}>Voided
+                    </option>
+                    <option value="stale" {% if cheque and cheque.status == 'stale' %}selected{% endif %}>Stale</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Cheque Duration (days)</label>
+                <select name="stale_after_days" id="fStaleDays">
+                    <option value="30" {% if cheque and cheque.stale_after_days == 30 %}selected{% endif %}>30</option>
+                    <option value="60" {% if cheque and cheque.stale_after_days == 60 %}selected{% endif %}>60</option>
+                    <option value="90" {% if cheque and cheque.stale_after_days == 90 %}selected{% endif %}>90</option>
+                    <option value="120" {% if cheque and cheque.stale_after_days == 120 %}selected{% endif %}>120</option>
+                    <option value="180" {% if cheque and cheque.stale_after_days == 180 or not cheque.stale_after_days %}selected{% endif %}>180</option>
+                </select>
+            </div>
+
+            <!-- Report / Disbursement Fields (collapsible) -->
+            <div style="border-top: 1px solid var(--line); margin: 18px 0 14px; padding-top: 14px;">
+
+                <!-- Toggle Header -->
+                <button type="button" id="btnToggleDisb" onclick="toggleDisbursement()" style="width:100%; background:none; border:none; cursor:pointer; padding:0;
+                           display:flex; align-items:center; justify-content:space-between;
+                           font-size:12px; font-weight:700; color:var(--muted);
+                           letter-spacing:0.06em; margin-bottom:0; gap:6px;">
+                    <span style="display:flex;align-items:center;gap:6px;">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        REPORT / DISBURSEMENT FIELDS
+                    </span>
+                    <i id="disbChevron" class="fas fa-chevron-down"
+                        style="transition:transform 0.25s ease; color:var(--muted); font-size:11px;"></i>
+                </button>
+
+                <!-- Collapsible body -->
+                <div id="disbBody" style="overflow:hidden; max-height:0; opacity:0;
+                            transition: max-height 0.35s ease, opacity 0.25s ease; margin-top:0;">
+                    <div style="padding-top:12px;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>DV/Payroll No.</label>
+                                <input type="text" name="dv_payroll_no" id="fDvPayroll"
+                                    value="{{ cheque.dv_payroll_no|default:'' }}" placeholder="e.g. DV-2026-001">
+                            </div>
+                            <div class="form-group">
+                                <label>ORS/BURS No.</label>
+                                <input type="text" name="ors_burs_no" id="fOrsBurs"
+                                    value="{{ cheque.ors_burs_no|default:'' }}" placeholder="e.g. ORS-2026-001">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Responsibility Center Code</label>
+                                <input type="text" name="responsibility_center" id="fRespCenter"
+                                    value="{{ cheque.responsibility_center|default:'' }}" placeholder="e.g. 102">
+                            </div>
+                            <div class="form-group">
+                                <label>UACS Object Code</label>
+                                <input type="text" name="uacs_object_code" id="fUacs"
+                                    value="{{ cheque.uacs_object_code|default:'' }}" placeholder="e.g. 5020101000">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Nature of Payment</label>
+                            <input type="text" name="nature_of_payment" id="fNatureOfPayment"
+                                value="{{ cheque.nature_of_payment|default:'' }}" placeholder="e.g. Salaries and Wages">
+                        </div>
+                        <div
+                            style="font-size:12px; font-weight:700; color:var(--muted); letter-spacing:0.05em; margin:10px 0 8px;">
+                            TAX DEDUCTIONS</div>
+                        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr;">
+                            <div class="form-group">
+                                <label>Professional Tax (₱)</label>
+                                <input type="text" name="professional_tax" id="fProfTax"
+                                    value="{{ cheque.professional_tax|default:'' }}" placeholder="₱0.00"
+                                    autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label>Tax 5%/3% (₱)</label>
+                                <input type="text" name="tax_5_3" id="fTax53"
+                                    value="{{ cheque.tax_5_3|default:'' }}" placeholder="₱0.00"
+                                    autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label>Tax 2%/1% (₱)</label>
+                                <input type="text" name="tax_3_1" id="fTax31"
+                                    value="{{ cheque.tax_3_1|default:'' }}" placeholder="₱0.00"
+                                    autocomplete="off">
+                            </div>
+                        </div>
+                        <div
+                            style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px; padding:10px 14px; font-size:13px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <div><span style="color:#6b7280;">Gross Amount:</span> <strong id="summaryGross"
+                                    style="margin-left:4px; color:#050505;">&#8369; 0.00</strong></div>
+                            <div><span style="color:#6b7280;">Total Deductions:</span> <strong id="summaryDeductions"
+                                    style="margin-left:4px; color:#dc2626;">- &#8369; 0.00</strong></div>
+                            <div><span style="color:#6b7280; font-weight:700;">Net Amount:</span> <strong
+                                    id="summaryNet" style="margin-left:4px; color:#15803d; font-size:15px;">&#8369;
+                                    0.00</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Cheque</button>
+                <button type="button" id="btnSavePrint" class="btn btn-success"><i class="fas fa-print"></i> Save & Print</button>
+                {% if cheque and cheque.pk %}
+                <a href="{% url 'cheque_print' cheque.pk %}" class="btn btn-secondary" target="_blank"><i class="fas fa-print"></i>
+                    Print</a>
+                {% endif %}
+                <a href="{% url 'cheque_list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- LIVE PREVIEW -->
+    <div class="editor-preview">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="font-size:14px; font-weight:700; color:var(--muted);"><i class="fas fa-eye"></i> Live Preview
+            </h3>
+            <span style="font-size:11px; color:var(--muted);">Updates as you type</span>
+        </div>
+        <div class="cheque-scaler" id="chequeScaler">
+        <div class="cheque-paper" id="chequePreview"
+            style="font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif; width: 8in; height: 3in; box-sizing: border-box; background: white; border: 2px solid #3b82f6; border-radius: 8px; position: relative; overflow: hidden; color: black; box-shadow: 0 4px 20px rgba(0,0,0,0.12);">
+            <!-- Fund Cluster Code -->
+            <div id="pvFundCode"
+                style="position: absolute; left: 0.5in; top: 0.39in; font-size: 10pt; font-weight: normal;">—</div>
+
+            <!-- UACS Object Code -->
+            <div id="pvUacsCode"
+                style="position: absolute; left: 1in; top: 0.39in; font-size: 10pt; font-weight: normal;">—</div>
+
+            <!-- Cheque Number -->
+            <div id="pvChequeNum"
+                style="position: absolute; right: 0.5in; top: 0.35in; font-size: 10pt; font-weight: normal; text-align: right;">
+                ______</div>
+
+            <!-- Spaced Date -->
+            <div id="pvDate"
+                style="position: absolute; right: 0.45in; top: 0.55in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">
+                ____________</div>
+
+            <!-- Payee Name -->
+            <div id="pvPayee"
+                style="position: absolute; left: 1in; top: 0.90in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            </div>
+
+            <!-- Amount -->
+            <div id="pvAmount"
+                style="position: absolute; right: 0.9in; top: 0.85in; font-size: 12pt; font-weight: normal; text-align: right;">
+                0.00</div>
+
+            <!-- Amount in Words -->
+            <div id="pvWords"
+                style="position: absolute; left: 0.80in; top: 1.2in; font-size: 11pt; font-weight: normal; text-transform: uppercase; width: 5.7in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            </div>
+        </div>
+        </div>
+
+        <div
+            style="margin-top:12px; background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:12px;">
+            <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:8px;">AMOUNT IN WORDS</div>
+            <div id="pvWordsDisplay" style="font-size:13px; font-style:italic; color:var(--ink); min-height:18px;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const CHEQUE_LOOKUP_URL = "{% url 'cheque_lookup' %}";
+    const isEditMode = {% if cheque and cheque.pk %}true{% else %} false{% endif %};
+    let chequeLookupTimer = null;
+    let chequeLookupToken = 0;
+
+    function autofillSupplier(sel) {
+        if (sel.selectedIndex > 0) {
+            const opt = sel.options[sel.selectedIndex];
+            const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+            const getAttr = (attr) => opt.getAttribute(attr) || '';
+
+            setVal('fPayee', getAttr('data-name'));
+
+            const checkSerial = getAttr('data-check-serial');
+            if (checkSerial) setVal('fChequeNum', checkSerial);
+
+            if (!isEditMode) {
+                const grossVal = getAttr('data-gross');
+                const netVal = getAttr('data-amount');
+                setVal('fAmount', formatAmountInput(grossVal || netVal));
+            }
+
+            setVal('fDvPayroll', getAttr('data-dv-payroll'));
+            setVal('fOrsBurs', getAttr('data-ors-burs'));
+            setVal('fRespCenter', getAttr('data-resp-center'));
+            setVal('fUacs', getAttr('data-uacs'));
+            setVal('fNatureOfPayment', getAttr('data-nature'));
+
+            setVal('fProfTax', formatAmountInput(getAttr('data-prof-tax')));
+            setVal('fTax53', formatAmountInput(getAttr('data-tax5')));
+            setVal('fTax31', formatAmountInput(getAttr('data-tax2')));
+
+            const fcId = getAttr('data-fund-cluster-id');
+            const fcLabel = getAttr('data-fund-cluster-label');
+            const fundSel = document.getElementById('fFund');
+            const fundHidden = document.getElementById('fFundHidden');
+            if (fundSel && (fcId || fcLabel)) {
+                let matched = false;
+                if (fcId) {
+                    fundSel.value = fcId;
+                    matched = fundSel.value === fcId;
+                }
+                if (!matched && fcLabel) {
+                    const fcLabelLower = fcLabel.trim().toLowerCase();
+                    for (let i = 0; i < fundSel.options.length; i++) {
+                        if (fundSel.options[i].text.trim().toLowerCase() === fcLabelLower) {
+                            fundSel.selectedIndex = i;
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+                if (matched) {
+                    if (fundHidden) fundHidden.value = fundSel.value;
+                    fundSel.dispatchEvent(new Event('change'));
+                }
+            }
+        }
+        updateNetAmount();
+        updatePreview();
+    }
+
+    // Amount to words (Philippine Peso) with centavos formatted as & XX/100 ONLY
+    function amountToWords(amount) {
+        if (!amount || isNaN(amount) || amount <= 0) return '';
+        const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+            'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+        const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+
+        function below1000(n) {
+            if (n === 0) return '';
+            if (n < 20) return ones[n] + ' ';
+            if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '') + ' ';
+            return ones[Math.floor(n / 100)] + ' HUNDRED ' + below1000(n % 100);
+        }
+
+        const parts = parseFloat(amount).toFixed(2).split('.');
+        const pesos = parseInt(parts[0]);
+        const centavos = parseInt(parts[1]);
+
+        let result = '';
+        if (pesos >= 1000000000) result += below1000(Math.floor(pesos / 1000000000)) + 'BILLION ';
+        if (pesos >= 1000000) result += below1000(Math.floor((pesos % 1000000000) / 1000000)) + 'MILLION ';
+        if (pesos >= 1000) result += below1000(Math.floor((pesos % 1000000) / 1000)) + 'THOUSAND ';
+        result += below1000(pesos % 1000);
+        result = result.replace(/\s+/g, ' ').trim();
+        const pesosText = (result ? (result + ' PESOS') : 'ZERO PESOS');
+
+        const centsFormatted = String(centavos).padStart(2, '0');
+        return pesosText + ' & ' + centsFormatted + '/100 ONLY';
+    }
+
+    function parseNumber(value) {
+        const normalized = String(value || '').trim()
+            .replace(/,/g, '')
+            .replace(/₱/g, '')
+            .replace(/\u20B1/g, '')
+            .replace(/%/g, '');
+        const parsed = parseFloat(normalized);
+        return isNaN(parsed) ? 0 : parsed;
+    }
+
+    function formatAmountInput(value) {
+        const num = parseNumber(value).toFixed(2);
+        const parts = num.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return '₱' + parts.join('.');
+    }
+
+    function formatAmount(val) {
+        const n = parseNumber(val);
+        const parts = n.toFixed(2).split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return parts.join('.');
+    }
+
+    function formatSpacedDate(dateStr) {
+        if (!dateStr) return '____________';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return '____________';
+        const year = parts[0];
+        const month = parts[1];
+        const day = parts[2];
+
+        const mSpaced = ' ' + month.charAt(0) + '  ' + month.charAt(1);
+        const dSpaced = ' ' + day.charAt(0) + '  ' + day.charAt(1);
+        const ySpaced = ' ' + year.charAt(0) + '  ' + year.charAt(1) + '  ' + year.charAt(2) + '  ' + year.charAt(3);
+
+        return mSpaced + '    ' + dSpaced + '    ' + ySpaced;
+    }
+
+    function updatePreview() {
+        const chequeNum = normalizeChequeNumber(document.getElementById('fChequeNum').value);
+        const date = document.getElementById('fDate').value;
+        const payee = document.getElementById('fPayee').value;
+        const amount = parseNumber(document.getElementById('fAmount').value);
+
+        const words = amountToWords(amount);
+
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = value;
+        };
+
+        // Fund Cluster Code
+        const fundSel = document.getElementById('fFund');
+        let fundCode = '—';
+        if (fundSel && fundSel.selectedIndex > 0) {
+            fundCode = fundSel.options[fundSel.selectedIndex].getAttribute('data-code') || '—';
+        }
+        setText('pvFundCode', fundCode);
+
+        // UACS Code
+        const payeeSelect = document.getElementById('fPayeeId');
+        let uacsCode = '—';
+        if (payeeSelect && payeeSelect.selectedIndex > 0) {
+            uacsCode = payeeSelect.options[payeeSelect.selectedIndex].getAttribute('data-uacs') || '—';
+        }
+        setText('pvUacsCode', uacsCode);
+
+        setText('pvChequeNum', chequeNum);
+        setText('pvDate', formatSpacedDate(date));
+        setText('pvPayee', payee);
+        setText('pvAmount', formatAmount(amount));
+        setText('pvWords', words || '');
+        setText('pvWordsDisplay', words || '');
+
+        // Fit payee and words into single lines by reducing font-size if necessary
+        fitTextToWidth(document.getElementById('pvPayee'), 19, 11);
+        fitTextToWidth(document.getElementById('pvWords'), 16, 11);
+    }
+
+    function fitTextToWidth(el, maxSizePx, minSizePx) {
+        if (!el) return;
+        const parentWidth = el.clientWidth;
+        let size = maxSizePx;
+        el.style.whiteSpace = 'nowrap';
+        el.style.fontSize = size + 'px';
+        while (size > minSizePx && el.scrollWidth > parentWidth) {
+            size -= 1;
+            el.style.fontSize = size + 'px';
+        }
+    }
+
+    function normalizeChequeNumber(value) {
+        const raw = String(value || '').trim();
+        if (!raw) return '';
+        if (/^\d+$/.test(raw) && raw.length < 6) {
+            return raw.padStart(6, '0');
+        }
+        return raw;
+    }
+
+    function syncChequeNumberInput() {
+        const input = document.getElementById('fChequeNum');
+        if (!input) return;
+        const nextValue = normalizeChequeNumber(input.value);
+        input.value = nextValue;
+    }
+
+    function lockCaretToEnd(input) {
+        if (!input || typeof input.setSelectionRange !== 'function') return;
+        const end = input.value.length;
+        requestAnimationFrame(() => {
+            try {
+                input.setSelectionRange(end, end);
+            } catch (error) {
+                // Ignore browsers that do not allow selection changes on this element.
+            }
+        });
+    }
+
+    function setFieldValue(id, value) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = value || '';
+    }
+
+    function applyChequeLookup(data) {
+        if (!data || !data.found) return;
+        setFieldValue('fChequeNum', data.number || '');
+        setFieldValue('fDate', data.date || '');
+        setFieldValue('fPayee', data.payee_name || '');
+        setFieldValue('fAmount', formatAmountInput(data.amount || '0'));
+        setFieldValue('fBank', data.bank_name || '');
+        setFieldValue('fAccNum', data.account_number || '');
+        setFieldValue('fPurpose', data.purpose || '');
+        setFieldValue('fStatus', data.status || 'draft');
+
+        const payeeSelect = document.getElementById('fPayeeId');
+        if (payeeSelect) {
+            payeeSelect.value = data.payee_id || '';
+        }
+
+        const fundSelect = document.getElementById('fFund');
+        const fundHidden = document.getElementById('fFundHidden');
+        if (fundSelect) {
+            fundSelect.value = data.fund_cluster_id || '';
+            if (fundHidden) fundHidden.value = fundSelect.value;
+        }
+
+        updatePreview();
+        lockCaretToEnd(document.getElementById('fChequeNum'));
+    }
+
+    function toggleStaleTimerVisibility() {
+        const status = document.getElementById('fStatus')?.value;
+        const group = document.getElementById('staleTimerGroup');
+        if (!group) return;
+        if (status === 'released') {
+            group.style.display = 'block';
+        } else {
+            group.style.display = 'none';
+        }
+    }
+
+    document.getElementById('fStatus')?.addEventListener('change', function () {
+        toggleStaleTimerVisibility();
+    });
+
+    // initialize on load
+    toggleStaleTimerVisibility();
+
+    function updateNetAmount() {
+        const gross = parseNumber(document.getElementById('fAmount')?.value);
+        const profTax = parseNumber(document.getElementById('fProfTax')?.value);
+        const tax53 = parseNumber(document.getElementById('fTax53')?.value);
+        const tax31 = parseNumber(document.getElementById('fTax31')?.value);
+        const deductions = profTax + tax53 + tax31;
+        const net = gross - deductions;
+        const g = document.getElementById('summaryGross');
+        const d = document.getElementById('summaryDeductions');
+        const n2 = document.getElementById('summaryNet');
+        if (g) g.textContent = formatAmountInput(gross);
+        if (d) d.textContent = '- ' + formatAmountInput(deductions);
+        if (n2) n2.textContent = formatAmountInput(net);
+    }
+
+    function queueChequeLookup() {
+        if (!isEditMode) {
+            return;
+        }
+        const input = document.getElementById('fChequeNum');
+        if (!input) return;
+
+        if (!input.value.trim()) {
+            return;
+        }
+
+        const normalized = normalizeChequeNumber(input.value);
+        if (!normalized) {
+            return;
+        }
+
+        if (chequeLookupTimer) {
+            clearTimeout(chequeLookupTimer);
+        }
+
+        chequeLookupTimer = setTimeout(() => {
+            const token = ++chequeLookupToken;
+            fetch(CHEQUE_LOOKUP_URL + '?number=' + encodeURIComponent(normalized), {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+                .then(response => response.ok ? response.json() : null)
+                .then(data => {
+                    if (!data || token !== chequeLookupToken) return;
+                    if (data.found) {
+                        applyChequeLookup(data);
+                    }
+                })
+                .catch(() => { });
+        }, 180);
+    }
+
+    // When fund cluster changes, populate bank and account from cluster record
+    const FUND_INFO_URL = "{% url 'fund_cluster_info' %}";
+    document.getElementById('fFund')?.addEventListener('change', function (e) {
+        const val = this.value;
+        if (!val) {
+            document.getElementById('fBank').value = '';
+            document.getElementById('fAccNum').value = '';
+            updatePreview();
+            return;
+        }
+        fetch(FUND_INFO_URL + '?fc_id=' + encodeURIComponent(val), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data || !data.ok) return;
+                document.getElementById('fBank').value = data.bank_name || '';
+                document.getElementById('fAccNum').value = data.account_number || '';
+                updatePreview();
+            })
+            .catch(() => { });
+    });
+
+    // Bind live updates
+    ['fChequeNum', 'fDate', 'fPayee', 'fAmount', 'fBank', 'fAccNum', 'fPurpose', 'fFund'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', updatePreview);
+            el.addEventListener('change', updatePreview);
+        }
+    });
+    // Also wire amount to update net summary
+    document.getElementById('fAmount')?.addEventListener('input', updateNetAmount);
+    document.getElementById('fAmount')?.addEventListener('change', updateNetAmount);
+
+    const chequeNumInput = document.getElementById('fChequeNum');
+    if (chequeNumInput) {
+        chequeNumInput.addEventListener('focus', function () {
+            lockCaretToEnd(this);
+        });
+        chequeNumInput.addEventListener('input', function () {
+            updatePreview();
+            lockCaretToEnd(this);
+            queueChequeLookup();
+        });
+        chequeNumInput.addEventListener('blur', function () {
+            if (this.value.trim()) {
+                this.value = normalizeChequeNumber(this.value);
+            }
+            updatePreview();
+            lockCaretToEnd(this);
+            queueChequeLookup();
+        });
+    }
+
+    // ── Report / Disbursement collapsible ────────────────────────────────────
+    function toggleDisbursement() {
+        const body = document.getElementById('disbBody');
+        const chevron = document.getElementById('disbChevron');
+        if (!body) return;
+        const isOpen = body.style.maxHeight && body.style.maxHeight !== '0px';
+        if (isOpen) {
+            body.style.maxHeight = '0';
+            body.style.opacity = '0';
+            if (chevron) chevron.style.transform = 'rotate(0deg)';
+        } else {
+            body.style.maxHeight = body.scrollHeight + 400 + 'px';
+            body.style.opacity = '1';
+            if (chevron) chevron.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    function setupAmountFieldFocusBlur(id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        // format initially
+        if (input.value) {
+            input.value = formatAmountInput(input.value);
+        }
+
+        // Skip focus/blur formatting for readonly fields (e.g. amount in edit mode)
+        if (input.readOnly) return;
+
+        input.addEventListener('focus', function () {
+            let raw = this.value.replace(/,/g, '').replace(/₱/g, '').replace(/\u20B1/g, '').trim();
+            if (raw === '0.00' || raw === '0') {
+                this.value = '';
+            } else {
+                this.value = raw;
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            const num = parseNumber(this.value);
+            this.value = formatAmountInput(num);
+            updateNetAmount();
+            updatePreview();
+        });
+    }
+
+    ['fAmount', 'fProfTax', 'fTax53', 'fTax31'].forEach(setupAmountFieldFocusBlur);
+
+    // Save & Print flow
+    function alertError(msg) {
+        const container = document.getElementById('alertContainer');
+        if (container) {
+            container.innerHTML = `<div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> ${msg}</div>`;
+            container.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            showToast('error', 'Error', msg);
+        }
+    }
+
+    const btnSavePrint = document.getElementById('btnSavePrint');
+    if (btnSavePrint) {
+        btnSavePrint.addEventListener('click', function () {
+            const form = document.getElementById('chequeForm');
+            if (!form) return;
+            if (!form.reportValidity()) {
+                return;
+            }
+
+            const printWin = window.open('about:blank', '_blank');
+            if (!printWin) {
+                showToast('warning', 'Popup Blocked', 'Please allow popups for this site to print cheques directly.');
+                return;
+            }
+
+            printWin.document.write(`
+                <html>
+                <head>
+                    <title>Preparing Print...</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #eef3f7; color: #1f2a37; }
+                        .loader-container { text-align: center; }
+                        .spinner { width: 40px; height: 40px; border: 4px solid rgba(14, 45, 10, 0.1); border-top: 4px solid #0e2d0a; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+                        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                    </style>
+                </head>
+                <body>
+                    <div class="loader-container">
+                        <div class="spinner"></div>
+                        <div style="font-weight: 600;">Generating print page...</div>
+                        <div style="font-size: 12px; color: #667085; margin-top: 4px;">Please wait while the cheque is saved.</div>
+                    </div>
+                </body>
+                </html>
+            `);
+
+            const formData = new FormData(form);
+            formData.append('save_and_print', '1');
+
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(async response => {
+                let data;
+                try {
+                    data = await response.json();
+                } catch(e) {
+                    data = { ok: false, error: 'Server error (' + response.status + ')' };
+                }
+                return data;
+            })
+            .then(data => {
+                if (data && data.ok) {
+                    if (printWin) {
+                        printWin.location.href = data.print_url;
+                    }
+                    window.location.href = data.success_url;
+                } else {
+                    if (printWin) printWin.close();
+                    alertError((data && data.error) ? data.error : 'Failed to save cheque.');
+                }
+            })
+            .catch(err => {
+                if (printWin) printWin.close();
+                alertError(err.message || 'An error occurred while saving the cheque.');
+                console.error(err);
+            });
+        });
+    }
+
+    // Initial render
+    syncChequeNumberInput();
+    updatePreview();
+    updateNetAmount();
+    if (isEditMode) {
+        lockCaretToEnd(document.getElementById('fChequeNum'));
+    }
+
+    function scaleCheque() {
+        var scaler = document.getElementById('chequeScaler');
+        var paper = document.getElementById('chequePreview');
+        if (!scaler || !paper) return;
+        var containerW = scaler.clientWidth;
+        var paperW = 768;
+        if (containerW >= paperW) {
+            paper.style.zoom = '';
+            scaler.style.height = '';
+            return;
+        }
+        var s = containerW / paperW;
+        paper.style.zoom = s;
+        scaler.style.height = paper.offsetHeight + 'px';
+    }
+    scaleCheque();
+    window.addEventListener('resize', scaleCheque);
+</script>
+{% endblock %}
+{% include 'admin_panel/_supplier_modal.html' %}

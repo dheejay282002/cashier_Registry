@@ -1,0 +1,381 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile Settings{% endblock %}
+
+{% block content %}
+<style>
+    .profile-card {
+        max-width: 580px;
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+        padding: 28px;
+        margin: 20px auto;
+    }
+    .profile-photo-wrap {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .profile-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 8px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 3px solid #f1f5f9;
+    }
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .profile-avatar span {
+        font-size: 24px;
+        font-weight: 700;
+        color: #475569;
+    }
+    .profile-hint {
+        font-size: 12px;
+        color: #94a3b8;
+    }
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        margin-top: 16px;
+    }
+    .profile-grid label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #222222;
+        margin-bottom: 5px;
+    }
+    .profile-grid input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+    .profile-grid input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+    }
+    .profile-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        border: none;
+        transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .profile-btn-primary {
+        background: #166534;
+        color: #fff;
+    }
+    .profile-btn-primary:hover { background: #14532d; }
+    .profile-btn-primary:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+    }
+    .profile-btn-outline {
+        background: #fff;
+        color: #166534;
+        border: 1px solid #166534;
+    }
+    .profile-btn-outline:hover { background: #f0fdf4; }
+    .profile-btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 18px;
+        justify-content: center;
+    }
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 5000;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal-card {
+        width: min(440px, 92vw);
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        padding: 24px;
+    }
+    .modal-card h3 {
+        margin: 0 0 14px;
+        font-size: 16px;
+        font-weight: 700;
+        color: #111111;
+    }
+    .modal-card label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #222222;
+        margin-bottom: 5px;
+    }
+    .modal-card input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+        margin-bottom: 12px;
+    }
+    .modal-card input:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+    .modal-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 6px;
+    }
+    .modal-cancel {
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        background: #fff;
+        color: #222222;
+        padding: 10px 14px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    .modal-cancel:hover { background: #f8fafc; }
+    @media (max-width: 640px) {
+        .profile-grid { grid-template-columns: 1fr; }
+        .profile-btn-row { flex-direction: column; }
+        .profile-btn { width: 100%; justify-content: center; }
+    }
+
+    /* ── Dark Mode Overrides for Profile Settings ── */
+    [data-theme="dark"] .profile-card,
+    [data-theme="dark"] .modal-card {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .ill-circle.green {
+        background: #064e3b !important;
+        border-color: #047857 !important;
+        color: #34d399 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    [data-theme="dark"] .ill-badge {
+        border-color: #111111 !important;
+    }
+
+    [data-theme="dark"] .profile-avatar {
+        background: #111111 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .profile-avatar span {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .profile-grid label,
+    [data-theme="dark"] .modal-card label,
+    [data-theme="dark"] .modal-card h3,
+    [data-theme="dark"] h2 {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .profile-grid input,
+    [data-theme="dark"] .modal-card input {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .profile-btn-outline,
+    [data-theme="dark"] .modal-cancel {
+        background: #111111 !important;
+        color: #38bdf8 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .profile-btn-outline:hover,
+    [data-theme="dark"] .modal-cancel:hover {
+        background: #0284c7 !important;
+        color: #ffffff !important;
+    }
+</style>
+
+<div class="page-center">
+  <h2>Profile Settings</h2>
+  <p class="page-sub">Manage your personal account information, profile picture, and password.</p>
+</div>
+
+<div class="profile-card">
+    {% if error %}
+        <script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>
+    {% endif %}
+    {% if success %}
+        <script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>
+    {% endif %}
+
+    <form id="profileForm" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="form_type" value="profile">
+
+        <div class="profile-photo-wrap">
+            <label for="profile_picture" style="cursor:pointer; display:inline-block;">
+                <div class="profile-avatar">
+                    {% if profile.profile_picture %}
+                        <img src="{{ profile.profile_picture.url }}" alt="Profile photo">
+                    {% else %}
+                        <span>{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+                    {% endif %}
+                </div>
+            </label>
+            <input id="profile_picture" type="file" name="profile_picture" accept="image/*" style="position:absolute; width:1px; height:1px; opacity:0; overflow:hidden;">
+            <p class="profile-hint">Click the photo to change it</p>
+        </div>
+
+        <div class="profile-grid">
+            <div>
+                <label for="last_name">Last Name</label>
+                <input id="last_name" type="text" name="last_name" value="{{ request.user.last_name }}" required>
+            </div>
+            <div>
+                <label for="first_name">Given Name</label>
+                <input id="first_name" type="text" name="first_name" value="{{ request.user.first_name }}" required>
+            </div>
+            <div>
+                <label for="middle_initial">MI</label>
+                <input id="middle_initial" type="text" name="middle_initial" value="{{ profile.middle_initial }}">
+            </div>
+            <div>
+                <label for="email">Email Address</label>
+                <input id="email" type="email" name="email" value="{{ request.user.email }}" required>
+            </div>
+            <div>
+                <label for="username">Username</label>
+                <input id="username" type="text" name="username" value="{{ request.user.username }}" required>
+            </div>
+        </div>
+
+        <div class="profile-btn-row">
+            <button id="saveProfileBtn" type="submit" class="profile-btn profile-btn-primary" disabled><i class="fas fa-check"></i> Save Changes</button>
+            <button type="button" class="profile-btn profile-btn-outline" onclick="openPasswordModal()"><i class="fas fa-lock"></i> Change Password</button>
+            <a href="{% url 'mfa_setup' %}" class="profile-btn profile-btn-outline"><i class="fas fa-shield-alt"></i> Multi-Factor Auth</a>
+        </div>
+    </form>
+</div>
+
+<div id="currentPasswordModal" class="modal-backdrop" onclick="closeCurrentPasswordModal(event)">
+    <div class="modal-card">
+        <h3>Verify Current Password</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="verify_password">
+            <label for="current_password_step">Current Password</label>
+            <input id="current_password_step" type="password" name="current_password" required>
+            <div class="modal-actions">
+                <button type="submit" class="profile-btn profile-btn-primary">Next</button>
+                <button type="button" class="modal-cancel" onclick="closeCurrentPasswordModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="newPasswordModal" class="modal-backdrop" onclick="closeNewPasswordModal(event)">
+    <div class="modal-card">
+        <h3>Set New Password</h3>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="form_type" value="password">
+            <label for="new_password_step">New Password</label>
+            <input id="new_password_step" type="password" name="new_password" required>
+            <label for="confirm_password_step">Confirm New Password</label>
+            <input id="confirm_password_step" type="password" name="confirm_password" required>
+            <div class="modal-actions">
+                <button type="submit" class="profile-btn profile-btn-primary">Update Password</button>
+                <button type="button" class="modal-cancel" onclick="backToCurrentPasswordModal()">Back</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openPasswordModal() { openCurrentPasswordModal(); }
+    function openCurrentPasswordModal() { document.getElementById("currentPasswordModal").classList.add("active"); }
+    function closeCurrentPasswordModal(event) {
+        if (!event || event.target.id === "currentPasswordModal") {
+            document.getElementById("currentPasswordModal").classList.remove("active");
+        }
+    }
+    function openNewPasswordModal() { document.getElementById("newPasswordModal").classList.add("active"); }
+    function closeNewPasswordModal(event) {
+        if (!event || event.target.id === "newPasswordModal") {
+            document.getElementById("newPasswordModal").classList.remove("active");
+        }
+    }
+    function backToCurrentPasswordModal() { closeNewPasswordModal(); openCurrentPasswordModal(); }
+
+    (function setupProfileChangeTracking() {
+        var profileForm = document.getElementById("profileForm");
+        var saveButton = document.getElementById("saveProfileBtn");
+        if (!profileForm || !saveButton) return;
+        var trackedSelectors = ["input[name='last_name']","input[name='first_name']","input[name='middle_initial']","input[name='email']","input[name='username']","input[name='profile_picture']"];
+        var trackedInputs = trackedSelectors.map(function(s){ return profileForm.querySelector(s); }).filter(Boolean);
+        var initialValues = trackedInputs.map(function(i){ return i.type === "file" ? "" : i.value; });
+        function hasProfileChanges() {
+            return trackedInputs.some(function(input, idx) {
+                if (input.type === "file") return input.files && input.files.length > 0;
+                return input.value !== initialValues[idx];
+            });
+        }
+        function refresh() { saveButton.disabled = !hasProfileChanges(); }
+        trackedInputs.forEach(function(i){ i.addEventListener("input", refresh); i.addEventListener("change", refresh); });
+        refresh();
+    })();
+
+    {% if show_current_password_modal %} openCurrentPasswordModal(); {% endif %}
+    {% if show_new_password_modal %} openNewPasswordModal(); {% endif %}
+
+    var newPwForm = document.querySelector('#newPasswordModal form');
+    if (newPwForm) {
+        var pwInput = newPwForm.querySelector('input[name="new_password"]');
+        var cpwInput = newPwForm.querySelector('input[name="confirm_password"]');
+        if (pwInput) {
+            pwInput.addEventListener('focus', function(){ showPasswordReqs(pwInput); });
+            pwInput.addEventListener('input', function(){ updatePasswordReqs(pwInput.value); });
+        }
+        newPwForm.addEventListener('submit', function(e) {
+            var pw = pwInput ? pwInput.value : '';
+            var cpw = cpwInput ? cpwInput.value : '';
+            var err = validatePassword(pw);
+            if (err) { e.preventDefault(); alert(err); return; }
+            if (pw !== cpw) { e.preventDefault(); alert('Passwords do not match.'); return; }
+        });
+    }
+</script>
+{% endblock %}

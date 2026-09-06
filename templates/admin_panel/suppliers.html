@@ -1,0 +1,822 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Suppliers{% endblock %}
+{% block nav_suppliers %}active{% endblock %}
+{% block content %}
+
+{% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+{% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+<style>
+    .supplier-toolbar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .supplier-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .supplier-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .supplier-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .supplier-field label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .supplier-field input,
+    .supplier-field select,
+    .supplier-field textarea {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid #d6dde7;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .supplier-field textarea {
+        resize: vertical;
+        min-height: 90px;
+    }
+
+    .supplier-modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 5000;
+        background: rgba(15, 23, 42, 0.58);
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+    }
+
+    .supplier-modal {
+        width: min(1120px, 100%);
+        max-height: 92vh;
+        overflow: auto;
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .supplier-modal-head {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        background: linear-gradient(135deg, #0f3d2e, #17563d);
+        color: #fff;
+    }
+
+    .supplier-modal-head h3 {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .supplier-modal-body {
+        padding: 22px;
+    }
+
+    .supplier-section {
+        margin-bottom: 18px;
+        padding: 16px;
+        border: 1px solid #e5eaf0;
+        border-radius: 14px;
+        background: #fbfdff;
+    }
+
+    .supplier-section h4 {
+        margin: 0 0 14px;
+        font-size: 14px;
+        color: #163c2a;
+    }
+
+    .supplier-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 18px;
+    }
+
+    .supplier-table td,
+    .supplier-table th {
+        vertical-align: top;
+        white-space: nowrap;
+    }
+
+    .supplier-table {
+        min-width: max-content;
+        width: 100%;
+        table-layout: auto;
+        border-collapse: collapse;
+    }
+
+    .supplier-table thead {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .supplier-table thead th {
+        background: linear-gradient(135deg, #0f3d2e, #17563d);
+        color: #ffffff;
+        text-align: center;
+        padding: 12px 10px;
+        white-space: nowrap;
+        position: sticky;
+        top: 0;
+    }
+
+    .supplier-table thead tr:first-child th {
+        font-size: 14px;
+        border-bottom: 2px solid #0b2f23;
+    }
+
+    .supplier-table thead tr:nth-child(2) th {
+        background: #004629;
+        font-size: 13px;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 68vh;
+    }
+
+    .truncate {
+        max-width: none;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: nowrap;
+    }
+
+    .truncate-wide {
+        max-width: none;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: nowrap;
+    }
+
+    .table-count {
+        font-size: 13px;
+        color: var(--muted);
+        margin-top: 8px;
+        text-align: center;
+        width: 100%;
+    }
+
+    .pagination .btn-light {
+        background: #e5e7eb;
+        color: #111827;
+        border: 1px solid #fafafa;
+    }
+
+    .pagination .btn-light:hover {
+        background: #d1d5db;
+        color: #111827;
+    }
+
+    .pagination .btn-primary {
+        background: #374151;
+        color: #ffffff;
+        border: 1px solid #374151;
+    }
+
+    .pagination .btn-primary:hover {
+        background: #111827;
+        border-color: #111827;
+    }
+
+    @media (max-width: 900px) {
+        .supplier-grid,
+        .supplier-grid-3 {
+            grid-template-columns: 1fr;
+        }
+        .supplier-table thead tr:first-child th:nth-child(1),
+        .supplier-table tbody td:nth-child(1) {
+            display: none;
+        }
+    }
+
+    .dropdown-action {
+        position: relative;
+        display: inline-block;
+    }
+
+    .action-dropdown-menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background: #fff;
+        min-width: 200px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        z-index: 9999;
+    }
+
+    .action-dropdown-menu button,
+    .action-dropdown-menu a {
+        width: 100%;
+        padding: 10px 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        text-decoration: none;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 14px;
+        color: #111827;
+    }
+
+    .action-dropdown-menu button:hover,
+    .action-dropdown-menu a:hover {
+        background: #f3f4f6;
+    }
+
+    .inline-editable-remark {
+        cursor: pointer;
+        border-bottom: 1px dashed #bbb;
+        padding: 2px 4px;
+        border-radius: 4px;
+        display: inline-block;
+        transition: all 0.2s ease;
+    }
+
+    .inline-editable-remark:hover {
+        background-color: #f3f4f6;
+        border-bottom-color: var(--brand);
+    }
+
+    .remark-select-inline,
+    .remark-input-inline {
+        padding: 4px 8px;
+        border: 1px solid var(--brand);
+        border-radius: 6px;
+        font-size: 13px;
+        background: #fff;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(47, 128, 237, 0.15);
+    }
+
+    .remark-input-inline {
+        width: 100%;
+        box-sizing: border-box;
+    }
+</style>
+
+<div class="page-header">
+    <h2><i class="fas fa-building"></i> Registry Management</h2>
+    <div class="supplier-toolbar">
+        <form method="get" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select name="period" onchange="this.form.submit()"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:220px;">
+
+                <option value="all" {% if period_type == 'all' or not period_type %}selected{% endif %}>
+                    All Records
+                </option>
+
+                <optgroup label="Dates">
+                    {% for dt in supplier_dates %}
+                    {% with dt_str=dt|date:"Y-m-d" %}
+                    <option value="date|{{ dt_str }}" {% if period_type == 'date' and period_value == dt_str %}selected{% endif %}>
+                        {{ dt|date:'M d, Y' }}
+                    </option>
+                    {% endwith %}
+                    {% endfor %}
+                </optgroup>
+
+                <optgroup label="Months">
+                    {% for mt in supplier_months %}
+                    {% with mt_str=mt|date:"Y-m" %}
+                    <option value="month|{{ mt_str }}" {% if period_type == 'month' and period_value == mt_str %}selected{% endif %}>
+                        {{ mt|date:'F Y' }}
+                    </option>
+                    {% endwith %}
+                    {% endfor %}
+                </optgroup>
+            </select>
+
+            <select id="orSourceFilter" onchange="filterORSource()"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:180px;">
+                <option value="all">All OR Sources</option>
+                <option value="old">Old</option>
+                <option value="new">New</option>
+            </select>
+
+            <input type="text" id="supplierSearch" onkeyup="searchSuppliers()"
+                placeholder="Search Payee or OR Number..."
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:220px;">
+        </form>
+
+
+        <div class="dropdown-action">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleActionDropdown()">
+                <i class="fas fa-bars"></i> Actions
+            </button>
+
+            <div id="actionDropdown" class="action-dropdown-menu">
+<!--                <a href="{% url 'registry' %}">
+                    <i class="fas fa-table"></i> Registry
+                </a>-->
+
+                {% if is_admin %}
+                <a href="{% url 'export_suppliers' %}?format=excel">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </a>
+
+                <a href="{% url 'export_suppliers' %}?format=csv">
+                    <i class="fas fa-file-csv"></i> Export CSV
+                </a>
+                {% endif %}
+
+                <button type="button" onclick="openSupplierModal('create')">
+                    <i class="fas fa-plus"></i> Add Supplier
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="table-wrap">
+        <table class="supplier-table">
+            <thead>
+                <!-- TOP GROUP HEADER -->
+                <tr>
+                    <th rowspan="2">#</th>
+
+                    <!-- CHECK GROUP -->
+                    <th colspan="2">Check</th>
+
+                    <th rowspan="2">Payee</th>                    
+                    <th rowspan="2">DV/Payroll No.</th>
+                    <th rowspan="2">ORS/BURS No.</th>
+                    <th rowspan="2">Responsibility code Center</th>
+                    <th rowspan="2">UACS Object Code</th>
+                    <th rowspan="2">Account Title</th>
+
+
+                    <th rowspan="2">Nature of Payments</th>
+
+                    <th rowspan="2">Gross Amount</th>
+                    <th rowspan="2">Professional Tax</th>
+
+                    <!-- TAX GROUP -->
+                    <th colspan="2">Tax</th>
+
+                    <th rowspan="2">Net Amount</th>
+                    <th rowspan="2">Other Deductions</th>
+                    <th rowspan="2">Fund Cluster</th>
+                    <th rowspan="2">Remarks</th>
+                    <th rowspan="2">Status</th>
+                    <th rowspan="2">Actions</th>
+                </tr>
+
+                <!-- SECOND HEADER ROW -->
+                <tr>
+                    <!-- CHECK SUBHEADERS -->
+                    <th>Serial No.</th>
+                    <th>Check Date</th>
+
+
+                    <!-- TAX SUBHEADERS -->
+                    <th>Tax 1</th>
+                    <th>Tax 2</th>
+                </tr>
+            </thead>
+            <tbody id="supplierTableBody">
+                {% for sup in supplier_list %}
+                <tr data-or-source="{% if sup.is_old_or %}old{% else %}new{% endif %}">
+                    <td style="color:var(--muted);">{{ sup.display_number|default:forloop.revcounter }}</td>
+                    <td>{{ sup.mr_or|default:"—" }}</td>
+                    <td>{% if sup.display_date_text %}{{ sup.display_date_text }}{% else %}{{ sup.date|date:"M d,
+                        Y"|default:"—" }}{% endif %}</td>
+                    <!--                    <td>
+                        {% if sup.or_number %}
+                        {% if sup.is_old_or %}<span class="badge badge-inactive" style="margin-right:3px;">Old</span>{% endif %}
+                        {{ sup.or_number }}
+                        {% else %}
+                        {{ sup.account_number|default:"—" }}
+                        {% endif %}
+                    </td>-->
+                    <!--                    <td>{{ sup.series_day|default:" — " }}</td>-->
+                    <td><strong>{{ sup.account_name }}</strong></td>
+
+                    <td>{{ sup.dv_payroll|default:" " }}</td>
+                    <td>{{ sup.ors_burs|default:" " }}</td>
+                    <td>{{ sup.responsibility_center|default:" " }}</td>
+                    <td>{{ sup.uacs|default:" " }}</td>
+                    <td>{{ sup.account_title|default:" " }}</td>
+                    <td class="truncate-wide" title="{{ sup.nature_of_collections|default:'' }}">{{ sup.nature_of_collections|default:" " }}</td>
+                    <td>{% if sup.gross_amount and sup.gross_amount != '0.00' %}<strong>₱ {{ sup.gross_amount|intcomma }}</strong>{% else %} {% endif %}</td>
+                    <td>{% if sup.professional_tax and sup.professional_tax != '0.00' %}₱ {{ sup.professional_tax|intcomma }}{% else %} {% endif %}</td>
+                    <td>{% if sup.tax_5 and sup.tax_5 != '0.00' %}₱ {{ sup.tax_5|intcomma }}{% else %} {% endif %}</td>
+                    <td>{% if sup.tax_2 and sup.tax_2 != '0.00' %}₱ {{ sup.tax_2|intcomma }}{% else %} {% endif %}</td>
+                    <td>{% if sup.amount %}₱ {{ sup.amount|floatformat:2|intcomma }}{% else %} {% endif %}</td>
+                    <td>{{ sup.other_deductions|default:"0" }}</td>
+
+                    <td>{{ sup.fund_cluster_label|default:"0" }}</td>
+                    <td class="remark-cell" data-supplier-id="{{ sup.pk }}"
+                        data-current-remark="{{ sup.remarks|default:'' }}">
+                        <span class="remark-text inline-editable-remark" title="Click to change remark">
+                            {{ sup.remarks|default:"Add Remarks!" }}
+                        </span>
+                    </td>
+                    <td><span class="badge badge-{{ sup.status }}">{{ sup.get_status_display }}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" onclick="openSupplierModal('edit', this)"
+                            data-id="{{ sup.pk }}" data-mr-or="{{ sup.mr_or|escape }}" data-mr="{{ sup.mr|escape }}"
+                            data-code-or="{{ sup.code_or|escape }}" data-code-or2="{{ sup.code_or2|escape }}"
+                            data-series-month="{{ sup.series_month|escape }}" data-date="{{ sup.date|date:'Y-m-d' }}"
+                            data-or-number="{{ sup.or_number|escape }}" data-series-day="{{ sup.series_day|escape }}"
+                            data-payee="{{ sup.account_name|escape }}" data-code-line="{{ sup.code_line|escape }}"
+                            data-line="{{ sup.line|escape }}" data-code-noc="{{ sup.code_noc|escape }}"
+                            data-nature-of-collections="{{ sup.nature_of_collections|escape }}"
+                            data-amount="{{ sup.amount|default_if_none:'0.00' }}"
+                            data-dv-payroll="{{ sup.dv_payroll|escape }}" data-ors-burs="{{ sup.ors_burs|escape }}"
+                            data-responsibility-center="{{ sup.responsibility_center|escape }}"
+                            data-uacs="{{ sup.uacs|escape }}"
+                            data-professional-tax-rate="{{ sup.professional_tax_rate|escape }}"
+                            data-professional-tax="{{ sup.professional_tax|escape }}"
+                            data-tax5="{{ sup.tax_5|default:'0.00'|escape }}"
+                            data-tax2="{{ sup.tax_2|default:'0.00'|escape }}"
+                            data-gross-amount="{{ sup.gross_amount|escape }}" data-remarks="{{ sup.remarks|escape }}"
+                            data-address="{{ sup.address|escape }}" data-tin="{{ sup.tin|escape }}"
+                            data-status="{{ sup.status }}" data-account-title="{{ sup.account_title|escape }}"
+                            data-fund-cluster="{{ sup.fund_cluster_label|escape }}"
+                            data-fund-cluster-id="{{ sup.x_fund_cluster_id|escape }}"
+                            data-cashier-name="{{ sup.cashier_name|escape }}" data-approval="{{ sup.approval|escape }}"
+                            data-other-deductions="{{ sup.other_deductions|escape }}"
+                            data-tax1-option="{{ sup.tax_1_option|escape }}"
+                            data-tax2-option="{{ sup.tax_2_option|escape }}" data-is-vat="{{ sup.is_vat|escape }}"
+                            data-tax5-rate-vat="{{ sup.tax_5_rate_vat|escape }}"
+                            data-tax5-rate-non-vat="{{ sup.tax_5_rate_non_vat|escape }}"
+                            data-tax2-rate-vat="{{ sup.tax_2_rate_vat|escape }}"
+                            data-tax2-rate-non-vat="{{ sup.tax_2_rate_non_vat|escape }}"
+                            data-remarks-text="{{ sup.remarks_text|escape }}"><i class="fas fa-pen"></i></button>
+                        {% if 'delete' in role_permissions.permissions.suppliers %}
+                        <form method="post" style="display:inline;" onsubmit="requestDeleteConfirmation(event, this, 'Please enter your password (or an admin password) to confirm deletion of this supplier:')">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="sup_id" value="{{ sup.pk }}">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="19" style="text-align:center; padding:30px; color:var(--muted);">No suppliers yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="table-count">Showing all {{ supplier_list|length }} suppliers.</div>
+
+
+    {% include 'admin_panel/_supplier_modal.html' %}
+
+    {{ remark_options|json_script:"remark-options-data" }}
+
+    <script>
+        let editingColumnIndex = -1;
+        let autoCountResetResolver = null;
+
+        function updatePaginationStats() {
+            const search = document.getElementById("supplierSearch").value.toLowerCase().trim();
+            const orFilter = document.getElementById("orSourceFilter").value;
+            const isFiltering = (search !== "" || orFilter !== "all");
+
+            const rows = document.querySelectorAll(".supplier-table tbody tr:not(.nothing-follows-row)");
+            let visibleCount = 0;
+            const totalCount = rows.length;
+            rows.forEach(row => {
+                if (row.style.display !== "none" && row.querySelectorAll("td").length > 0) {
+                    visibleCount++;
+                }
+            });
+
+            const tableCountDiv = document.querySelector('.table-count');
+
+            if (isFiltering) {
+                if (tableCountDiv) {
+                    if (visibleCount === 0) {
+                        tableCountDiv.textContent = "No matching suppliers found.";
+                    } else if (visibleCount === totalCount) {
+                        tableCountDiv.textContent = `Showing all ${totalCount} suppliers.`;
+                    } else if (visibleCount === 1) {
+                        tableCountDiv.textContent = "Showing 1 matching supplier.";
+                    } else {
+                        tableCountDiv.textContent = `Showing ${visibleCount} of ${totalCount} suppliers.`;
+                    }
+                }
+            } else {
+                if (tableCountDiv) {
+                    tableCountDiv.textContent = `Showing all ${totalCount} suppliers.`;
+                }
+            }
+        }
+
+        function filterORSource() {
+            const filter = document.getElementById("orSourceFilter").value;
+            const rows = document.querySelectorAll(".supplier-table tbody tr");
+
+            // SAVE selection
+            localStorage.setItem("orSourceFilter", filter);
+
+            rows.forEach(row => {
+                const source = row.dataset.orSource;
+
+                if (filter === "all") {
+                    row.style.display = "";
+                }
+                else if (filter === "old" && source === "old") {
+                    row.style.display = "";
+                }
+                else if (filter === "new" && source === "new") {
+                    row.style.display = "";
+                }
+                else {
+                    row.style.display = "none";
+                }
+            });
+            updatePaginationStats();
+        }
+
+        function searchSuppliers() {
+            const search = document.getElementById("supplierSearch").value.toLowerCase().trim();
+            const rows = document.querySelectorAll(".supplier-table tbody tr");
+
+            rows.forEach(row => {
+
+                // skip empty/summary rows safely
+                if (!row.querySelectorAll("td").length) {
+                    row.style.display = "";
+                    return;
+                }
+
+                const text = row.innerText.toLowerCase();
+
+                const match = search === "" || text.includes(search);
+
+                row.style.display = match ? "" : "none";
+            });
+            updatePaginationStats();
+        }
+
+        function toggleActionDropdown() {
+            const menu = document.getElementById("actionDropdown");
+            menu.style.display = menu.style.display === "block" ? "none" : "block";
+        }
+
+        // close when clicking outside
+        document.addEventListener("click", function (e) {
+            const dropdown = document.querySelector(".dropdown-action");
+            if (!dropdown.contains(e.target)) {
+                document.getElementById("actionDropdown").style.display = "none";
+            }
+        });
+
+
+
+        // RESTORE ON PAGE LOAD
+        document.addEventListener("DOMContentLoaded", function () {
+            const savedFilter = localStorage.getItem("orSourceFilter") || "all";
+            const dropdown = document.getElementById("orSourceFilter");
+
+            if (dropdown) {
+                dropdown.value = savedFilter;
+            }
+
+            const rows = document.querySelectorAll(".supplier-table tbody tr");
+
+            rows.forEach(row => {
+                const source = row.dataset.orSource;
+
+                if (savedFilter === "all") {
+                    row.style.display = "";
+                }
+                else if (savedFilter === "old" && source === "old") {
+                    row.style.display = "";
+                }
+                else if (savedFilter === "new" && source === "new") {
+                    row.style.display = "";
+                }
+                else {
+                    row.style.display = "none";
+                }
+            });
+            updatePaginationStats();
+
+            // INLINE EDITABLE REMARKS DROPDOWN
+            const remarkOptionsData = document.getElementById('remark-options-data');
+            const remarkOptions = remarkOptionsData ? JSON.parse(remarkOptionsData.textContent || '[]') : [];
+
+            function getCsrfToken() {
+                const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+                return match ? decodeURIComponent(match[1]) : '';
+            }
+
+            document.querySelectorAll('.remark-cell').forEach(cell => {
+                const textSpan = cell.querySelector('.remark-text');
+                if (!textSpan) return;
+
+                textSpan.addEventListener('click', function (e) {
+                    e.stopPropagation();
+
+                    if (cell.classList.contains('editing')) return;
+                    cell.classList.add('editing');
+
+                    const currentVal = cell.dataset.currentRemark || '';
+                    const supplierId = cell.dataset.supplierId;
+
+                    // Create datalist dynamically
+                    const datalist = document.createElement('datalist');
+                    datalist.id = `datalist-${supplierId}`;
+
+                    // Add predefined options
+                    remarkOptions.forEach(opt => {
+                        const optElem = document.createElement('option');
+                        optElem.value = opt;
+                        datalist.appendChild(optElem);
+                    });
+
+                    // Create text input
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'remark-input-inline';
+                    input.setAttribute('list', datalist.id);
+                    input.placeholder = 'Type or select remark...';
+                    input.value = currentVal;
+
+                    textSpan.style.display = 'none';
+                    cell.appendChild(datalist);
+                    cell.appendChild(input);
+                    input.focus();
+
+                    // To avoid double execution (e.g. keydown + blur firing in sequence)
+                    let isSaved = false;
+
+                    const saveChanges = async () => {
+                        if (isSaved) return;
+                        const newVal = input.value.trim();
+
+                        if (newVal === currentVal) {
+                            cleanup();
+                            return;
+                        }
+
+                        isSaved = true;
+                        try {
+                            input.disabled = true;
+                            const formData = new FormData();
+                            formData.append('remarks', newVal);
+
+                            const response = await fetch(`/suppliers/${supplierId}/update-remark/`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRFToken': getCsrfToken()
+                                },
+                                body: formData
+                            });
+
+                            const resData = await response.json();
+                            if (response.ok && resData.ok) {
+                                cell.dataset.currentRemark = newVal;
+                                textSpan.textContent = newVal || '—';
+                                cell.style.backgroundColor = '#ecfdf5';
+                                setTimeout(() => { cell.style.backgroundColor = ''; }, 500);
+                            } else {
+                                showToast('error', 'Update Failed', resData.error || 'Failed to update remark.');
+                            }
+                        } catch (err) {
+                            console.error('Error saving remark:', err);
+                            showToast('error', 'Network Error', 'Could not save remark. Check your connection.');
+                        } finally {
+                            cleanup();
+                        }
+                    };
+
+                    const cleanup = () => {
+                        input.remove();
+                        datalist.remove();
+                        textSpan.style.display = 'inline-block';
+                        cell.classList.remove('editing');
+                    };
+
+                    // Save on Enter, revert on Escape
+                    input.addEventListener('keydown', function (evt) {
+                        if (evt.key === 'Enter') {
+                            saveChanges();
+                        } else if (evt.key === 'Escape') {
+                            cleanup();
+                        }
+                    });
+
+                    // Save on blur
+                    input.addEventListener('blur', function () {
+                        setTimeout(() => {
+                            saveChanges();
+                        }, 180); // Small timeout to allow option selection clicking
+                    });
+                });
+            });
+        });
+
+
+    </script>
+
+    <!-- Deletion Password Confirmation Modal -->
+    <div id="deleteConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+        <div style="background: white; border-radius: 12px; padding: 24px; width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid var(--line); color: var(--ink);">
+            <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> Confirm Deletion
+            </h3>
+            <p id="deleteConfirmPromptText" style="font-size: 14px; margin-bottom: 16px; color: var(--muted);"></p>
+            <div style="margin-bottom: 16px;">
+                <input type="password" id="deleteConfirmPassword" placeholder="Enter password to confirm" style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; outline: none;">
+                <div id="deleteConfirmError" style="color: var(--danger); font-size: 12px; margin-top: 4px; display: none;">Password is required.</div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="submitDeleteConfirm()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let pendingDeleteForm = null;
+
+        function requestDeleteConfirmation(event, form, promptText) {
+            event.preventDefault();
+            pendingDeleteForm = form;
+            document.getElementById('deleteConfirmPromptText').textContent = promptText;
+            document.getElementById('deleteConfirmPassword').value = '';
+            document.getElementById('deleteConfirmError').style.display = 'none';
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('deleteConfirmPassword').focus(), 80);
+        }
+
+        function closeDeleteConfirmModal() {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            pendingDeleteForm = null;
+        }
+
+        function submitDeleteConfirm() {
+            const password = document.getElementById('deleteConfirmPassword').value;
+            if (!password) {
+                const err = document.getElementById('deleteConfirmError');
+                err.textContent = "Password is required.";
+                err.style.display = 'block';
+                return;
+            }
+            
+            let pwdField = pendingDeleteForm.querySelector('input[name="password"]');
+            if (!pwdField) {
+                pwdField = document.createElement('input');
+                pwdField.type = 'hidden';
+                pwdField.name = 'password';
+                pendingDeleteForm.appendChild(pwdField);
+            }
+            pwdField.value = password;
+            
+            pendingDeleteForm.submit();
+        }
+
+        document.getElementById('deleteConfirmPassword').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitDeleteConfirm();
+            }
+        });
+    </script>
+    {% endblock %}

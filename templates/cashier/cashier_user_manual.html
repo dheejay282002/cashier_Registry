@@ -1,0 +1,3147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cashier User Manual{% endblock %}
+
+{% block content %}
+<div class="manual-modal-overlay">
+<div class="manual-modal-container">
+<div class="manual-modal-topbar">
+    <span><i class="fas fa-book-open" style="margin-right:8px;"></i>Cashier User Manual</span>
+    <a href="{% url 'cashier_dashboard' %}" class="manual-modal-close" title="Close"><i class="fas fa-xmark"></i></a>
+</div>
+<style>
+    :root {
+        --primary: #1a3a2e;
+        --accent: #3b82f6;
+        --accent-light: #dbeafe;
+        --green: #16a34a;
+        --green-light: #dcfce7;
+        --orange: #d97706;
+        --orange-light: #fef3c7;
+        --red: #dc2626;
+        --red-light: #fee2e2;
+        --blue: #2563eb;
+        --blue-light: #dbeafe;
+        --purple: #7c3aed;
+        --purple-light: #ede9fe;
+        --teal: #0d9488;
+        --teal-light: #ccfbf1;
+    }
+
+    .manual-layout {
+        display: flex;
+        gap: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .toc-sidebar {
+        width: 260px;
+        flex-shrink: 0;
+        position: sticky;
+        top: 80px;
+        height: calc(100vh - 100px);
+        overflow-y: auto;
+        background: var(--card);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        padding: 20px 0;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    }
+
+    .toc-sidebar::-webkit-scrollbar { width: 4px; }
+    .toc-sidebar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+
+    .toc-header {
+        padding: 0 18px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .toc-header i { color: var(--accent); }
+
+    .toc-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 18px;
+        font-size: 13px;
+        color: var(--ink);
+        text-decoration: none;
+        transition: all 0.15s ease;
+        border-left: 3px solid transparent;
+        cursor: pointer;
+    }
+
+    .toc-item:hover {
+        background: #f1f5f9;
+        color: var(--accent);
+        border-left-color: var(--accent);
+    }
+
+    .toc-item i {
+        width: 18px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--muted);
+        flex-shrink: 0;
+    }
+
+    .toc-item:hover i { color: var(--accent); }
+
+    .toc-divider {
+        height: 1px;
+        background: var(--line);
+        margin: 6px 18px;
+    }
+
+    .toc-label {
+        padding: 10px 18px 4px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        opacity: 0.7;
+    }
+
+    .manual-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .manual-hero {
+        background: linear-gradient(135deg, #0e2d0a 0%, #1a5c2f 50%, #0e2d0a 100%);
+        border-radius: 18px;
+        padding: 48px 40px;
+        color: white;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .manual-hero::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        right: -60px;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: rgba(59, 130, 246, 0.15);
+    }
+
+    .manual-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -40px;
+        left: 30%;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .manual-hero h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .manual-hero p {
+        font-size: 15px;
+        opacity: 0.8;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+        max-width: 600px;
+        line-height: 1.6;
+    }
+
+    .manual-hero .hero-icon {
+        position: absolute;
+        right: 40px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 80px;
+        opacity: 0.12;
+        z-index: 0;
+    }
+
+    .manual-hero .version-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,0.15);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 14px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .permissions-banner {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .permissions-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+        background: #d97706;
+    }
+
+    .permissions-banner .banner-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #d97706, #b45309);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .permissions-banner .banner-content { flex: 1; }
+
+    .permissions-banner h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #92400e;
+        margin: 0 0 6px;
+    }
+
+    .permissions-banner p {
+        font-size: 13px;
+        color: #a16207;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .permissions-banner .permission-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .permission-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .permission-pill.can {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .permission-pill.cannot {
+        background: #fee2e2;
+        color: #991b1b;
+        text-decoration: line-through;
+    }
+
+    .manual-section {
+        background: var(--card);
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 18px 22px;
+        background: #f8fafc;
+        border-bottom: 1px solid var(--line);
+        cursor: pointer;
+        transition: background 0.15s;
+        user-select: none;
+    }
+
+    .section-header:hover { background: #f1f5f9; }
+
+    .section-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .section-icon.green { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .section-icon.blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+    .section-icon.orange { background: linear-gradient(135deg, #d97706, #b45309); }
+    .section-icon.red { background: linear-gradient(135deg, #dc2626, #b91c1c); }
+    .section-icon.purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+    .section-icon.teal { background: linear-gradient(135deg, #0d9488, #0f766e); }
+    .section-icon.indigo { background: linear-gradient(135deg, #4f46e5, #4338ca); }
+    .section-icon.pink { background: linear-gradient(135deg, #db2777, #be185d); }
+    .section-icon.cyan { background: linear-gradient(135deg, #06b6d4, #0891b2); }
+
+    .section-title-group { flex: 1; }
+
+    .section-title-group h2 {
+        font-size: 17px;
+        font-weight: 700;
+        margin: 0;
+        color: var(--ink);
+    }
+
+    .section-title-group .section-subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+    }
+
+    .section-toggle {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: white;
+        border: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: var(--muted);
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .section-header:hover .section-toggle {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .section-body {
+        padding: 24px;
+        display: none;
+    }
+
+    .section-body.open { display: block; }
+
+    .steps {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin: 16px 0;
+    }
+
+    .step {
+        display: flex;
+        gap: 14px;
+        position: relative;
+    }
+
+    .step-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .step-number.green { background: var(--green); }
+    .step-number.orange { background: var(--orange); }
+
+    .step-line {
+        width: 2px;
+        flex: 1;
+        background: #e2e8f0;
+        min-height: 16px;
+    }
+
+    .step:last-child .step-line { display: none; }
+
+    .step-content {
+        padding-bottom: 20px;
+        flex: 1;
+    }
+
+    .step-content h4 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 4px;
+        color: var(--ink);
+    }
+
+    .step-content p {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .callout {
+        display: flex;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        margin: 14px 0;
+        font-size: 13px;
+        line-height: 1.6;
+        border-left: 4px solid;
+    }
+
+    .callout-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .callout.tip {
+        background: var(--green-light);
+        border-color: var(--green);
+        color: #166534;
+    }
+
+    .callout.tip .callout-icon {
+        background: var(--green);
+        color: white;
+    }
+
+    .callout.warning {
+        background: var(--orange-light);
+        border-color: var(--orange);
+        color: #92400e;
+    }
+
+    .callout.warning .callout-icon {
+        background: var(--orange);
+        color: white;
+    }
+
+    .callout.info {
+        background: var(--blue-light);
+        border-color: var(--accent);
+        color: #1e40af;
+    }
+
+    .callout.info .callout-icon {
+        background: var(--accent);
+        color: white;
+    }
+
+    .callout.danger {
+        background: var(--red-light);
+        border-color: var(--red);
+        color: #991b1b;
+    }
+
+    .callout.danger .callout-icon {
+        background: var(--red);
+        color: white;
+    }
+
+    .callout-body { flex: 1; }
+    .callout-body strong { display: block; margin-bottom: 2px; font-size: 13px; }
+
+    .mock-card {
+        background: white;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 16px;
+        margin: 12px 0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .mock-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .mock-card-header h4 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .mock-stat {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .mock-stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .mock-stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .mock-stat-label {
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .mock-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin: 12px 0;
+    }
+
+    .mock-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+
+    .mock-btn.primary { background: var(--primary); }
+    .mock-btn.accent { background: var(--accent); }
+    .mock-btn.success { background: var(--green); }
+    .mock-btn.warning { background: var(--orange); }
+    .mock-btn.danger { background: var(--red); }
+    .mock-btn.secondary { background: #6b7280; }
+
+    .mock-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        margin: 12px 0;
+    }
+
+    .mock-table th {
+        background: #f8fafc;
+        padding: 8px 12px;
+        text-align: left;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+        border-bottom: 2px solid var(--line);
+    }
+
+    .mock-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .mock-table tr:hover td { background: #f9fafb; }
+
+    .mock-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .mock-badge.green { background: #dcfce7; color: #166534; }
+    .mock-badge.orange { background: #fef3c7; color: #92400e; }
+    .mock-badge.red { background: #fee2e2; color: #991b1b; }
+    .mock-badge.blue { background: #dbeafe; color: #1e40af; }
+    .mock-badge.gray { background: #f3f4f6; color: #374151; }
+
+    .mock-input {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--ink);
+        background: white;
+        margin: 6px 0;
+    }
+
+    .mock-form-group {
+        margin-bottom: 14px;
+    }
+
+    .mock-form-group label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 4px;
+    }
+
+    .mock-select {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 13px;
+        background: white;
+        margin: 6px 0;
+    }
+
+    .flow-diagram {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        margin: 16px 0;
+        flex-wrap: wrap;
+        padding: 16px;
+        background: #f8fafc;
+        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .flow-node {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 12px 16px;
+        background: white;
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        min-width: 100px;
+        text-align: center;
+        position: relative;
+    }
+
+    .flow-node.active {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .flow-node.success {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px var(--green-light);
+    }
+
+    .flow-node.warning {
+        border-color: var(--orange);
+        box-shadow: 0 0 0 3px var(--orange-light);
+    }
+
+    .flow-node.readonly {
+        border-color: #94a3b8;
+        box-shadow: 0 0 0 3px #f1f5f9;
+    }
+
+    .flow-node i {
+        font-size: 20px;
+        color: var(--accent);
+    }
+
+    .flow-node.success i { color: var(--green); }
+    .flow-node.warning i { color: var(--orange); }
+    .flow-node.readonly i { color: #94a3b8; }
+
+    .flow-node span {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .flow-arrow {
+        font-size: 18px;
+        color: #94a3b8;
+        padding: 0 8px;
+        flex-shrink: 0;
+    }
+
+    .mock-nav {
+        background: var(--primary);
+        border-radius: 10px;
+        padding: 12px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        max-width: 200px;
+    }
+
+    .mock-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: rgba(255,255,255,0.7);
+        font-weight: 500;
+    }
+
+    .mock-nav-item.active {
+        background: rgba(255,255,255,0.15);
+        color: white;
+    }
+
+    .mock-nav-item i {
+        width: 16px;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    .sub-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        margin: 18px 0 10px;
+        padding-bottom: 6px;
+        border-bottom: 2px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .sub-title i {
+        color: var(--accent);
+        font-size: 14px;
+    }
+
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .tag.green { background: #dcfce7; color: #166534; }
+    .tag.blue { background: #dbeafe; color: #1e40af; }
+    .tag.orange { background: #fef3c7; color: #92400e; }
+
+    .print-fab {
+        position: fixed;
+        bottom: 28px;
+        left: 28px;
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary), #17563d);
+        color: white;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        box-shadow: 0 4px 20px rgba(26, 58, 46, 0.35);
+        z-index: 9000;
+        transition: all 0.3s;
+    }
+
+    .print-fab:hover {
+        transform: scale(1.08);
+        box-shadow: 0 6px 28px rgba(26, 58, 46, 0.45);
+    }
+
+    .readonly-overlay {
+        position: relative;
+    }
+
+    .readonly-overlay::after {
+        content: 'VIEW ONLY';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(148, 163, 184, 0.85);
+        color: white;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+    }
+
+    .permission-comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin: 14px 0;
+    }
+
+    .permission-card {
+        border-radius: 10px;
+        padding: 16px;
+        border: 2px solid;
+    }
+
+    .permission-card.allowed {
+        background: #f0fdf4;
+        border-color: #86efac;
+    }
+
+    .permission-card.denied {
+        background: #fef2f2;
+        border-color: #fca5a5;
+    }
+
+    .permission-card h5 {
+        font-size: 13px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .permission-card.allowed h5 { color: #166534; }
+    .permission-card.denied h5 { color: #991b1b; }
+
+    .permission-card ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .permission-card li {
+        font-size: 12px;
+        color: #475569;
+        padding: 3px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .permission-card.allowed li i { color: #16a34a; }
+    .permission-card.denied li i { color: #dc2626; }
+
+    .search-mock {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin: 10px 0;
+    }
+
+    .search-mock i {
+        color: #94a3b8;
+        font-size: 14px;
+    }
+
+    .search-mock input {
+        flex: 1;
+        border: none;
+        background: none;
+        font-size: 13px;
+        color: var(--ink);
+        outline: none;
+    }
+
+    .filter-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 10px 0;
+    }
+
+    .filter-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        background: white;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+        cursor: pointer;
+    }
+
+    .filter-chip.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+
+    @media print {
+        .toc-sidebar,
+        .print-fab,
+        .mini-sidebar,
+        .navbar,
+        .header-line,
+        .chatbot-fab,
+        #chatbotWindow,
+        .overlay {
+            display: none !important;
+        }
+
+        .manual-layout {
+            display: block;
+        }
+
+        .manual-content {
+            width: 100%;
+        }
+
+        .manual-hero {
+            background: #1a3a2e !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .permissions-banner {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .section-body {
+            display: block !important;
+        }
+
+        .section-toggle {
+            display: none;
+        }
+
+        .section-header {
+            background: #f8fafc !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .content {
+            margin-left: 0 !important;
+            padding: 0 !important;
+        }
+
+        .step-number,
+        .section-icon,
+        .callout-icon,
+        .mock-stat-icon,
+        .flow-node i {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .callout.tip,
+        .callout.warning,
+        .callout.info,
+        .callout.danger {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .mock-btn,
+        .mock-badge,
+        .tag,
+        .mock-nav,
+        .permission-pills,
+        .permission-pill {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        body {
+            font-size: 11pt;
+        }
+
+        h2, h3, h4 {
+            page-break-after: avoid;
+        }
+
+        .mock-card,
+        .mock-table,
+        .callout,
+        .flow-diagram {
+            page-break-inside: avoid;
+        }
+    }
+
+    @media (max-width: 1024px) {
+        .toc-sidebar { display: none; }
+        .manual-layout { display: block; }
+    }
+
+    @media (max-width: 768px) {
+        .manual-hero { padding: 28px 20px; }
+        .manual-hero h1 { font-size: 22px; }
+        .manual-hero .hero-icon { display: none; }
+        .section-body { padding: 16px; }
+        .flow-diagram { flex-direction: column; }
+        .flow-arrow { transform: rotate(90deg); }
+        .mock-stats-grid { grid-template-columns: 1fr; }
+        .permission-comparison { grid-template-columns: 1fr; }
+    }
+
+    /* ── DARK MODE ── */
+    html[data-theme="dark"] .manual-modal-overlay,
+    html.dark-mode .manual-modal-overlay,
+    body.a11y-dark-mode .manual-modal-overlay {
+        background: rgba(0, 0, 0, 0.7);
+    }
+
+    html[data-theme="dark"] .manual-modal-container,
+    html.dark-mode .manual-modal-container,
+    body.a11y-dark-mode .manual-modal-container {
+        background: #0a0a0a;
+        color: #e2e8f0;
+    }
+
+    html[data-theme="dark"] .manual-modal-topbar,
+    html.dark-mode .manual-modal-topbar,
+    body.a11y-dark-mode .manual-modal-topbar {
+        background: #111;
+        color: #f8fafc;
+        border-bottom: 1px solid #222;
+    }
+
+    html[data-theme="dark"] .toc-sidebar,
+    html.dark-mode .toc-sidebar,
+    body.a11y-dark-mode .toc-sidebar {
+        background: #111;
+        border-color: #222;
+    }
+
+    html[data-theme="dark"] .toc-header,
+    html.dark-mode .toc-header,
+    body.a11y-dark-mode .toc-header {
+        color: #94a3b8;
+        border-bottom-color: #222;
+    }
+
+    html[data-theme="dark"] .toc-item,
+    html.dark-mode .toc-item,
+    body.a11y-dark-mode .toc-item {
+        color: #cbd5e1;
+    }
+
+    html[data-theme="dark"] .toc-item:hover,
+    html.dark-mode .toc-item:hover,
+    body.a11y-dark-mode .toc-item:hover {
+        background: #1a1a2e;
+        color: #60a5fa;
+    }
+
+    html[data-theme="dark"] .toc-item i,
+    html.dark-mode .toc-item i,
+    body.a11y-dark-mode .toc-item i {
+        color: #64748b;
+    }
+
+    html[data-theme="dark"] .manual-hero,
+    html.dark-mode .manual-hero,
+    body.a11y-dark-mode .manual-hero {
+        background: linear-gradient(135deg, #0f3d2e, #17563d);
+    }
+
+    html[data-theme="dark"] .manual-hero h1,
+    html.dark-mode .manual-hero h1,
+    body.a11y-dark-mode .manual-hero h1 {
+        color: #f8fafc;
+    }
+
+    html[data-theme="dark"] .manual-hero p,
+    html.dark-mode .manual-hero p,
+    body.a11y-dark-mode .manual-hero p {
+        color: #94a3b8;
+    }
+
+    html[data-theme="dark"] .section-card,
+    html.dark-mode .section-card,
+    body.a11y-dark-mode .section-card {
+        background: #111;
+        border-color: #222;
+        color: #e2e8f0;
+    }
+
+    html[data-theme="dark"] .section-head,
+    html.dark-mode .section-head,
+    body.a11y-dark-mode .section-head {
+        background: #1a1a2e;
+        border-bottom-color: #222;
+        color: #f8fafc;
+    }
+
+    html[data-theme="dark"] .section-head h2,
+    html.dark-mode .section-head h2,
+    body.a11y-dark-mode .section-head h2 {
+        color: #f8fafc;
+    }
+
+    html[data-theme="dark"] .section-body,
+    html.dark-mode .section-body,
+    body.a11y-dark-mode .section-body {
+        color: #cbd5e1;
+    }
+
+    html[data-theme="dark"] h3,
+    html.dark-mode h3,
+    body.a11y-dark-mode h3 {
+        color: #f1f5f9;
+    }
+
+    html[data-theme="dark"] .callout.tip,
+    html.dark-mode .callout.tip,
+    body.a11y-dark-mode .callout.tip {
+        background: rgba(22, 163, 74, 0.15);
+        border-color: #16a34a;
+        color: #86efac;
+    }
+
+    html[data-theme="dark"] .callout.warning,
+    html.dark-mode .callout.warning,
+    body.a11y-dark-mode .callout.warning {
+        background: rgba(217, 119, 6, 0.15);
+        border-color: #d97706;
+        color: #fcd34d;
+    }
+
+    html[data-theme="dark"] .callout.info,
+    html.dark-mode .callout.info,
+    body.a11y-dark-mode .callout.info {
+        background: rgba(37, 99, 235, 0.15);
+        border-color: #2563eb;
+        color: #93c5fd;
+    }
+
+    html[data-theme="dark"] .callout.danger,
+    html.dark-mode .callout.danger,
+    body.a11y-dark-mode .callout.danger {
+        background: rgba(220, 38, 38, 0.15);
+        border-color: #dc2626;
+        color: #fca5a5;
+    }
+
+    html[data-theme="dark"] .mock-card,
+    html.dark-mode .mock-card,
+    body.a11y-dark-mode .mock-card {
+        background: #1a1a2e;
+        border-color: #222;
+        color: #e2e8f0;
+    }
+
+    html[data-theme="dark"] .mock-table,
+    html.dark-mode .mock-table,
+    body.a11y-dark-mode .mock-table {
+        background: #111;
+        border-color: #222;
+    }
+
+    html[data-theme="dark"] .mock-table th,
+    html.dark-mode .mock-table th,
+    body.a11y-dark-mode .mock-table th {
+        background: #1a1a2e;
+        color: #94a3b8;
+        border-bottom-color: #333;
+    }
+
+    html[data-theme="dark"] .mock-table td,
+    html.dark-mode .mock-table td,
+    body.a11y-dark-mode .mock-table td {
+        border-bottom-color: #222;
+        color: #cbd5e1;
+    }
+
+    html[data-theme="dark"] .mock-nav,
+    html.dark-mode .mock-nav,
+    body.a11y-dark-mode .mock-nav {
+        background: #111;
+        border-color: #222;
+    }
+
+    html[data-theme="dark"] .mock-stat-card,
+    html.dark-mode .mock-stat-card,
+    body.a11y-dark-mode .mock-stat-card {
+        background: #1a1a2e;
+        border-color: #222;
+    }
+
+    html[data-theme="dark"] .mock-stat-value,
+    html.dark-mode .mock-stat-value,
+    body.a11y-dark-mode .mock-stat-value {
+        color: #f8fafc;
+    }
+
+    html[data-theme="dark"] .mock-stat-label,
+    html.dark-mode .mock-stat-label,
+    body.a11y-dark-mode .mock-stat-label {
+        color: #94a3b8;
+    }
+
+    html[data-theme="dark"] .permission-pill,
+    html.dark-mode .permission-pill,
+    body.a11y-dark-mode .permission-pill {
+        background: #1a1a2e;
+        border-color: #333;
+        color: #cbd5e1;
+    }
+
+    html[data-theme="dark"] .tag,
+    html.dark-mode .tag,
+    body.a11y-dark-mode .tag {
+        background: #1a1a2e;
+        color: #94a3b8;
+    }
+
+    html[data-theme="dark"] .flow-node,
+    html.dark-mode .flow-node,
+    body.a11y-dark-mode .flow-node {
+        background: #1a1a2e;
+        border-color: #333;
+        color: #e2e8f0;
+    }
+
+    html[data-theme="dark"] .flow-arrow,
+    html.dark-mode .flow-arrow,
+    body.a11y-dark-mode .flow-arrow {
+        color: #64748b;
+    }
+
+    html[data-theme="dark"] code,
+    html.dark-mode code,
+    body.a11y-dark-mode code {
+        background: #1a1a2e;
+        color: #f59e0b;
+    }
+
+    html[data-theme="dark"] a,
+    html.dark-mode a,
+    body.a11y-dark-mode a {
+        color: #60a5fa;
+    }
+
+    /* Dark mode for activity feed items */
+    html[data-theme="dark"] div[style*="background: #f8fafc"],
+    html.dark-mode div[style*="background: #f8fafc"],
+    body.a11y-dark-mode div[style*="background: #f8fafc"] {
+        background: #1a1a2e !important;
+    }
+
+    html[data-theme="dark"] div[style*="background: #dcfce7"],
+    html.dark-mode div[style*="background: #dcfce7"],
+    body.a11y-dark-mode div[style*="background: #dcfce7"] {
+        background: rgba(22, 163, 74, 0.2) !important;
+    }
+
+    html[data-theme="dark"] div[style*="background: #dbeafe"],
+    html.dark-mode div[style*="background: #dbeafe"],
+    body.a11y-dark-mode div[style*="background: #dbeafe"] {
+        background: rgba(37, 99, 235, 0.2) !important;
+    }
+
+    html[data-theme="dark"] div[style*="background: #fef3c7"],
+    html.dark-mode div[style*="background: #fef3c7"],
+    body.a11y-dark-mode div[style*="background: #fef3c7"] {
+        background: rgba(217, 119, 6, 0.2) !important;
+    }
+
+    html[data-theme="dark"] div[style*="color: #16a34a"],
+    html.dark-mode div[style*="color: #16a34a"],
+    body.a11y-dark-mode div[style*="color: #16a34a"] {
+        color: #86efac !important;
+    }
+
+    html[data-theme="dark"] div[style*="color: #3b82f6"],
+    html.dark-mode div[style*="color: #3b82f6"],
+    body.a11y-dark-mode div[style*="color: #3b82f6"] {
+        color: #93c5fd !important;
+    }
+
+    html[data-theme="dark"] div[style*="color: #d97706"],
+    html.dark-mode div[style*="color: #d97706"],
+    body.a11y-dark-mode div[style*="color: #d97706"] {
+        color: #fcd34d !important;
+    }
+
+    /* Dark mode for permissions banner */
+    html[data-theme="dark"] .permissions-banner,
+    html.dark-mode .permissions-banner,
+    body.a11y-dark-mode .permissions-banner {
+        background: linear-gradient(135deg, rgba(217, 119, 6, 0.15), rgba(245, 158, 11, 0.1)) !important;
+        border-color: #d97706 !important;
+    }
+
+    html[data-theme="dark"] .permissions-banner h3,
+    html.dark-mode .permissions-banner h3,
+    body.a11y-dark-mode .permissions-banner h3 {
+        color: #fcd34d !important;
+    }
+
+    html[data-theme="dark"] .permissions-banner p,
+    html.dark-mode .permissions-banner p,
+    body.a11y-dark-mode .permissions-banner p {
+        color: #fde68a !important;
+    }
+
+    html[data-theme="dark"] .permissions-banner strong,
+    html.dark-mode .permissions-banner strong,
+    body.a11y-dark-mode .permissions-banner strong {
+        color: #fbbf24 !important;
+    }
+
+    /* Dark mode for colored info boxes */
+    html[data-theme="dark"] div[style*="background:#f0fdf4"],
+    html.dark-mode div[style*="background:#f0fdf4"],
+    body.a11y-dark-mode div[style*="background:#f0fdf4"] {
+        background: rgba(22, 163, 74, 0.15) !important;
+    }
+    html[data-theme="dark"] div[style*="color:#166534"],
+    html.dark-mode div[style*="color:#166534"],
+    body.a11y-dark-mode div[style*="color:#166534"] {
+        color: #86efac !important;
+    }
+
+    html[data-theme="dark"] div[style*="background:#fef3c7"],
+    html.dark-mode div[style*="background:#fef3c7"],
+    body.a11y-dark-mode div[style*="background:#fef3c7"] {
+        background: rgba(217, 119, 6, 0.15) !important;
+    }
+    html[data-theme="dark"] div[style*="color:#92400e"],
+    html.dark-mode div[style*="color:#92400e"],
+    body.a11y-dark-mode div[style*="color:#92400e"] {
+        color: #fcd34d !important;
+    }
+
+    html[data-theme="dark"] div[style*="background:#dbeafe"],
+    html.dark-mode div[style*="background:#dbeafe"],
+    body.a11y-dark-mode div[style*="background:#dbeafe"] {
+        background: rgba(37, 99, 235, 0.15) !important;
+    }
+    html[data-theme="dark"] div[style*="color:#1e40af"],
+    html.dark-mode div[style*="color:#1e40af"],
+    body.a11y-dark-mode div[style*="color:#1e40af"] {
+        color: #93c5fd !important;
+    }
+
+    html[data-theme="dark"] div[style*="background:#ede9fe"],
+    html.dark-mode div[style*="background:#ede9fe"],
+    body.a11y-dark-mode div[style*="background:#ede9fe"] {
+        background: rgba(124, 58, 237, 0.15) !important;
+    }
+    html[data-theme="dark"] div[style*="color:#5b21b6"],
+    html.dark-mode div[style*="color:#5b21b6"],
+    body.a11y-dark-mode div[style*="color:#5b21b6"] {
+        color: #c4b5fd !important;
+    }
+
+    /* Dark mode for stat cards */
+    html[data-theme="dark"] .mock-stat-icon,
+    html.dark-mode .mock-stat-icon,
+    body.a11y-dark-mode .mock-stat-icon {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    html[data-theme="dark"] .mock-stat,
+    html.dark-mode .mock-stat,
+    body.a11y-dark-mode .mock-stat {
+        background: #1a1a2e !important;
+        border-color: #333 !important;
+    }
+
+    html[data-theme="dark"] .mock-stat-value,
+    html.dark-mode .mock-stat-value,
+    body.a11y-dark-mode .mock-stat-value {
+        color: #f8fafc !important;
+    }
+
+    html[data-theme="dark"] .mock-stat-label,
+    html.dark-mode .mock-stat-label,
+    body.a11y-dark-mode .mock-stat-label {
+        color: #94a3b8 !important;
+    }
+
+    /* Dark mode for mock-nav */
+    html[data-theme="dark"] .mock-nav-item,
+    html.dark-mode .mock-nav-item,
+    body.a11y-dark-mode .mock-nav-item {
+        color: #cbd5e1;
+    }
+
+    /* Dark mode for permission pills */
+    html[data-theme="dark"] .permission-pills,
+    html.dark-mode .permission-pills,
+    body.a11y-dark-mode .permission-pills {
+        background: #111;
+    }
+
+    html[data-theme="dark"] .permission-pill,
+    html.dark-mode .permission-pill,
+    body.a11y-dark-mode .permission-pill {
+        background: #1a1a2e;
+        border-color: #333;
+        color: #cbd5e1;
+    }
+
+    /* Dark mode for mock badges */
+    html[data-theme="dark"] .mock-badge.green,
+    html.dark-mode .mock-badge.green,
+    body.a11y-dark-mode .mock-badge.green {
+        background: rgba(22, 163, 74, 0.2);
+        color: #86efac;
+    }
+
+    html[data-theme="dark"] .mock-badge.orange,
+    html.dark-mode .mock-badge.orange,
+    body.a11y-dark-mode .mock-badge.orange {
+        background: rgba(217, 119, 6, 0.2);
+        color: #fcd34d;
+    }
+
+    html[data-theme="dark"] .mock-badge.red,
+    html.dark-mode .mock-badge.red,
+    body.a11y-dark-mode .mock-badge.red {
+        background: rgba(220, 38, 38, 0.2);
+        color: #fca5a5;
+    }
+
+    html[data-theme="dark"] .mock-badge.gray,
+    html.dark-mode .mock-badge.gray,
+    body.a11y-dark-mode .mock-badge.gray {
+        background: rgba(100, 116, 139, 0.2);
+        color: #94a3b8;
+    }
+
+    html[data-theme="dark"] .mock-badge.blue,
+    html.dark-mode .mock-badge.blue,
+    body.a11y-dark-mode .mock-badge.blue {
+        background: rgba(37, 99, 235, 0.2);
+        color: #93c5fd;
+    }
+
+    html[data-theme="dark"] .mock-badge.purple,
+    html.dark-mode .mock-badge.purple,
+    body.a11y-dark-mode .mock-badge.purple {
+        background: rgba(124, 58, 237, 0.2);
+        color: #c4b5fd;
+    }
+
+    /* Dark mode for sub-titles */
+    html[data-theme="dark"] .sub-title,
+    html.dark-mode .sub-title,
+    body.a11y-dark-mode .sub-title {
+        color: #f1f5f9;
+    }
+
+    /* Dark mode for steps */
+    html[data-theme="dark"] .step,
+    html.dark-mode .step,
+    body.a11y-dark-mode .step {
+        background: #1a1a2e;
+        border-color: #333;
+    }
+
+    html[data-theme="dark"] .step-num,
+    html.dark-mode .step-num,
+    body.a11y-dark-mode .step-num {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    html[data-theme="dark"] .step-title,
+    html.dark-mode .step-title,
+    body.a11y-dark-mode .step-title {
+        color: #f1f5f9;
+    }
+
+    /* Dark mode for feature cards */
+    html[data-theme="dark"] .feature-card,
+    html.dark-mode .feature-card,
+    body.a11y-dark-mode .feature-card {
+        background: #1a1a2e;
+        border-color: #333;
+    }
+
+    html[data-theme="dark"] .feature-card h4,
+    html.dark-mode .feature-card h4,
+    body.a11y-dark-mode .feature-card h4 {
+        color: #f1f5f9;
+    }
+
+    /* Dark mode for mock-input */
+    html[data-theme="dark"] .mock-input,
+    html.dark-mode .mock-input,
+    body.a11y-dark-mode .mock-input {
+        background: #111;
+        border-color: #333;
+        color: #e2e8f0;
+    }
+
+    /* Dark mode for search-mock and filter-chip */
+    html[data-theme="dark"] .search-mock,
+    html.dark-mode .search-mock,
+    body.a11y-dark-mode .search-mock {
+        background: #1a1a2e !important;
+        border-color: #333 !important;
+    }
+
+    html[data-theme="dark"] .search-mock i,
+    html.dark-mode .search-mock i,
+    body.a11y-dark-mode .search-mock i {
+        color: #64748b !important;
+    }
+
+    html[data-theme="dark"] .search-mock input,
+    html.dark-mode .search-mock input,
+    body.a11y-dark-mode .search-mock input {
+        color: #e2e8f0 !important;
+    }
+
+    html[data-theme="dark"] .filter-chip,
+    html.dark-mode .filter-chip,
+    body.a11y-dark-mode .filter-chip {
+        background: #1a1a2e !important;
+        border-color: #333 !important;
+        color: #94a3b8 !important;
+    }
+
+    html[data-theme="dark"] .filter-chip.active,
+    html.dark-mode .filter-chip.active,
+    body.a11y-dark-mode .filter-chip.active {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+        color: #fff !important;
+    }
+
+    html[data-theme="dark"] .filter-row,
+    html.dark-mode .filter-row,
+    body.a11y-dark-mode .filter-row {
+        background: transparent;
+    }
+
+    /* Dark mode for flow-diagram */
+    html[data-theme="dark"] .flow-diagram,
+    html.dark-mode .flow-diagram,
+    body.a11y-dark-mode .flow-diagram {
+        background: #1a1a2e !important;
+        border-color: #333 !important;
+    }
+
+    html[data-theme="dark"] .flow-node,
+    html.dark-mode .flow-node,
+    body.a11y-dark-mode .flow-node {
+        background: #111 !important;
+        border-color: #333 !important;
+    }
+
+    html[data-theme="dark"] .flow-node span,
+    html.dark-mode .flow-node span,
+    body.a11y-dark-mode .flow-node span {
+        color: #e2e8f0 !important;
+    }
+
+    /* Dark mode for step-line */
+    html[data-theme="dark"] .step-line,
+    html.dark-mode .step-line,
+    body.a11y-dark-mode .step-line {
+        background: #333 !important;
+    }
+
+    html[data-theme="dark"] .step-content h4,
+    html.dark-mode .step-content h4,
+    body.a11y-dark-mode .step-content h4 {
+        color: #f1f5f9 !important;
+    }
+
+    html[data-theme="dark"] .step-content p,
+    html.dark-mode .step-content p,
+    body.a11y-dark-mode .step-content p {
+        color: #94a3b8 !important;
+    }
+
+    html[data-theme="dark"] .step-content strong,
+    html.dark-mode .step-content strong,
+    body.a11y-dark-mode .step-content strong {
+        color: #e2e8f0 !important;
+    }
+
+    /* ══ COMPREHENSIVE DARK MODE: Override ALL inline light colors ══ */
+    html[data-theme="dark"] [style*="background: #fff"],
+    html.dark-mode [style*="background: #fff"],
+    body.a11y-dark-mode [style*="background: #fff"] { background: #111 !important; }
+
+    html[data-theme="dark"] [style*="background:#fff"],
+    html.dark-mode [style*="background:#fff"],
+    body.a11y-dark-mode [style*="background:#fff"] { background: #111 !important; }
+
+    html[data-theme="dark"] [style*="background: #f8fafc"],
+    html.dark-mode [style*="background: #f8fafc"],
+    body.a11y-dark-mode [style*="background: #f8fafc"] { background: #1a1a2e !important; }
+
+    html[data-theme="dark"] [style*="background:#f8fafc"],
+    html.dark-mode [style*="background:#f8fafc"],
+    body.a11y-dark-mode [style*="background:#f8fafc"] { background: #1a1a2e !important; }
+
+    html[data-theme="dark"] [style*="background: #f1f5f9"],
+    html.dark-mode [style*="background: #f1f5f9"],
+    body.a11y-dark-mode [style*="background: #f1f5f9"] { background: #1e293b !important; }
+
+    html[data-theme="dark"] [style*="background:#f1f5f9"],
+    html.dark-mode [style*="background:#f1f5f9"],
+    body.a11y-dark-mode [style*="background:#f1f5f9"] { background: #1e293b !important; }
+
+    html[data-theme="dark"] [style*="background: #fef3c7"],
+    html.dark-mode [style*="background: #fef3c7"],
+    body.a11y-dark-mode [style*="background: #fef3c7"] { background: rgba(217,119,6,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#fef3c7"],
+    html.dark-mode [style*="background:#fef3c7"],
+    body.a11y-dark-mode [style*="background:#fef3c7"] { background: rgba(217,119,6,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #dcfce7"],
+    html.dark-mode [style*="background: #dcfce7"],
+    body.a11y-dark-mode [style*="background: #dcfce7"] { background: rgba(22,163,74,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#dcfce7"],
+    html.dark-mode [style*="background:#dcfce7"],
+    body.a11y-dark-mode [style*="background:#dcfce7"] { background: rgba(22,163,74,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #dbeafe"],
+    html.dark-mode [style*="background: #dbeafe"],
+    body.a11y-dark-mode [style*="background: #dbeafe"] { background: rgba(37,99,235,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#dbeafe"],
+    html.dark-mode [style*="background:#dbeafe"],
+    body.a11y-dark-mode [style*="background:#dbeafe"] { background: rgba(37,99,235,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #ede9fe"],
+    html.dark-mode [style*="background: #ede9fe"],
+    body.a11y-dark-mode [style*="background: #ede9fe"] { background: rgba(124,58,237,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#ede9fe"],
+    html.dark-mode [style*="background:#ede9fe"],
+    body.a11y-dark-mode [style*="background:#ede9fe"] { background: rgba(124,58,237,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #f0fdf4"],
+    html.dark-mode [style*="background: #f0fdf4"],
+    body.a11y-dark-mode [style*="background: #f0fdf4"] { background: rgba(22,163,74,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#f0fdf4"],
+    html.dark-mode [style*="background:#f0fdf4"],
+    body.a11y-dark-mode [style*="background:#f0fdf4"] { background: rgba(22,163,74,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #ecfdf5"],
+    html.dark-mode [style*="background: #ecfdf5"],
+    body.a11y-dark-mode [style*="background: #ecfdf5"] { background: rgba(22,163,74,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#ecfdf5"],
+    html.dark-mode [style*="background:#ecfdf5"],
+    body.a11y-dark-mode [style*="background:#ecfdf5"] { background: rgba(22,163,74,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #fffbeb"],
+    html.dark-mode [style*="background: #fffbeb"],
+    body.a11y-dark-mode [style*="background: #fffbeb"] { background: rgba(245,158,11,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#fffbeb"],
+    html.dark-mode [style*="background:#fffbeb"],
+    body.a11y-dark-mode [style*="background:#fffbeb"] { background: rgba(245,158,11,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #fefce8"],
+    html.dark-mode [style*="background: #fefce8"],
+    body.a11y-dark-mode [style*="background: #fefce8"] { background: rgba(234,179,8,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#fefce8"],
+    html.dark-mode [style*="background:#fefce8"],
+    body.a11y-dark-mode [style*="background:#fefce8"] { background: rgba(234,179,8,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #fee2e2"],
+    html.dark-mode [style*="background: #fee2e2"],
+    body.a11y-dark-mode [style*="background: #fee2e2"] { background: rgba(220,38,38,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#fee2e2"],
+    html.dark-mode [style*="background:#fee2e2"],
+    body.a11y-dark-mode [style*="background:#fee2e2"] { background: rgba(220,38,38,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #e0f2fe"],
+    html.dark-mode [style*="background: #e0f2fe"],
+    body.a11y-dark-mode [style*="background: #e0f2fe"] { background: rgba(14,165,233,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#e0f2fe"],
+    html.dark-mode [style*="background:#e0f2fe"],
+    body.a11y-dark-mode [style*="background:#e0f2fe"] { background: rgba(14,165,233,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background: #f3e8ff"],
+    html.dark-mode [style*="background: #f3e8ff"],
+    body.a11y-dark-mode [style*="background: #f3e8ff"] { background: rgba(168,85,247,0.15) !important; }
+
+    html[data-theme="dark"] [style*="background:#f3e8ff"],
+    html.dark-mode [style*="background:#f3e8ff"],
+    body.a11y-dark-mode [style*="background:#f3e8ff"] { background: rgba(168,85,247,0.15) !important; }
+
+    /* Override ALL inline color styles for text in dark mode */
+    html[data-theme="dark"] [style*="color: #166534"],
+    html.dark-mode [style*="color: #166534"],
+    body.a11y-dark-mode [style*="color: #166534"] { color: #86efac !important; }
+
+    html[data-theme="dark"] [style*="color:#166534"],
+    html.dark-mode [style*="color:#166534"],
+    body.a11y-dark-mode [style*="color:#166534"] { color: #86efac !important; }
+
+    html[data-theme="dark"] [style*="color: #92400e"],
+    html.dark-mode [style*="color: #92400e"],
+    body.a11y-dark-mode [style*="color: #92400e"] { color: #fcd34d !important; }
+
+    html[data-theme="dark"] [style*="color:#92400e"],
+    html.dark-mode [style*="color:#92400e"],
+    body.a11y-dark-mode [style*="color:#92400e"] { color: #fcd34d !important; }
+
+    html[data-theme="dark"] [style*="color: #1e40af"],
+    html.dark-mode [style*="color: #1e40af"],
+    body.a11y-dark-mode [style*="color: #1e40af"] { color: #93c5fd !important; }
+
+    html[data-theme="dark"] [style*="color:#1e40af"],
+    html.dark-mode [style*="color:#1e40af"],
+    body.a11y-dark-mode [style*="color:#1e40af"] { color: #93c5fd !important; }
+
+    html[data-theme="dark"] [style*="color: #5b21b6"],
+    html.dark-mode [style*="color: #5b21b6"],
+    body.a11y-dark-mode [style*="color: #5b21b6"] { color: #c4b5fd !important; }
+
+    html[data-theme="dark"] [style*="color:#5b21b6"],
+    html.dark-mode [style*="color:#5b21b6"],
+    body.a11y-dark-mode [style*="color:#5b21b6"] { color: #c4b5fd !important; }
+
+    html[data-theme="dark"] [style*="color: #16a34a"],
+    html.dark-mode [style*="color: #16a34a"],
+    body.a11y-dark-mode [style*="color: #16a34a"] { color: #86efac !important; }
+
+    html[data-theme="dark"] [style*="color:#16a34a"],
+    html.dark-mode [style*="color:#16a34a"],
+    body.a11y-dark-mode [style*="color:#16a34a"] { color: #86efac !important; }
+
+    html[data-theme="dark"] [style*="color: #3b82f6"],
+    html.dark-mode [style*="color: #3b82f6"],
+    body.a11y-dark-mode [style*="color: #3b82f6"] { color: #93c5fd !important; }
+
+    html[data-theme="dark"] [style*="color:#3b82f6"],
+    html.dark-mode [style*="color:#3b82f6"],
+    body.a11y-dark-mode [style*="color:#3b82f6"] { color: #93c5fd !important; }
+
+    html[data-theme="dark"] [style*="color: #d97706"],
+    html.dark-mode [style*="color: #d97706"],
+    body.a11y-dark-mode [style*="color: #d97706"] { color: #fcd34d !important; }
+
+    html[data-theme="dark"] [style*="color:#d97706"],
+    html.dark-mode [style*="color:#d97706"],
+    body.a11y-dark-mode [style*="color:#d97706"] { color: #fcd34d !important; }
+
+    html[data-theme="dark"] [style*="color: #7c3aed"],
+    html.dark-mode [style*="color: #7c3aed"],
+    body.a11y-dark-mode [style*="color: #7c3aed"] { color: #c4b5fd !important; }
+
+    html[data-theme="dark"] [style*="color:#7c3aed"],
+    html.dark-mode [style*="color:#7c3aed"],
+    body.a11y-dark-mode [style*="color:#7c3aed"] { color: #c4b5fd !important; }
+
+    html[data-theme="dark"] [style*="color: #0d9488"],
+    html.dark-mode [style*="color: #0d9488"],
+    body.a11y-dark-mode [style*="color: #0d9488"] { color: #5eead4 !important; }
+
+    html[data-theme="dark"] [style*="color:#0d9488"],
+    html.dark-mode [style*="color:#0d9488"],
+    body.a11y-dark-mode [style*="color:#0d9488"] { color: #5eead4 !important; }
+
+    html[data-theme="dark"] [style*="color: #dc2626"],
+    html.dark-mode [style*="color: #dc2626"],
+    body.a11y-dark-mode [style*="color: #dc2626"] { color: #fca5a5 !important; }
+
+    html[data-theme="dark"] [style*="color:#dc2626"],
+    html.dark-mode [style*="color:#dc2626"],
+    body.a11y-dark-mode [style*="color:#dc2626"] { color: #fca5a5 !important; }
+
+    html[data-theme="dark"] [style*="color: #059669"],
+    html.dark-mode [style*="color: #059669"],
+    body.a11y-dark-mode [style*="color: #059669"] { color: #6ee7b7 !important; }
+
+    html[data-theme="dark"] [style*="color:#059669"],
+    html.dark-mode [style*="color:#059669"],
+    body.a11y-dark-mode [style*="color:#059669"] { color: #6ee7b7 !important; }
+
+    html[data-theme="dark"] [style*="color: #0369a1"],
+    html.dark-mode [style*="color: #0369a1"],
+    body.a11y-dark-mode [style*="color: #0369a1"] { color: #7dd3fc !important; }
+
+    html[data-theme="dark"] [style*="color:#0369a1"],
+    html.dark-mode [style*="color:#0369a1"],
+    body.a11y-dark-mode [style*="color:#0369a1"] { color: #7dd3fc !important; }
+
+    html[data-theme="dark"] [style*="color: #9333ea"],
+    html.dark-mode [style*="color: #9333ea"],
+    body.a11y-dark-mode [style*="color: #9333ea"] { color: #d8b4fe !important; }
+
+    html[data-theme="dark"] [style*="color:#9333ea"],
+    html.dark-mode [style*="color:#9333ea"],
+    body.a11y-dark-mode [style*="color:#9333ea"] { color: #d8b4fe !important; }
+
+    /* Override all white/near-white border colors */
+    html[data-theme="dark"] [style*="border: 1px solid #e2e8f0"],
+    html.dark-mode [style*="border: 1px solid #e2e8f0"],
+    body.a11y-dark-mode [style*="border: 1px solid #e2e8f0"] { border-color: #333 !important; }
+
+    html[data-theme="dark"] [style*="border:1px solid #e2e8f0"],
+    html.dark-mode [style*="border:1px solid #e2e8f0"],
+    body.a11y-dark-mode [style*="border:1px solid #e2e8f0"] { border-color: #333 !important; }
+
+    html[data-theme="dark"] [style*="border: 1px solid #e5e7eb"],
+    html.dark-mode [style*="border: 1px solid #e5e7eb"],
+    body.a11y-dark-mode [style*="border: 1px solid #e5e7eb"] { border-color: #333 !important; }
+
+    html[data-theme="dark"] [style*="border:1px solid #e5e7eb"],
+    html.dark-mode [style*="border:1px solid #e5e7eb"],
+    body.a11y-dark-mode [style*="border:1px solid #e5e7eb"] { border-color: #333 !important; }
+
+    html[data-theme="dark"] [style*="border: 2px solid #e2e8f0"],
+    html.dark-mode [style*="border: 2px solid #e2e8f0"],
+    body.a11y-dark-mode [style*="border: 2px solid #e2e8f0"] { border-color: #333 !important; }
+
+    html[data-theme="dark"] [style*="border:2px solid #e2e8f0"],
+    html.dark-mode [style*="border:2px solid #e2e8f0"],
+    body.a11y-dark-mode [style*="border:2px solid #e2e8f0"] { border-color: #333 !important; }
+
+    html[data-theme="dark"] [style*="border: 2px solid #d1d5db"],
+    html.dark-mode [style*="border: 2px solid #d1d5db"],
+    body.a11y-dark-mode [style*="border: 2px solid #d1d5db"] { border-color: #444 !important; }
+
+    html[data-theme="dark"] [style*="border:2px solid #d1d5db"],
+    html.dark-mode [style*="border:2px solid #d1d5db"],
+    body.a11y-dark-mode [style*="border:2px solid #d1d5db"] { border-color: #444 !important; }
+
+    /* Override hardcoded white search/input backgrounds */
+    html[data-theme="dark"] [style*="background-color: white"],
+    html.dark-mode [style*="background-color: white"],
+    body.a11y-dark-mode [style*="background-color: white"] { background-color: #111 !important; }
+
+    html[data-theme="dark"] [style*="background-color: #ffffff"],
+    html.dark-mode [style*="background-color: #ffffff"],
+    body.a11y-dark-mode [style*="background-color: #ffffff"] { background-color: #111 !important; }
+
+    html[data-theme="dark"] [style*="background-color:white"],
+    html.dark-mode [style*="background-color:white"],
+    body.a11y-dark-mode [style*="background-color:white"] { background-color: #111 !important; }
+</style>
+
+<div class="manual-layout">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TABLE OF CONTENTS SIDEBAR
+═══════════════════════════════════════════════════════════════ -->
+<aside class="toc-sidebar">
+    <div class="toc-header">
+        <i class="fas fa-book-open"></i> Table of Contents
+    </div>
+    <a class="toc-item" href="#hero"><i class="fas fa-home"></i> Introduction</a>
+    <div class="toc-divider"></div>
+    <div class="toc-label">Your Access</div>
+    <a class="toc-item" href="#dashboard"><i class="fas fa-gauge-high"></i> Dashboard Overview</a>
+    <a class="toc-item" href="#cheques"><i class="fas fa-money-check-dollar"></i> Viewing Cheques</a>
+    <a class="toc-item" href="#fund-clusters"><i class="fas fa-piggy-bank"></i> Fund Clusters</a>
+    <a class="toc-item" href="#account-titles"><i class="fas fa-list"></i> Account Titles</a>
+    <a class="toc-item" href="#suppliers"><i class="fas fa-building"></i> Suppliers</a>
+    <a class="toc-item" href="#radai"><i class="fas fa-database"></i> RADAI Entries</a>
+    <div class="toc-divider"></div>
+    <div class="toc-label">Tools</div>
+    <a class="toc-item" href="#reports"><i class="fas fa-chart-bar"></i> Generating Reports</a>
+    <div class="toc-divider"></div>
+    <div class="toc-label">Account</div>
+    <a class="toc-item" href="#profile"><i class="fas fa-user-gear"></i> Profile Settings</a>
+    <a class="toc-item" href="#about"><i class="fas fa-circle-info"></i> About System</a>
+    <div class="toc-divider"></div>
+    <div class="toc-label">Reference</div>
+    <a class="toc-item" href="#permissions"><i class="fas fa-shield-halved"></i> Access Permissions</a>
+    <a class="toc-item" href="#navigation"><i class="fas fa-compass"></i> Navigation Guide</a>
+    <a class="toc-item" href="#faq"><i class="fas fa-circle-question"></i> FAQ</a>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-content">
+
+<!-- ── HERO BANNER ── -->
+<div class="manual-hero" id="hero">
+    <h1>Cashier User Manual</h1>
+    <p>Your complete guide to using the Registry system as a Cashier. This manual covers your read-only access to financial data, report generation, and profile management.</p>
+    <div class="version-badge"><i class="fas fa-tag"></i> Version 2.0 &middot; Updated July 2026</div>
+    <div class="hero-icon"><i class="fas fa-user-shield"></i></div>
+</div>
+
+<!-- ── PERMISSIONS BANNER ── -->
+<div class="permissions-banner">
+    <div class="banner-icon"><i class="fas fa-lock"></i></div>
+    <div class="banner-content">
+        <h3><i class="fas fa-exclamation-triangle"></i> Read-Only Access Notice</h3>
+        <p>As a <strong>Cashier</strong>, you have <strong>read-only access</strong> to all financial data. You can view cheques, fund clusters, account titles, suppliers, RADAI entries, and generate reports. However, you <strong>cannot</strong> create, edit, or delete any records. Only administrators have write permissions.</p>
+        <div class="permission-pills">
+            <span class="permission-pill can"><i class="fas fa-check"></i> View Dashboard</span>
+            <span class="permission-pill can"><i class="fas fa-check"></i> View Cheques</span>
+            <span class="permission-pill can"><i class="fas fa-check"></i> View Reports</span>
+            <span class="permission-pill cannot"><i class="fas fa-times"></i> Add/Edit/Delete</span>
+            <span class="permission-pill cannot"><i class="fas fa-times"></i> User Management</span>
+            <span class="permission-pill cannot"><i class="fas fa-times"></i> System Settings</span>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 1: DASHBOARD OVERVIEW
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="dashboard">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon green"><i class="fas fa-gauge-high"></i></div>
+        <div class="section-title-group">
+            <h2>Dashboard Overview</h2>
+            <div class="section-subtitle">Your read-only snapshot of system activity</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Dashboard is the first screen you see after logging in. It displays a real-time summary of financial data. As a cashier, you can <strong>view all dashboard information</strong> but cannot modify any records.</p>
+
+        <h3 class="sub-title"><i class="fas fa-layer-group"></i> Dashboard Statistics Cards</h3>
+        <p>At the top of the dashboard, you'll see four key metric cards. These give you a quick overview of the system's current state.</p>
+
+        <div class="mock-stats-grid">
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #16a34a, #15803d);"><i class="fas fa-money-check-dollar"></i></div>
+                <div>
+                    <div class="mock-stat-value">1,248</div>
+                    <div class="mock-stat-label">Total Cheques</div>
+                </div>
+            </div>
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #d97706, #b45309);"><i class="fas fa-hourglass-half"></i></div>
+                <div>
+                    <div class="mock-stat-value">87</div>
+                    <div class="mock-stat-label">Pending Cheques</div>
+                </div>
+            </div>
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);"><i class="fas fa-building"></i></div>
+                <div>
+                    <div class="mock-stat-value">342</div>
+                    <div class="mock-stat-label">Suppliers</div>
+                </div>
+            </div>
+            <div class="mock-stat">
+                <div class="mock-stat-icon" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);"><i class="fas fa-piggy-bank"></i></div>
+                <div>
+                    <div class="mock-stat-value">15</div>
+                    <div class="mock-stat-label">Fund Clusters</div>
+                </div>
+            </div>
+        </div>
+
+        <h4 style="font-size:13px; font-weight:600; margin:14px 0 6px; color:var(--ink);">What Each Card Means</h4>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0;">
+            <div style="padding:10px; background:#f0fdf4; border-radius:8px; border-left:3px solid #16a34a;">
+                <div style="font-size:12px; font-weight:700; color:#166534;"><i class="fas fa-money-check-dollar"></i> Total Cheques</div>
+                <div style="font-size:12px; color:#166534; opacity:0.8; margin-top:2px;">All cheque records in the system, regardless of status.</div>
+            </div>
+            <div style="padding:10px; background:#fef3c7; border-radius:8px; border-left:3px solid #d97706;">
+                <div style="font-size:12px; font-weight:700; color:#92400e;"><i class="fas fa-hourglass-half"></i> Pending Cheques</div>
+                <div style="font-size:12px; color:#92400e; opacity:0.8; margin-top:2px;">Cheques awaiting release or processing approval.</div>
+            </div>
+            <div style="padding:10px; background:#dbeafe; border-radius:8px; border-left:3px solid #3b82f6;">
+                <div style="font-size:12px; font-weight:700; color:#1e40af;"><i class="fas fa-building"></i> Suppliers</div>
+                <div style="font-size:12px; color:#1e40af; opacity:0.8; margin-top:2px;">Registered vendor and supplier entities in the system.</div>
+            </div>
+            <div style="padding:10px; background:#ede9fe; border-radius:8px; border-left:3px solid #7c3aed;">
+                <div style="font-size:12px; font-weight:700; color:#5b21b6;"><i class="fas fa-piggy-bank"></i> Fund Clusters</div>
+                <div style="font-size:12px; color:#5b21b6; opacity:0.8; margin-top:2px;">Budget categories used to classify cheque allocations.</div>
+            </div>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Good to Know</strong>
+                The dashboard automatically refreshes every 30 seconds. You can also click the refresh icon in the top-right corner of any card to manually update the data.
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-chart-line"></i> Recent Activity Feed</h3>
+        <p>Below the statistics cards, you'll find a feed showing recent actions performed by all users in the system. This is read-only — you cannot delete or modify activity entries.</p>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-clock-rotate-left"></i> Recent Activity</h4>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #f8fafc; border-radius: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #dcfce7; display: flex; align-items: center; justify-content: center; color: #16a34a; font-size: 12px;"><i class="fas fa-plus"></i></div>
+                    <div style="flex: 1;"><strong style="font-size: 13px;">Admin</strong> added cheque <span style="color: var(--accent); font-weight: 600;">CHQ-2024-0892</span></div>
+                    <div style="font-size: 11px; color: var(--muted);">2 min ago</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #f8fafc; border-radius: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #dbeafe; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 12px;"><i class="fas fa-file-export"></i></div>
+                    <div style="flex: 1;"><strong style="font-size: 13px;">You</strong> generated <span style="color: var(--accent); font-weight: 600;">Monthly Report</span></div>
+                    <div style="font-size: 11px; color: var(--muted);">15 min ago</div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: #f8fafc; border-radius: 8px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #fef3c7; display: flex; align-items: center; justify-content: center; color: #d97706; font-size: 12px;"><i class="fas fa-eye"></i></div>
+                    <div style="flex: 1;"><strong style="font-size: 13px;">You</strong> viewed cheque <span style="color: var(--accent); font-weight: 600;">CHQ-2024-0890</span></div>
+                    <div style="font-size: 11px; color: var(--muted);">1 hour ago</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                Your own actions (viewing records, generating reports) will also appear in the activity feed. This helps you track your work throughout the day.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 2: VIEWING CHEQUES
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="cheques">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon blue"><i class="fas fa-money-check-dollar"></i></div>
+        <div class="section-title-group">
+            <h2>Viewing Cheques</h2>
+            <div class="section-subtitle">Search, filter, and view cheque details (read-only)</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Cheques section displays all cheque records in the system. As a cashier, you can <strong>search, filter, and view</strong> cheque details, but you <strong>cannot add, edit, or delete</strong> any cheque records.</p>
+
+        <div class="callout warning">
+            <div class="callout-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="callout-body">
+                <strong>Read-Only Access</strong>
+                You will NOT see the "Add Cheque" button or action menus (edit/delete) on this page. These are restricted to administrators only.
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-search"></i> Searching for Cheques</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Navigate to Cheques</h4>
+                    <p>Click the <strong>Cheques</strong> icon in the left sidebar navigation to open the cheque list view.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Use the Search Bar</h4>
+                    <p>Type in the search bar to filter cheques by number, payee name, or amount. Results update as you type.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                </div>
+                <div class="step-content">
+                    <h4>View Results</h4>
+                    <p>Click on any cheque row to open the detailed view showing all cheque information.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-search"></i> Search Bar</h4>
+            </div>
+            <div class="search-mock">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Search by cheque number, payee, or amount..." readonly>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-filter"></i> Filtering Cheques</h3>
+        <p>Use the filter chips below the search bar to narrow down results by status:</p>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-filter"></i> Filter Options</h4>
+            </div>
+            <div class="filter-row">
+                <span class="filter-chip active">All</span>
+                <span class="filter-chip"><i class="fas fa-check-circle"></i> Released</span>
+                <span class="filter-chip"><i class="fas fa-hourglass-half"></i> Pending</span>
+                <span class="filter-chip"><i class="fas fa-pen"></i> Draft</span>
+                <span class="filter-chip"><i class="fas fa-ban"></i> Voided</span>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-table"></i> Cheque List View</h3>
+        <p>The cheque list displays all records in a table format. You can sort by clicking column headers. The list is read-only — no action buttons appear in the Actions column for cashiers.</p>
+
+        <div class="mock-card readonly-overlay" style="overflow-x: auto;">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-money-check-dollar"></i> All Cheques</h4>
+                <div style="display: flex; gap: 6px;">
+                    <span class="mock-btn accent" style="font-size: 11px; padding: 5px 10px;"><i class="fas fa-search"></i> Search</span>
+                </div>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr>
+                        <th>Cheque No.</th>
+                        <th>Date</th>
+                        <th>Payee</th>
+                        <th>Amount</th>
+                        <th>Fund Cluster</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 600;">CHQ-2024-0890</td>
+                        <td>07/25/2026</td>
+                        <td>ABC Construction</td>
+                        <td style="font-weight: 600;">&#8369; 125,000.00</td>
+                        <td>FC-001</td>
+                        <td><span class="mock-badge green">Released</span></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">CHQ-2024-0891</td>
+                        <td>07/26/2026</td>
+                        <td>XYZ Supplies Inc.</td>
+                        <td style="font-weight: 600;">&#8369; 45,500.00</td>
+                        <td>FC-003</td>
+                        <td><span class="mock-badge orange">Pending</span></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">CHQ-2024-0892</td>
+                        <td>07/28/2026</td>
+                        <td>Office Depot</td>
+                        <td style="font-weight: 600;">&#8369; 12,750.00</td>
+                        <td>FC-002</td>
+                        <td><span class="mock-badge red">Voided</span></td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600;">CHQ-2024-0893</td>
+                        <td>07/29/2026</td>
+                        <td>Tech Solutions</td>
+                        <td style="font-weight: 600;">&#8369; 89,200.00</td>
+                        <td>FC-001</td>
+                        <td><span class="mock-badge blue">Draft</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-eye"></i> Viewing Cheque Details</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Click a Cheque Row</h4>
+                    <p>Click anywhere on a cheque row in the table to open the detail view.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                </div>
+                <div class="step-content">
+                    <h4>Review Details</h4>
+                    <p>The detail panel shows: cheque number, date, payee, amount, fund cluster, account title, status, remarks, and creation info. All fields are read-only.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-file-invoice"></i> Cheque Detail View</h4>
+                <span class="mock-badge green">Released</span>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                    <div style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase;">Cheque Number</div>
+                    <div style="font-size:14px; font-weight:600;">CHQ-2024-0890</div>
+                </div>
+                <div>
+                    <div style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase;">Date</div>
+                    <div style="font-size:14px; font-weight:600;">July 25, 2026</div>
+                </div>
+                <div>
+                    <div style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase;">Payee</div>
+                    <div style="font-size:14px; font-weight:600;">ABC Construction</div>
+                </div>
+                <div>
+                    <div style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase;">Amount</div>
+                    <div style="font-size:14px; font-weight:600; color:var(--green);">&#8369; 125,000.00</div>
+                </div>
+                <div>
+                    <div style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase;">Fund Cluster</div>
+                    <div style="font-size:14px; font-weight:600;">FC-001 - Regular Fund</div>
+                </div>
+                <div>
+                    <div style="font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase;">Account Title</div>
+                    <div style="font-size:14px; font-weight:600;">AT-001 - Regular Disbursement</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                Use keyboard shortcuts: Press <strong>/</strong> to focus the search bar, or <strong>Esc</strong> to close the detail panel. Press <strong>&#8593;</strong>/<strong>&#8595;</strong> to navigate between rows.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 3: FUND CLUSTERS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="fund-clusters">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon purple"><i class="fas fa-piggy-bank"></i></div>
+        <div class="section-title-group">
+            <h2>Viewing Fund Clusters</h2>
+            <div class="section-subtitle">Browse fund cluster categories (read-only)</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Fund Clusters categorize financial resources. As a cashier, you can <strong>view the list</strong> of fund clusters to understand how cheques are allocated, but you <strong>cannot create, edit, or delete</strong> fund cluster records.</p>
+
+        <h3 class="sub-title"><i class="fas fa-list"></i> Fund Cluster List</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Fund Clusters</h4>
+                    <p>Navigate to <strong>Fund Clusters</strong> from the sidebar menu.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                </div>
+                <div class="step-content">
+                    <h4>Browse the List</h4>
+                    <p>View all fund clusters with their codes, names, descriptions, and statuses. Use the search bar to find specific clusters.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card readonly-overlay" style="overflow-x: auto;">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-piggy-bank"></i> Fund Clusters</h4>
+                <div class="search-mock" style="width: 250px; margin: 0;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search fund clusters..." readonly>
+                </div>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr><th>Code</th><th>Name</th><th>Description</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td style="font-weight:600;">FC-001</td><td>Regular Fund</td><td>Standard operating fund allocation</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">FC-002</td><td>Special Account</td><td>Special purpose fund allocations</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">FC-003</td><td>Trust Fund</td><td>Trust fund disbursements</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">FC-004</td><td>Capital Outlay</td><td>Equipment and infrastructure purchases</td><td><span class="mock-badge gray">Inactive</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Note</strong>
+                Fund cluster information is displayed when viewing cheque details. Understanding fund clusters helps you verify that cheques are properly categorized.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 4: ACCOUNT TITLES
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="account-titles">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon teal"><i class="fas fa-list"></i></div>
+        <div class="section-title-group">
+            <h2>Viewing Account Titles</h2>
+            <div class="section-subtitle">Browse account title classifications (read-only)</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Account Titles classify financial transactions for reporting and auditing. As a cashier, you can <strong>view the list</strong> but you <strong>cannot create, edit, or delete</strong> account title records.</p>
+
+        <h3 class="sub-title"><i class="fas fa-list"></i> Account Title List</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Access Account Titles</h4>
+                    <p>Go to <strong>Account Titles</strong> from the sidebar navigation.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                </div>
+                <div class="step-content">
+                    <h4>Browse the List</h4>
+                    <p>View all account titles with their codes, names, descriptions, and group classifications.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card readonly-overlay" style="overflow-x: auto;">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-list"></i> Account Titles</h4>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr><th>Code</th><th>Title</th><th>Group</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td style="font-weight:600;">AT-001</td><td>Regular Disbursement</td><td>Disbursements</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">AT-002</td><td>Special Account</td><td>Special Funds</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">AT-003</td><td>Trust Fund</td><td>Trust Funds</td><td><span class="mock-badge gray">Inactive</span></td></tr>
+                    <tr><td style="font-weight:600;">AT-004</td><td>Capital Outlay</td><td>Capital</td><td><span class="mock-badge green">Active</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Note</strong>
+                Account titles appear when viewing cheque details. They help you understand how each transaction is classified for financial reporting purposes.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 5: SUPPLIERS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="suppliers">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon indigo"><i class="fas fa-building"></i></div>
+        <div class="section-title-group">
+            <h2>Viewing Suppliers</h2>
+            <div class="section-subtitle">Browse vendor and supplier information (read-only)</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Suppliers section maintains your vendor database. As a cashier, you can <strong>view supplier details</strong> but you <strong>cannot create, edit, or delete</strong> supplier records.</p>
+
+        <h3 class="sub-title"><i class="fas fa-building"></i> Supplier List</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Suppliers Page</h4>
+                    <p>Click <strong>Suppliers</strong> in the sidebar navigation.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                </div>
+                <div class="step-content">
+                    <h4>Browse or Search</h4>
+                    <p>Use the search bar to find suppliers by name, TIN, or contact details. Click on a row to view full details.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card readonly-overlay" style="overflow-x: auto;">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-building"></i> Suppliers</h4>
+                <div class="search-mock" style="width: 250px; margin: 0;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search suppliers..." readonly>
+                </div>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr><th>Supplier Name</th><th>Contact Person</th><th>TIN</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td style="font-weight:600;">ABC Construction</td><td>Juan Santos</td><td>123-456-789</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">XYZ Supplies Inc.</td><td>Maria Reyes</td><td>987-654-321</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">Office Depot</td><td>Pedro Cruz</td><td>456-789-012</td><td><span class="mock-badge green">Active</span></td></tr>
+                    <tr><td style="font-weight:600;">Defunct Corp</td><td>Lisa Wang</td><td>321-654-987</td><td><span class="mock-badge gray">Inactive</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Note</strong>
+                Suppliers can be flagged as <span class="mock-badge green" style="font-size: 10px;">Active</span>, <span class="mock-badge gray" style="font-size: 10px;">Inactive</span>, or <span class="mock-badge red" style="font-size: 10px;">Blacklisted</span>. Use the status filter to view specific supplier groups.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 6: RADAI ENTRIES
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="radai">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon cyan"><i class="fas fa-database"></i></div>
+        <div class="section-title-group">
+            <h2>Viewing RADAI Entries</h2>
+            <div class="section-subtitle">Browse allotment and disbursement records (read-only)</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>RADAI (Registry of Allotments, Disbursements, and Allotment Inquiries) tracks internal financial allocations. As a cashier, you can <strong>view all RADAI entries</strong> but you <strong>cannot create, edit, or delete</strong> records.</p>
+
+        <h3 class="sub-title"><i class="fas fa-database"></i> RADAI Entry List</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Navigate to RADAI</h4>
+                    <p>Click <strong>RADAI</strong> in the sidebar to access the RADAI entries list.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                </div>
+                <div class="step-content">
+                    <h4>Browse Entries</h4>
+                    <p>View all RADAI entries including allotment references, amounts, fund sources, and disbursement dates. Use search to find specific entries.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card readonly-overlay" style="overflow-x: auto;">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-database"></i> RADAI Entries</h4>
+                <div class="search-mock" style="width: 250px; margin: 0;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search RADAI entries..." readonly>
+                </div>
+            </div>
+            <table class="mock-table">
+                <thead>
+                    <tr><th>Reference</th><th>Amount</th><th>Fund Source</th><th>Date</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td style="font-weight:600;">RAD-2024-001</td><td style="font-weight:600;">&#8369; 500,000.00</td><td>FC-001</td><td>07/01/2026</td><td><span class="mock-badge green">Completed</span></td></tr>
+                    <tr><td style="font-weight:600;">RAD-2024-002</td><td style="font-weight:600;">&#8369; 250,000.00</td><td>FC-002</td><td>07/15/2026</td><td><span class="mock-badge orange">Pending</span></td></tr>
+                    <tr><td style="font-weight:600;">RAD-2024-003</td><td style="font-weight:600;">&#8369; 125,000.00</td><td>FC-003</td><td>07/28/2026</td><td><span class="mock-badge blue">In Progress</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                RADAI entries help you cross-reference cheque allocations with their original allotments. When reviewing a cheque, check the RADAI entry to verify the fund source.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 7: REPORTS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="reports">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon orange"><i class="fas fa-chart-bar"></i></div>
+        <div class="section-title-group">
+            <h2>Generating Reports</h2>
+            <div class="section-subtitle">Generate, preview, and export financial reports</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The Reports module allows you to generate financial summaries and cheque registers. As a cashier, you can <strong>generate and view reports</strong> but the data is always read-only.</p>
+
+        <h3 class="sub-title"><i class="fas fa-file-pdf"></i> Generating a Report</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Reports</h4>
+                    <p>Click <strong>Reports</strong> in the sidebar navigation to see available report types.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Select Report Type</h4>
+                    <p>Choose from available report categories: Cheque Register, Fund Summary, Supplier Report, or RADAI Summary.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Set Date Range & Filters</h4>
+                    <p>Configure the date range, fund cluster, status, and other filters to narrow the report data.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number green">4</div>
+                </div>
+                <div class="step-content">
+                    <h4>Generate & Export</h4>
+                    <p>Click <strong>Generate Report</strong>. Preview on screen, then export as PDF or print directly.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-diagram">
+            <div class="flow-node">
+                <i class="fas fa-filter"></i>
+                <span>Set Filters</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node active">
+                <i class="fas fa-cogs"></i>
+                <span>Generate</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node">
+                <i class="fas fa-eye"></i>
+                <span>Preview</span>
+            </div>
+            <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+            <div class="flow-node success">
+                <i class="fas fa-download"></i>
+                <span>Export PDF</span>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-file-lines"></i> Available Report Types</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 12px 0;">
+            <div class="mock-card" style="margin: 0;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, #16a34a, #15803d); display:flex; align-items:center; justify-content:center; color:white; font-size:14px;"><i class="fas fa-money-check-dollar"></i></div>
+                    <div style="font-size:14px; font-weight:600;">Cheque Register</div>
+                </div>
+                <p style="font-size:12px; color:var(--muted); margin:0;">Complete list of all cheques with amounts, dates, and statuses.</p>
+            </div>
+            <div class="mock-card" style="margin: 0;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, #3b82f6, #2563eb); display:flex; align-items:center; justify-content:center; color:white; font-size:14px;"><i class="fas fa-piggy-bank"></i></div>
+                    <div style="font-size:14px; font-weight:600;">Fund Summary</div>
+                </div>
+                <p style="font-size:12px; color:var(--muted); margin:0;">Aggregated totals per fund cluster with budget utilization.</p>
+            </div>
+            <div class="mock-card" style="margin: 0;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, #7c3aed, #6d28d9); display:flex; align-items:center; justify-content:center; color:white; font-size:14px;"><i class="fas fa-building"></i></div>
+                    <div style="font-size:14px; font-weight:600;">Supplier Report</div>
+                </div>
+                <p style="font-size:12px; color:var(--muted); margin:0;">Payment history and transaction totals per supplier.</p>
+            </div>
+            <div class="mock-card" style="margin: 0;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <div style="width:36px; height:36px; border-radius:8px; background:linear-gradient(135deg, #06b6d4, #0891b2); display:flex; align-items:center; justify-content:center; color:white; font-size:14px;"><i class="fas fa-database"></i></div>
+                    <div style="font-size:14px; font-weight:600;">RADAI Summary</div>
+                </div>
+                <p style="font-size:12px; color:var(--muted); margin:0;">Allotment and disbursement summary with utilization rates.</p>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                Use the "Save as Favorite" option on frequently used report configurations to quickly regenerate them without re-entering filters each time.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 8: PROFILE SETTINGS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="profile">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon indigo"><i class="fas fa-user-gear"></i></div>
+        <div class="section-title-group">
+            <h2>Profile Settings</h2>
+            <div class="section-subtitle">Manage your personal account and profile information</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Profile Settings allow you to manage your personal account information, change your password, and update your profile picture. This is the <strong>one section where you have write access</strong>.</p>
+
+        <div class="mock-card" style="text-align:center; padding:20px; margin-bottom:16px;">
+            <div style="width:48px; height:48px; border-radius:12px; background:#ecfdf5; display:flex; align-items:center; justify-content:center; margin:0 auto 10px;">
+                <i class="fas fa-user-gear" style="font-size:20px; color:#059669;"></i>
+            </div>
+            <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Profile Settings</div>
+            <div style="font-size:12px; color:var(--muted);">Manage your personal account information, profile picture, and password</div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-user-pen"></i> Editing Your Profile</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Open Profile Settings</h4>
+                    <p>Click <strong>Profile Settings</strong> in the sidebar or click your avatar in the top-right corner. You'll see a centered card with your profile photo at the top.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Change Profile Photo</h4>
+                    <p>Click the circular avatar to select a new profile picture from your computer.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <div class="step-line"></div>
+                </div>
+                <div class="step-content">
+                    <h4>Update Information</h4>
+                    <p>Edit your last name, given name, middle initial, email address, and username. The Save Changes button enables only when you make edits.</p>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-indicator">
+                    <div class="step-number">4</div>
+                </div>
+                <div class="step-content">
+                    <h4>Change Password</h4>
+                    <p>Click <strong>Change Password</strong> to open the password flow. Verify your current password first, then enter and confirm your new password.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-user"></i> Profile Card Layout</h4>
+            </div>
+            <div style="text-align:center; padding:12px 0;">
+                <div style="width:60px; height:60px; border-radius:50%; background:#e2e8f0; display:flex; align-items:center; justify-content:center; margin:0 auto 8px; font-size:22px; color:var(--muted);">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div style="font-size:11px; color:var(--muted); margin-bottom:12px;">Click to change photo</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;">
+                    <div class="mock-form-group"><label>Last Name</label><input type="text" class="mock-input" value="Dela Cruz"></div>
+                    <div class="mock-form-group"><label>Given Name</label><input type="text" class="mock-input" value="Juan"></div>
+                    <div class="mock-form-group"><label>MI</label><input type="text" class="mock-input" value="M"></div>
+                    <div class="mock-form-group"><label>Email</label><input type="text" class="mock-input" value="juan@example.com"></div>
+                    <div class="mock-form-group"><label>Username</label><input type="text" class="mock-input" value="jdelacruz"></div>
+                </div>
+                <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+                    <span class="mock-btn success"><i class="fas fa-check"></i> Save Changes</span>
+                    <span class="mock-btn"><i class="fas fa-lock"></i> Change Password</span>
+                    <span class="mock-btn"><i class="fas fa-shield-alt"></i> Multi-Factor Auth</span>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-key"></i> Changing Your Password</h3>
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-lock"></i> Change Password</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 400px;">
+                <div class="mock-form-group">
+                    <label>Current Password</label>
+                    <input type="password" class="mock-input" value="••••••••">
+                </div>
+                <div class="mock-form-group">
+                    <label>New Password</label>
+                    <input type="password" class="mock-input" placeholder="Enter new password">
+                </div>
+                <div class="mock-form-group">
+                    <label>Confirm New Password</label>
+                    <input type="password" class="mock-input" placeholder="Re-enter new password">
+                </div>
+            </div>
+            <span class="mock-btn accent" style="margin-top: 4px;"><i class="fas fa-key"></i> Update Password</span>
+        </div>
+
+        <div class="callout warning">
+            <div class="callout-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="callout-body">
+                <strong>Security Reminder</strong>
+                Choose a strong password with at least 8 characters, including uppercase, lowercase, numbers, and special characters. Do not reuse passwords from other systems.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 9: ABOUT SYSTEM
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="about">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon blue"><i class="fas fa-circle-info"></i></div>
+        <div class="section-title-group">
+            <h2>About System</h2>
+            <div class="section-subtitle">System version information and technical details</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The About page displays system version information, build details, and the technology stack used in the application.</p>
+
+        <h3 class="sub-title"><i class="fas fa-tag"></i> System Details</h3>
+        <div class="mock-card">
+            <div class="mock-card-header">
+                <h4><i class="fas fa-circle-info"></i> About Registry Management System</h4>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">System Name</div>
+                    <div style="font-size: 14px; font-weight: 600;">Registry Management System</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Version</div>
+                    <div style="font-size: 14px; font-weight: 600;">2.0.0</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Framework</div>
+                    <div style="font-size: 14px; font-weight: 600;">Django 4.2+</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Database</div>
+                    <div style="font-size: 14px; font-weight: 600;">SQLite3 / PostgreSQL</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Frontend</div>
+                    <div style="font-size: 14px; font-weight: 600;">HTML5 / CSS3 / Vanilla JS</div>
+                </div>
+                <div>
+                    <div style="font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; margin-bottom: 4px;">Icons</div>
+                    <div style="font-size: 14px; font-weight: 600;">FontAwesome 6</div>
+                </div>
+            </div>
+            <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted);">
+                <i class="fas fa-shield-halved" style="color: var(--green);"></i> Security features include auto-lock, single-device enforcement, MFA support, and comprehensive audit logging.
+            </div>
+        </div>
+
+        <div class="callout info">
+            <div class="callout-icon"><i class="fas fa-info"></i></div>
+            <div class="callout-body">
+                <strong>Support</strong>
+                For technical issues or feature requests, contact your system administrator or refer to the development team's documentation portal.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 10: ACCESS PERMISSIONS
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="permissions">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon red"><i class="fas fa-shield-halved"></i></div>
+        <div class="section-title-group">
+            <h2>Access Permissions</h2>
+            <div class="section-subtitle">Understanding your cashier role permissions</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>Your cashier account has specific permissions that define what you can and cannot do in the system. This section explains your access levels in detail.</p>
+
+        <h3 class="sub-title"><i class="fas fa-scale-balanced"></i> Permission Overview</h3>
+
+        <div class="permission-comparison">
+            <div class="permission-card allowed">
+                <h5><i class="fas fa-check-circle"></i> What You CAN Do</h5>
+                <ul>
+                    <li><i class="fas fa-check"></i> View Dashboard statistics</li>
+                    <li><i class="fas fa-check"></i> View Cheque list and details</li>
+                    <li><i class="fas fa-check"></i> View Fund Cluster list</li>
+                    <li><i class="fas fa-check"></i> View Account Title list</li>
+                    <li><i class="fas fa-check"></i> View Supplier list and details</li>
+                    <li><i class="fas fa-check"></i> View RADAI entries</li>
+                    <li><i class="fas fa-check"></i> Generate and view Reports</li>
+                    <li><i class="fas fa-check"></i> Edit your own Profile</li>
+                    <li><i class="fas fa-check"></i> Change your Password</li>
+                    <li><i class="fas fa-check"></i> View About System page</li>
+                </ul>
+            </div>
+            <div class="permission-card denied">
+                <h5><i class="fas fa-times-circle"></i> What You CANNOT Do</h5>
+                <ul>
+                    <li><i class="fas fa-times"></i> Add new Cheques</li>
+                    <li><i class="fas fa-times"></i> Edit existing Cheques</li>
+                    <li><i class="fas fa-times"></i> Delete or Void Cheques</li>
+                    <li><i class="fas fa-times"></i> Add/edit/delete Fund Clusters</li>
+                    <li><i class="fas fa-times"></i> Add/edit/delete Account Titles</li>
+                    <li><i class="fas fa-times"></i> Add/edit/delete Suppliers</li>
+                    <li><i class="fas fa-times"></i> Add/edit/delete RADAI entries</li>
+                    <li><i class="fas fa-times"></i> Manage other Users</li>
+                    <li><i class="fas fa-times"></i> Change System Settings</li>
+                    <li><i class="fas fa-times"></i> Backup or Restore data</li>
+                </ul>
+            </div>
+        </div>
+
+        <h3 class="sub-title"><i class="fas fa-table"></i> Full Permission Matrix</h3>
+        <div class="mock-card" style="overflow-x: auto;">
+            <table class="mock-table">
+                <thead>
+                    <tr><th>Feature</th><th>Admin</th><th>Cashier (You)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Dashboard</td><td><span class="mock-badge green">Full Access</span></td><td><span class="mock-badge green">View Only</span></td></tr>
+                    <tr><td>Cheques</td><td><span class="mock-badge green">Add / Edit / Delete</span></td><td><span class="mock-badge orange">View Only</span></td></tr>
+                    <tr><td>Fund Clusters</td><td><span class="mock-badge green">Add / Edit / Delete</span></td><td><span class="mock-badge orange">View Only</span></td></tr>
+                    <tr><td>Account Titles</td><td><span class="mock-badge green">Add / Edit / Delete</span></td><td><span class="mock-badge orange">View Only</span></td></tr>
+                    <tr><td>Suppliers</td><td><span class="mock-badge green">Add / Edit / Delete</span></td><td><span class="mock-badge orange">View Only</span></td></tr>
+                    <tr><td>RADAI</td><td><span class="mock-badge green">Add / Edit / Delete</span></td><td><span class="mock-badge orange">View Only</span></td></tr>
+                    <tr><td>Reports</td><td><span class="mock-badge green">Generate / Export</span></td><td><span class="mock-badge green">Generate / Export</span></td></tr>
+                    <tr><td>User Management</td><td><span class="mock-badge green">Full Access</span></td><td><span class="mock-badge red">No Access</span></td></tr>
+                    <tr><td>System Settings</td><td><span class="mock-badge green">Full Access</span></td><td><span class="mock-badge red">No Access</span></td></tr>
+                    <tr><td>Backup & Restore</td><td><span class="mock-badge green">Full Access</span></td><td><span class="mock-badge red">No Access</span></td></tr>
+                    <tr><td>Import Data</td><td><span class="mock-badge green">Full Access</span></td><td><span class="mock-badge red">No Access</span></td></tr>
+                    <tr><td>Profile Settings</td><td><span class="mock-badge green">Own Profile</span></td><td><span class="mock-badge green">Own Profile</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="callout danger">
+            <div class="callout-icon"><i class="fas fa-exclamation-circle"></i></div>
+            <div class="callout-body">
+                <strong>Important</strong>
+                If you need to create, edit, or delete financial records, please contact your system administrator. Only admin accounts have write permissions for financial data.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 11: NAVIGATION GUIDE
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="navigation">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon green"><i class="fas fa-compass"></i></div>
+        <div class="section-title-group">
+            <h2>Navigation Guide</h2>
+            <div class="section-subtitle">How to navigate the system sidebar and menus</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+        <p>The system uses a collapsible sidebar navigation. On desktop, the sidebar is always visible as a narrow icon bar. On mobile, it opens as an overlay.</p>
+
+        <h3 class="sub-title"><i class="fas fa-bars"></i> Cashier Sidebar Layout</h3>
+        <div class="mock-card">
+            <div style="display: flex; gap: 20px; align-items: flex-start;">
+                <div class="mock-nav">
+                    <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.4); padding: 4px 12px; letter-spacing: 0.08em;">Navigation</div>
+                    <div class="mock-nav-item active"><i class="fas fa-house"></i> Dashboard</div>
+                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 12px;"></div>
+                    <div style="font-size: 9px; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.3); padding: 4px 12px; letter-spacing: 0.08em;">Financial (View Only)</div>
+                    <div class="mock-nav-item"><i class="fas fa-money-check-dollar"></i> Cheques</div>
+                    <div class="mock-nav-item"><i class="fas fa-piggy-bank"></i> Fund Clusters</div>
+                    <div class="mock-nav-item"><i class="fas fa-building"></i> Suppliers</div>
+                    <div class="mock-nav-item"><i class="fas fa-database"></i> RADAI</div>
+                    <div class="mock-nav-item"><i class="fas fa-chart-bar"></i> Reports</div>
+                    <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 4px 12px;"></div>
+                    <div class="mock-nav-item"><i class="fas fa-user-gear"></i> Profile</div>
+                    <div class="mock-nav-item"><i class="fas fa-circle-info"></i> About</div>
+                </div>
+                <div style="flex: 1;">
+                    <p style="font-size: 13px; color: var(--ink); margin: 0 0 10px;"><strong>Hover to Expand:</strong> Hover over the sidebar on desktop to see full navigation labels.</p>
+                    <p style="font-size: 13px; color: var(--ink); margin: 0 0 10px;"><strong>Click to Pin:</strong> Click the hamburger menu icon to pin the sidebar open.</p>
+                    <p style="font-size: 13px; color: var(--muted); margin: 0;"><strong>Notice:</strong> Your sidebar has fewer items than an admin's. You won't see User Management, Backup, Import, System Settings, or other admin-only sections.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="callout tip">
+            <div class="callout-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="callout-body">
+                <strong>Tip</strong>
+                On mobile devices, tap the hamburger menu (&#9776;) in the top-left corner to open the sidebar as a full-screen overlay. Tap outside the sidebar to close it.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SECTION 12: FAQ
+═══════════════════════════════════════════════════════════════ -->
+<div class="manual-section" id="faq">
+    <div class="section-header" onclick="toggleSection(this)">
+        <div class="section-icon teal"><i class="fas fa-circle-question"></i></div>
+        <div class="section-title-group">
+            <h2>Frequently Asked Questions</h2>
+            <div class="section-subtitle">Common questions from cashier users</div>
+        </div>
+        <div class="section-toggle"><i class="fas fa-chevron-down"></i></div>
+    </div>
+    <div class="section-body">
+
+        <div class="mock-card" style="border-left: 3px solid var(--accent);">
+            <h4 style="font-size:14px; font-weight:600; margin:0 0 6px; color:var(--ink);"><i class="fas fa-question-circle" style="color:var(--accent);"></i> Why can't I see the "Add Cheque" button?</h4>
+            <p style="font-size:13px; color:var(--muted); margin:0;">As a cashier, you have read-only access to financial data. The "Add Cheque" button and edit/delete actions are only visible to administrators. If you need to create a cheque record, please contact your admin.</p>
+        </div>
+
+        <div class="mock-card" style="border-left: 3px solid var(--accent); margin-top: 12px;">
+            <h4 style="font-size:14px; font-weight:600; margin:0 0 6px; color:var(--ink);"><i class="fas fa-question-circle" style="color:var(--accent);"></i> Can I generate reports?</h4>
+            <p style="font-size:13px; color:var(--muted); margin:0;">Yes! Cashiers can generate and export all report types. Navigate to Reports, select a report type, set your filters, and click Generate Report. You can preview on screen or export as PDF.</p>
+        </div>
+
+        <div class="mock-card" style="border-left: 3px solid var(--accent); margin-top: 12px;">
+            <h4 style="font-size:14px; font-weight:600; margin:0 0 6px; color:var(--ink);"><i class="fas fa-question-circle" style="color:var(--accent);"></i> How do I change my password?</h4>
+            <p style="font-size:13px; color:var(--muted); margin:0;">Go to Profile Settings from the sidebar, click the Change Password button, verify your current password in the first modal, then enter and confirm your new password in the second modal.</p>
+        </div>
+
+        <div class="mock-card" style="border-left: 3px solid var(--accent); margin-top: 12px;">
+            <h4 style="font-size:14px; font-weight:600; margin:0 0 6px; color:var(--ink);"><i class="fas fa-question-circle" style="color:var(--accent);"></i> Can I search for cheques by payee name?</h4>
+            <p style="font-size:13px; color:var(--muted); margin:0;">Yes. In the Cheques section, type the payee name in the search bar. The list will filter in real-time to show matching results. You can also use the status filter chips to narrow results further.</p>
+        </div>
+
+        <div class="mock-card" style="border-left: 3px solid var(--accent); margin-top: 12px;">
+            <h4 style="font-size:14px; font-weight:600; margin:0 0 6px; color:var(--ink);"><i class="fas fa-question-circle" style="color:var(--accent);"></i> What should I do if I see incorrect data?</h4>
+            <p style="font-size:13px; color:var(--muted); margin:0;">Since you cannot edit records, please report any data discrepancies to your system administrator. Provide the cheque number, date, and a description of the issue for faster resolution.</p>
+        </div>
+
+        <div class="mock-card" style="border-left: 3px solid var(--accent); margin-top: 12px;">
+            <h4 style="font-size:14px; font-weight:600; margin:0 0 6px; color:var(--ink);"><i class="fas fa-question-circle" style="color:var(--accent);"></i> Does the system log my activity?</h4>
+            <p style="font-size:13px; color:var(--muted); margin:0;">Yes. All actions including page views, searches, and report generations are logged in the audit trail. This helps maintain accountability and track system usage.</p>
+        </div>
+
+    </div>
+</div>
+
+</div><!-- /manual-content -->
+</div><!-- /manual-layout -->
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FLOATING PRINT BUTTON
+═══════════════════════════════════════════════════════════════ -->
+<button class="print-fab" onclick="window.print()" title="Print Manual">
+    <i class="fas fa-print"></i>
+</button>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var headers = document.querySelectorAll('.section-header');
+    headers.forEach(function(header) {
+        var body = header.nextElementSibling;
+        if (body && body.classList.contains('section-body')) {
+            var section = header.closest('.manual-section');
+            var allSections = document.querySelectorAll('.manual-section');
+            var index = Array.prototype.indexOf.call(allSections, section);
+            if (index < 2) {
+                body.classList.add('open');
+                var toggle = header.querySelector('.section-toggle');
+                if (toggle) toggle.style.transform = 'rotate(180deg)';
+            }
+        }
+    });
+});
+
+function toggleSection(header) {
+    var body = header.nextElementSibling;
+    if (!body || !body.classList.contains('section-body')) return;
+    var toggle = header.querySelector('.section-toggle');
+    var isOpen = body.classList.contains('open');
+    if (isOpen) {
+        body.classList.remove('open');
+        if (toggle) toggle.style.transform = 'rotate(0deg)';
+    } else {
+        body.classList.add('open');
+        if (toggle) toggle.style.transform = 'rotate(180deg)';
+    }
+}
+
+document.querySelectorAll('.toc-item').forEach(function(item) {
+    item.addEventListener('click', function(e) {
+        e.preventDefault();
+        var targetId = this.getAttribute('href').substring(1);
+        var target = document.getElementById(targetId);
+        if (target) {
+            var sectionBody = target.querySelector('.section-body');
+            if (sectionBody && !sectionBody.classList.contains('open')) {
+                var header = target.querySelector('.section-header');
+                if (header) toggleSection(header);
+            }
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+});
+</script>
+
+</div><!-- manual-modal-container -->
+</div><!-- manual-modal-overlay -->
+
+<style>
+.manual-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99990;
+    background: #f1f5f9;
+    overflow-y: auto;
+}
+.manual-modal-container {
+    min-height: 100vh;
+    background: #f8fafc;
+}
+.manual-modal-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #1a3a2e, #2d5a47);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+.manual-modal-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 16px;
+    transition: background 0.2s;
+}
+.manual-modal-close:hover { background: rgba(255,255,255,0.3); }
+.manual-layout { margin-top: 0 !important; }
+@media print {
+    .manual-modal-topbar { display: none; }
+    .manual-modal-overlay { position: static; background: #fff; }
+}
+</style>
+
+{% endblock %}

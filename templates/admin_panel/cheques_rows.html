@@ -1,0 +1,65 @@
+{% load humanize %}
+{% for c in cheques %}
+<tr id="cheque-row-{{ c.pk }}">
+    <td>{{ c.desc_index }}</td>
+    <td><strong>{{ c.real_cheque_number|default:c.pk }}</strong></td>
+    <td>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+            <span>{{ c.payee_name|default:"—" }}</span>
+            {% if not c.payee and not c.payee_id %}
+            <span class="badge badge-custom-cheque" title="Custom Cheque (Not linked to Supplier Registry)" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%); color: #34d399; border: 1px solid #059669; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
+                <i class="fas fa-file-signature" style="font-size:10px; color:#34d399;"></i> Custom Cheque
+            </span>
+            {% endif %}
+        </div>
+    </td>
+    <td>{{ c.fund_cluster.code|default:"—" }}</td>
+    <td><strong>₱{{ c.amount|floatformat:2|intcomma }}</strong></td>
+    <td>{{ c.date }}</td>
+    <td>
+        {% if c.status == 'released' %}
+        <span class="badge badge-released"><i class="fas fa-check-circle"></i> Released / Claimed</span>
+        {% else %}
+        <span class="badge badge-{{ c.status }}">{{ c.get_status_display }}</span>
+        {% endif %}
+        {% if c.stale_at and c.status != 'released' and c.status != 'voided' %}
+        <div style="font-size:11px; margin-top:4px; font-weight:600; color:{% if c.stale_is_overdue %}#dc2626{% else %}var(--muted){% endif %};">
+            {% if c.stale_is_overdue %}<i class="fas fa-exclamation-triangle"></i> Already Stale{% else %}Stale on {{ c.stale_at }}{% endif %}
+        </div>
+        {% elif c.printed_at and c.stale_after_days and c.status != 'released' and c.status != 'voided' %}
+        <div style="font-size:11px; color:var(--muted); margin-top:4px;">Stale after {{ c.stale_after_days }} days</div>
+        {% endif %}
+    </td>
+    <td style="font-size:12px; color:var(--muted);">
+        {% if c.created_by %}
+            {{ c.created_by.get_full_name|default:c.created_by.username }}
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    <td>
+        <div class="cheque-actions">
+            {% if c.status == 'released' or c.status == 'voided' %}
+            <button class="btn btn-sm btn-secondary" disabled title="{% if c.status == 'released' %}Released - editing disabled{% else %}Voided - editing disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-pen"></i></button>
+            <button class="btn btn-sm btn-primary" disabled title="{% if c.status == 'released' %}Released - printing disabled{% else %}Voided - printing disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-print"></i></button>
+            <button class="btn btn-sm btn-danger" disabled title="{% if c.status == 'released' %}Released - voiding disabled{% else %}Voided - voiding disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-ban"></i></button>
+            <button class="btn btn-sm btn-danger" disabled title="{% if c.status == 'released' %}Released - deletion disabled{% else %}Voided - deletion disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-trash"></i></button>
+            {% else %}
+            <a href="{% url 'cheque_edit' c.pk %}" class="btn btn-sm btn-secondary" title="Edit" onclick="disableRowActions(this)"><i class="fas fa-pen"></i></a>
+            <a href="{% url 'cheque_print' c.pk %}" class="btn btn-sm btn-primary" title="Print" onclick="disableRowActions(this)"><i class="fas fa-print"></i></a>
+            {% if is_admin %}
+            <button class="btn btn-sm btn-danger" title="Void" onclick="disableRowActions(this); openVoid({{ c.pk }});"><i class="fas fa-ban"></i></button>
+            {% endif %}
+            <button class="btn btn-sm btn-danger" title="Delete" onclick="disableRowActions(this); openDelete({{ c.pk }}, '{{ c.real_cheque_number|default:c.pk }}');"><i class="fas fa-trash"></i></button>
+            {% endif %}
+        </div>
+        {% if c.action_blocked %}
+        <div class="cheque-action-warning">{{ c.action_block_reason }}</div>
+        {% endif %}
+    </td>
+</tr>
+{% empty %}
+<tr>
+    <td colspan="9" style="text-align:center; padding:30px; color:var(--muted);">No cheques found. <a href="{% url 'cheque_create' %}">Create one.</a></td>
+</tr>
+{% endfor %}

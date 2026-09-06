@@ -1,0 +1,179 @@
+<!-- Tanggalin ko to kapag ako na ang mahal niya, eme! pera niyo nga!
+
+{% extends 'base.html' %}
+{% block title %}{{ report.title }} - Print{% endblock %}
+{% block content %}
+<style>
+body { background: white; color: #000; }
+.cheque-report { width:100%; padding: 18px; }
+.cheque-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+.cheque-title { text-align:center; font-weight:800; font-size:16px; }
+.cheque-meta { font-size:12px; }
+.cheque-table { width:100%; border-collapse:collapse; margin-top:12px; }
+.cheque-table th, .cheque-table td { border:1px solid #000; font-size:11px; padding:6px 8px; }
+.cert-box { border:1px solid #000; padding:22px; margin-top:16px; }
+.cert-name { text-align:center; font-weight:800; margin-top:18px; text-decoration:underline; }
+.cert-role { text-align:center; font-size:12px; color:#333; }
+@media print {
+    body { margin: 6mm; }
+    .print-only { display: block !important; }
+    .report-page-footer.print-only {
+        position: fixed !important;
+        bottom: 8mm !important;
+        top: auto !important;
+        left: 0 !important;
+        width: 100% !important;
+        text-align: center;
+        font-size: 11px;
+        color: #333;
+    }
+    .report-page-footer.print-only::after {
+        content: "Page " counter(page) " of " counter(pages);
+    }
+}
+</style>
+
+<div class="cheque-report">
+    <div class="cheque-top">
+        <div>
+            <div><strong>Entity Name</strong></div>
+            <div style="margin-top:6px;">{{ entity_name|default:'' }}</div>
+            <div class="cheque-info"><strong>Fund Cluster</strong> {{ data.fund_cluster_display|default:'' }}</div>
+            <div><strong>Bank Name/Account No.</strong> {{ data.account_number|default:'' }}</div>
+        </div>
+        <div style="flex:1"></div>
+        <div style="text-align:right; font-size:12px;">
+            <div>{{ report.generated_at|date:"F d, Y" }}</div>
+            <div style="margin-top:8px;"><strong>Report No.</strong> {{ report.data_snapshot.report_no|default:report.pk }}</div>
+            <div><strong>No. Of Sheets</strong> {{ report.data_snapshot.sheet_count|default:1 }}</div>
+        </div>
+    </div>
+    <div class="cheque-title">REPORTS OF CHECK ISSUED</div>
+    <div style="text-align:center; font-size:18px; color:#333; margin-top:6px;">Period Covered: {{ period_covered }}</div>
+    <table class="cheque-table">
+        <thead>
+            <tr>
+                {% for h in table_headers %}
+                <th>{{ h }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table_rows %}
+            <tr>
+                {% for v in row %}
+                <td>{% if v == "" %}—{% else %}{{ v }}{% endif %}</td>
+                {% endfor %}
+            </tr>
+            {% empty %}
+            <tr><td colspan="{{ table_headers|length }}" style="text-align:center; padding:20px;">No data in this report.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="cert-box">
+        <div style="text-align:center; font-weight:700; margin-bottom:12px;">CERTIFICATION</div>
+        <div style="text-align:center; font-size:12px; color:#333; max-width:900px; margin:0 auto;">
+            I hereby certify on my official oath that this Report of Checks issued is a full, true and correct statement of all checks
+            issued by me during the period stated above for which Check Nos. are inclusive, were actually issued by me in payment of
+            obligations shown in the attached disbursement vouchers/payroll.
+        </div>
+        <div class="cert-name">{{ certification_name }}</div>
+        <div class="cert-role">Name and Signature of Disbursing Officer/Cashier</div>
+    </div>
+</div>
+
+<script>
+// auto-print when opened
+window.onload = function(){
+    var report = document.querySelector('.cheque-report');
+    if (report) {
+        var table = report.querySelector('.cheque-table');
+        if (table) {
+            var rows = Array.from(table.querySelectorAll('tbody tr'));
+            var nothingFollowsRow = Array.from(table.querySelectorAll('tbody tr')).find(r => r.textContent.includes('*** Nothing Follows ***'));
+            var totalRow = Array.from(table.querySelectorAll('tbody tr')).find(r => r.textContent.includes('Total:'));
+            
+            var dataRows = rows.filter(r => r !== nothingFollowsRow && r !== totalRow);
+            
+            var rowsPerPage = 25;
+            var totalRows = dataRows.length;
+            var totalPages = Math.ceil(totalRows / rowsPerPage) || 1;
+            
+            var container = report.parentElement;
+            container.innerHTML = '';
+            
+            for (var p = 0; p < totalPages; p++) {
+                var pageDiv = document.createElement('div');
+                pageDiv.className = 'cheque-report';
+                if (p < totalPages - 1) {
+                    pageDiv.style.pageBreakAfter = 'always';
+                    pageDiv.style.breakAfter = 'page';
+                }
+                
+                var topMeta = report.querySelector('.cheque-top').cloneNode(true);
+                var sheetCountDiv = Array.from(topMeta.querySelectorAll('div')).find(d => d.textContent.includes('No. Of Sheets'));
+                if (sheetCountDiv) {
+                    sheetCountDiv.innerHTML = '<strong>No. Of Sheets</strong> ' + totalPages;
+                }
+                pageDiv.appendChild(topMeta);
+                
+                var title = report.querySelector('.cheque-title').cloneNode(true);
+                pageDiv.appendChild(title);
+                
+                var subEl = report.querySelector('div[style*="text-align:center"]');
+                if (subEl) {
+                    var subtitle = subEl.cloneNode(true);
+                    pageDiv.appendChild(subtitle);
+                }
+                
+                var newTable = table.cloneNode(false);
+                var thead = table.querySelector('thead').cloneNode(true);
+                newTable.appendChild(thead);
+                
+                var tbody = document.createElement('tbody');
+                var startIdx = p * rowsPerPage;
+                var endIdx = Math.min(startIdx + rowsPerPage, totalRows);
+                
+                for (var i = startIdx; i < endIdx; i++) {
+                    tbody.appendChild(dataRows[i].cloneNode(true));
+                }
+                
+                if (p === totalPages - 1) {
+                    if (nothingFollowsRow) tbody.appendChild(nothingFollowsRow.cloneNode(true));
+                    if (totalRow) tbody.appendChild(totalRow.cloneNode(true));
+                }
+                
+                newTable.appendChild(tbody);
+                pageDiv.appendChild(newTable);
+                
+                if (p === totalPages - 1) {
+                    var cert = report.querySelector('.cert-box').cloneNode(true);
+                    var certBody = cert.querySelector('div[style*="text-align:center; font-size:12px"]');
+                    if (certBody) {
+                        certBody.innerHTML = certBody.innerHTML.replace('one (1) sheet', totalPages === 1 ? 'one (1) sheet' : totalPages + ' sheets');
+                    }
+                    pageDiv.appendChild(cert);
+                }
+                
+                var footer = document.createElement('div');
+                footer.className = 'report-page-footer print-only';
+                footer.style.textAlign = 'center';
+                footer.style.fontSize = '11px';
+                footer.style.marginTop = '10px';
+                footer.textContent = 'Page ' + (p + 1) + ' of ' + totalPages;
+                pageDiv.appendChild(footer);
+                
+                container.appendChild(pageDiv);
+            }
+        }
+    }
+    
+    setTimeout(function(){ window.print(); }, 500);
+};
+</script>
+
+<div class="report-page-footer print-only"></div>
+
+{% endblock %}
+-->

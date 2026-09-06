@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ system_name|default:"registry" }} - Logging Out</title>
+    {% if system_logo %}
+    <link rel="icon" type="image/png" href="{{ system_logo.url }}">
+    {% endif %}
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100vh; overflow: hidden; background: #08090d; }
+
+        .logout-overlay {
+            position: fixed; inset: 0; z-index: 99999;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+            background: rgba(8, 9, 13, 0.88);
+            backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+            color: white; text-align: center;
+        }
+
+        .ring-loader {
+            display: flex; flex-direction: column; align-items: center; gap: 24px;
+        }
+
+        .ring-logo {
+            width: 64px; height: 64px; object-fit: contain; border-radius: 50%;
+        }
+
+        .ring-line {
+            width: 160px; height: 3px; border-radius: 3px;
+            background: rgba(255, 255, 255, 0.15); overflow: hidden; position: relative;
+        }
+        .ring-line::after {
+            content: ''; position: absolute; top: 0; left: -40%;
+            width: 40%; height: 100%;
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            border-radius: 3px;
+            animation: lineSlide 1.2s ease-in-out infinite;
+        }
+        @keyframes lineSlide { 0% { left: -40%; } 100% { left: 100%; } }
+
+        .ring-text {
+            font-size: 14px; font-weight: 600;
+            color: rgba(255, 255, 255, 0.7);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div class="logout-overlay">
+        <div class="ring-loader">
+            {% if system_logo %}<img src="{{ system_logo.url }}" alt="Logo" class="ring-logo">{% endif %}
+            <div class="ring-line"></div>
+            <p class="ring-text">Signing out...</p>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', function() {
+            try {
+                var beep = new Audio("/media/system_assets/beep.mp3");
+                beep.play().catch(function() {
+                    try {
+                        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        var osc = audioCtx.createOscillator();
+                        var gain = audioCtx.createGain();
+                        osc.connect(gain); gain.connect(audioCtx.destination);
+                        osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                        osc.start();
+                        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                        osc.stop(audioCtx.currentTime + 0.35);
+                    } catch(e) {}
+                });
+            } catch(e) {}
+        });
+        setTimeout(function() { window.location.href = "{% url 'login' %}"; }, 3000);
+    </script>
+</body>
+</html>

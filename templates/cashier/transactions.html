@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Cashier Transactions{% endblock %}
+
+{% block content %}
+<h2>Recent Transactions</h2>
+
+<table style="width:100%; background:white; border-collapse: collapse; margin-top: 20px;">
+    <thead>
+        <tr>
+            <th style="text-align:left; padding:10px; border-bottom:1px solid #ddd;">Student</th>
+            <th style="text-align:left; padding:10px; border-bottom:1px solid #ddd;">Amount</th>
+            <th style="text-align:left; padding:10px; border-bottom:1px solid #ddd;">Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for txn in transactions %}
+        <tr>
+            <td style="padding:10px; border-bottom:1px solid #f1f1f1;">{{ txn.student_name }}</td>
+            <td style="padding:10px; border-bottom:1px solid #f1f1f1;">₱{{ txn.amount|floatformat:2|intcomma }}</td>
+            <td style="padding:10px; border-bottom:1px solid #f1f1f1;">{{ txn.date }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3" style="padding:10px;">No transactions available.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

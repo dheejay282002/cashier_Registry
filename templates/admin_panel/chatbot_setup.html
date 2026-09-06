@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block title %}Chatbot Setup - {{ system_name|default:"Registry" }}{% endblock %}
+
+{% block nav_chatbot %}active{% endblock %}
+
+{% block content %}
+<div class="page-center">
+  <h2>Chatbot Setup</h2>
+  <p class="page-sub">Configure the AI assistant that users can interact with via the floating chat widget.</p>
+</div>
+
+<style>
+/* ── Dark Mode Overrides for Chatbot Setup ── */
+[data-theme="dark"] .ill-circle.teal {
+    background: #134e4a !important;
+    border-color: #0f766e !important;
+    color: #2dd4bf !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .ill-badge {
+    border-color: #111111 !important;
+}
+
+[data-theme="dark"] div[style*="background:white"],
+[data-theme="dark"] div[style*="background: white"],
+[data-theme="dark"] div[style*="background:#fff"] {
+    background: #111827 !important;
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border-color: #1a1a1a !important;
+}
+
+[data-theme="dark"] label,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] p {
+    color: #f8fafc !important;
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border-color: #222222 !important;
+}
+</style>
+
+<div style="max-width:1100px; margin:0 auto; padding:0 16px;">
+<div style="display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start;">
+
+    <div style="background:white; border-radius:12px; border:1px solid var(--line); padding:28px;">
+        <p style="font-size:14px; color:var(--muted); margin-bottom:20px;">
+            Configure the AI assistant that users can interact with via the floating chat widget.
+        </p>
+
+        {% if success %}
+        <script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>
+        {% endif %}
+        {% if error %}
+        <script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>
+        {% endif %}
+
+        <form method="POST" id="main-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save">
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Name</label>
+                <input type="text" name="name" value="{{ config.name }}" placeholder="AI Assistant"
+                       style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; outline:none;">
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">AI Service Provider</label>
+                <select name="provider" id="providerSelect"
+                        style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; outline:none; background:white;">
+                    <option value="openai" {% if config.provider == 'openai' %}selected{% endif %}>OpenAI (GPT)</option>
+                    <option value="groq" {% if config.provider == 'groq' %}selected{% endif %}>Groq (Llama, Mixtral)</option>
+                    <option value="deepseek" {% if config.provider == 'deepseek' %}selected{% endif %}>DeepSeek</option>
+                    <option value="mistral" {% if config.provider == 'mistral' %}selected{% endif %}>Mistral AI</option>
+                    <option value="google" {% if config.provider == 'google' %}selected{% endif %}>Google Gemini</option>
+                    <option value="x" {% if config.provider == 'x' %}selected{% endif %}>xAI (Grok)</option>
+                    <option value="openrouter" {% if config.provider == 'openrouter' %}selected{% endif %}>OpenRouter</option>
+                    <option value="together" {% if config.provider == 'together' %}selected{% endif %}>Together AI</option>
+                    <option value="huggingface" {% if config.provider == 'huggingface' %}selected{% endif %}>Hugging Face</option>
+                    <option value="ollama" {% if config.provider == 'ollama' %}selected{% endif %}>Ollama (Local)</option>
+                    <option value="custom" {% if config.provider == 'custom' %}selected{% endif %}>Custom (OpenAI-Compatible)</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom:16px;" id="apiKeyGroup">
+                <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">API Key</label>
+                <input type="text" name="api_key" id="apiKeyInput" value="{{ config.api_key }}" placeholder="sk-..."
+                       style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; outline:none; font-family:monospace;">
+                <p style="font-size:11px; color:var(--muted); margin-top:4px;">Leave blank to keep the current key unchanged.</p>
+            </div>
+
+            <div style="margin-bottom:16px;" id="modelGroup">
+                <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Model</label>
+                <select name="model_name" id="modelSelect"
+                        style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; outline:none; background:white;">
+                </select>
+                <input type="text" name="model_name" id="modelInput" value="{{ config.model_name }}"
+                       placeholder="e.g. gpt-4o-mini"
+                       style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; outline:none; display:none;">
+                <p style="font-size:11px; color:var(--muted); margin-top:4px;" id="modelHint">Select a model for your AI provider.</p>
+            </div>
+
+            <div id="baseUrlGroup" style="margin-bottom:16px; display:none;">
+                <label style="display:block; font-size:13px; font-weight:600; color:var(--ink); margin-bottom:6px;">Base URL</label>
+                <input type="text" name="base_url" id="baseUrlInput" value="{{ config.base_url }}" placeholder="https://api.example.com/v1"
+                       style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:14px; outline:none;">
+                <p style="font-size:11px; color:var(--muted); margin-top:4px;">API endpoint URL. Leave blank for provider default.</p>
+            </div>
+
+            <div style="display:flex; gap:20px; align-items:center; margin-bottom:20px;">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:14px; font-weight:600; color:var(--ink);">
+                    <input type="checkbox" name="is_active" {% if config.is_active %}checked{% endif %}
+                           style="width:18px; height:18px; accent-color:var(--nav);">
+                    Enable Chatbot
+                </label>
+            </div>
+
+            <div style="display:flex; gap:10px;">
+                <button type="submit" class="btn btn-primary" style="justify-content:center;">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div>
+        <div style="background:white; border-radius:12px; border:1px solid var(--line); padding:20px; margin-bottom:16px;">
+            <h3 style="font-size:14px; font-weight:600; margin-bottom:8px;"><i class="fas fa-info-circle" style="opacity:0.5; margin-right:6px;"></i> Status</h3>
+            <div style="font-size:13px; color:var(--muted); line-height:2;">
+                <div>Status: <strong style="color:{% if config.is_active %}#16a34a{% else %}#dc2626{% endif %};">{% if config.is_active %}Active{% else %}Inactive{% endif %}</strong></div>
+                <div>Provider: <strong>{{ config.get_provider_display }}</strong></div>
+                {% if config.base_url %}<div>Base URL: <strong style="font-family:monospace; font-size:11px;">{{ config.base_url }}</strong></div>{% endif %}
+                <div>API Key: <strong style="font-family:monospace; font-size:11px;">{% if config.api_key %}{{ config.api_key }}{% else %}Not set{% endif %}</strong></div>
+            </div>
+            <form method="POST" style="margin-top:12px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="clear_history">
+                <button type="submit" class="btn btn-danger btn-sm" style="width:100%; justify-content:center;"
+                        onclick="return confirm('Clear all chat history for all users?')">
+                    <i class="fas fa-trash"></i> Clear Chat History
+                </button>
+            </form>
+        </div>
+
+        <div style="background:white; border-radius:12px; border:1px solid var(--line); padding:20px;">
+            <h3 style="font-size:14px; font-weight:600; margin-bottom:12px;"><i class="fas fa-flask" style="opacity:0.5; margin-right:6px;"></i> Test AI</h3>
+            <div style="font-size:12px; color:var(--muted); margin-bottom:10px;">Send a test message to verify your API connection.</div>
+
+            {% if test_result %}
+            <div style="background:{% if test_success %}#f0fdf4{% else %}#fef2f2{% endif %}; border:1px solid {% if test_success %}#bbf7d0{% else %}#fecaca{% endif %}; border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:12px; color:{% if test_success %}#166534{% else %}#991b1b{% endif %}; white-space:pre-wrap;">{{ test_result }}</div>
+            {% endif %}
+
+            <form method="POST" id="test-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="test">
+                <input type="hidden" name="name" value="{{ config.name }}">
+                <input type="hidden" name="api_key" value="{{ config.api_key }}">
+                <input type="hidden" name="base_url" value="{{ config.base_url }}">
+                <input type="hidden" name="model_name" value="{{ config.model_name }}">
+                <input type="hidden" name="provider" value="{{ config.provider }}">
+                <textarea name="test_message" rows="2" placeholder="Say hello..."
+                          style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:8px; font-size:13px; outline:none; resize:none; margin-bottom:8px;"></textarea>
+                <button type="submit" class="btn btn-sm" style="width:100%; justify-content:center; background:var(--ink); color:white;">
+                    <i class="fas fa-paper-plane"></i> Send Test
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+var PROVIDERS = {
+    openai: {
+        name: 'OpenAI',
+        url: 'https://api.openai.com/v1',
+        models: ['gpt-4o-mini','gpt-4o','gpt-4-turbo','gpt-3.5-turbo']
+    },
+    groq: {
+        name: 'Groq',
+        url: 'https://api.groq.com/openai/v1',
+        models: ['llama-3.1-8b-instant','llama-3.1-70b-versatile','llama-3.2-90b-text-preview','mixtral-8x7b-32768','gemma2-9b-it']
+    },
+    deepseek: {
+        name: 'DeepSeek',
+        url: 'https://api.deepseek.com/v1',
+        models: ['deepseek-chat','deepseek-reasoner']
+    },
+    mistral: {
+        name: 'Mistral AI',
+        url: 'https://api.mistral.ai/v1',
+        models: ['mistral-small-latest','mistral-medium-latest','mistral-large-latest','open-mistral-nemo']
+    },
+    google: {
+        name: 'Google Gemini',
+        url: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        models: ['gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-1.5-pro']
+    },
+    x: {
+        name: 'xAI (Grok)',
+        url: 'https://api.x.ai/v1',
+        models: ['grok-2','grok-2-mini']
+    },
+    openrouter: {
+        name: 'OpenRouter',
+        url: 'https://openrouter.ai/api/v1',
+        models: ['meta-llama/llama-3.1-8b-instant:free','meta-llama/llama-3.1-70b-instruct:free','openai/gpt-4o-mini','anthropic/claude-3-haiku']
+    },
+    together: {
+        name: 'Together AI',
+        url: 'https://api.together.xyz/v1',
+        models: ['meta-llama/Llama-3.1-8B-Instruct-Turbo','meta-llama/Llama-3.1-70B-Instruct-Turbo','mistralai/Mixtral-8x7B-Instruct-v0.1']
+    },
+    huggingface: {
+        name: 'Hugging Face',
+        url: 'https://api-inference.huggingface.co/v1',
+        models: ['meta-llama/Llama-3.1-8B-Instruct','meta-llama/Llama-3.1-70B-Instruct','Qwen/Qwen2.5-72B-Instruct']
+    },
+    ollama: {
+        name: 'Ollama (Local)',
+        url: 'http://localhost:11434/v1',
+        models: ['llama3.1','llama3.2','mistral','codellama','gemma2']
+    },
+    custom: {
+        name: 'Custom',
+        url: '',
+        models: []
+    }
+};
+
+var providerSelect = document.getElementById('providerSelect');
+var modelSelect = document.getElementById('modelSelect');
+var modelInput = document.getElementById('modelInput');
+var modelGroup = document.getElementById('modelGroup');
+var modelHint = document.getElementById('modelHint');
+var baseUrlGroup = document.getElementById('baseUrlGroup');
+var baseUrlInput = document.getElementById('baseUrlInput');
+var apiKeyInput = document.getElementById('apiKeyInput');
+var apiKeyGroup = document.getElementById('apiKeyGroup');
+
+var currentProvider = '{{ config.provider|default:"openai" }}';
+var currentModel = '{{ config.model_name|default:"" }}';
+var currentUrl = '{{ config.base_url|default:"" }}';
+
+function updateForm() {
+    var p = providerSelect.value;
+    var data = PROVIDERS[p] || PROVIDERS.custom;
+
+    if (p === 'custom') {
+        baseUrlGroup.style.display = 'block';
+        baseUrlInput.value = currentUrl || '';
+        baseUrlInput.placeholder = 'https://api.example.com/v1';
+        apiKeyGroup.style.display = 'block';
+        modelSelect.style.display = 'none';
+        modelInput.style.display = 'block';
+        modelInput.value = currentModel || '';
+        modelInput.placeholder = 'Model name (optional)';
+        modelHint.textContent = 'Enter the model name if your provider requires it.';
+    } else {
+        baseUrlGroup.style.display = 'none';
+        baseUrlInput.value = data.url;
+        apiKeyGroup.style.display = 'block';
+        modelSelect.style.display = 'block';
+        modelInput.style.display = 'none';
+        modelHint.textContent = 'Select a model for ' + data.name + '.';
+
+        modelSelect.innerHTML = '';
+        data.models.forEach(function(m) {
+            var opt = document.createElement('option');
+            opt.value = m;
+            opt.textContent = m;
+            if (m === currentModel) opt.selected = true;
+            modelSelect.appendChild(opt);
+        });
+
+        if (currentModel && data.models.indexOf(currentModel) === -1) {
+            var opt = document.createElement('option');
+            opt.value = currentModel;
+            opt.textContent = currentModel + ' (custom)';
+            opt.selected = true;
+            modelSelect.appendChild(opt);
+        }
+    }
+}
+
+providerSelect.addEventListener('change', function() {
+    currentModel = '';
+    currentUrl = '';
+    updateForm();
+});
+
+updateForm();
+
+document.getElementById('test-form').addEventListener('submit', function() {
+    var mainForm = document.getElementById('main-form');
+    var testForm = this;
+    var p = providerSelect.value;
+    testForm.querySelector('input[name="provider"]').value = p;
+    if (p === 'custom') {
+        testForm.querySelector('input[name="base_url"]').value = baseUrlInput.value;
+        testForm.querySelector('input[name="model_name"]').value = modelInput.value;
+    } else {
+        testForm.querySelector('input[name="base_url"]').value = PROVIDERS[p].url;
+        testForm.querySelector('input[name="model_name"]').value = modelSelect.value;
+    }
+    testForm.querySelector('input[name="api_key"]').value = apiKeyInput.value;
+    testForm.querySelector('input[name="name"]').value = mainForm.querySelector('input[name="name"]').value;
+});
+</script>
+{% endblock %}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Cheque Preview</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .cheque-wrapper {
+      font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
+      width: 8in !important;
+      height: 3in !important;
+      min-width: 8in !important;
+      min-height: 3in !important;
+      max-width: 8in !important;
+      max-height: 3in !important;
+      box-sizing: border-box;
+      background: white !important;
+      border: none !important;
+      outline: none !important;
+      border-radius: 0 !important;
+      position: relative;
+      overflow: hidden;
+      color: black;
+      box-shadow: none !important;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="cheque-wrapper" style="font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif; width: 8in; height: 3in; box-sizing: border-box; background: white; border: none !important; outline: none !important; box-shadow: none !important; border-radius: 0 !important; position: relative; overflow: hidden; color: black;">
+    <!-- Fund Cluster Code -->
+    <div style="position: absolute; left: 0.5in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.fund_cluster.code|default:"—" }}</div>
+    
+    <!-- UACS Object Code -->
+    <div style="position: absolute; left: 1in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.uacs_object_code|default:"5021199000" }}</div>
+    
+    <!-- Cheque Number -->
+    <div style="position: absolute; right: 0.5in; top: 0.35in; font-size: 10pt; font-weight: normal; text-align: right;">{{ cheque.cheque_number|default:"______" }}</div>
+    
+    <!-- Spaced Date -->
+    <div id="printDate" style="position: absolute; right: 0.45in; top: 0.55in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
+    
+    <!-- Payee Name -->
+    <div id="printPayee" style="position: absolute; left: 1in; top: 0.90in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cheque.payee_name }}</div>
+    
+    <!-- Amount -->
+    <div style="position: absolute; right: 0.9in; top: 0.85in; font-size: 12pt; font-weight: normal; text-align: right;">{{ cheque.amount|floatformat:2 }}</div>
+    
+    <!-- Amount in Words -->
+    <div id="wordsLine1" style="position: absolute; left: 0.80in; top: 1.2in; font-size: 11pt; font-weight: normal; text-transform: uppercase; width: 5.7in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+</div>
+
+<script>
+function amountToWords(amount) {
+    if (!amount || isNaN(amount) || amount <= 0) return '';
+    const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+        'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+    const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+    function below1000(n) {
+        if (n === 0) return '';
+        if (n < 20) return ones[n] + ' ';
+        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '') + ' ';
+        return ones[Math.floor(n / 100)] + ' HUNDRED ' + below1000(n % 100);
+    }
+    const parts = parseFloat(amount).toFixed(2).split('.');
+    const pesos = parseInt(parts[0]);
+    const centavos = parseInt(parts[1]);
+    let result = '';
+    if (pesos >= 1000000000) result += below1000(Math.floor(pesos / 1000000000)) + 'BILLION ';
+    if (pesos >= 1000000) result += below1000(Math.floor((pesos % 1000000000) / 1000000)) + 'MILLION ';
+    if (pesos >= 1000) result += below1000(Math.floor((pesos % 1000000) / 1000)) + 'THOUSAND ';
+    result += below1000(pesos % 1000);
+    const pesosText = (result.replace(/\s+/g, ' ').trim() || 'ZERO') + ' PESOS';
+    const centsFormatted = String(centavos).padStart(2, '0');
+    return (pesosText + ' & ' + centsFormatted + '/100 ONLY').toUpperCase();
+}
+
+function formatSpacedDate(dateStr) {
+    if (!dateStr) return '____________';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return '____________';
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+    return month.charAt(0) + '   ' + month.charAt(1) + '      ' + day.charAt(0) + '   ' + day.charAt(1) + '      ' + year.charAt(0) + '   ' + year.charAt(1) + '   ' + year.charAt(2) + '   ' + year.charAt(3);
+}
+
+const rawDate = '{{ cheque.date|date:"Y-m-d" }}';
+document.getElementById('printDate').textContent = formatSpacedDate(rawDate);
+
+const amt = parseFloat('{{ cheque.amount|floatformat:2 }}');
+const words = amountToWords(amt);
+document.getElementById('wordsLine1').textContent = words;
+</script>
+</body>
+</html>

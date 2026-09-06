@@ -1,0 +1,1146 @@
+{% extends 'base.html' %}
+{% block nav_about %}active{% endblock %}
+{% block content %}
+<style>
+    .about-container, .cashier-section, .tech-stack-section {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 10px 0 40px;
+    }
+
+    .about-container i:not(.fab):not(.fa-brands), .about-container i:not(.fab):not(.fa-brands)::before,
+    .cashier-section i:not(.fab):not(.fa-brands), .cashier-section i:not(.fab):not(.fa-brands)::before,
+    .tech-stack-section i:not(.fab):not(.fa-brands), .tech-stack-section i:not(.fab):not(.fa-brands)::before {
+        font-family: 'Font Awesome 6 Free' !important;
+        font-weight: 900;
+    }
+
+    .about-container h1, .about-container h2, .about-container h3, .about-container h4, .about-container h5,
+    .about-container h6, .about-container p, .about-container span, .about-container div,
+    .about-container label, .about-container a, .about-container strong, .about-container li,
+    .about-container td, .about-container th,
+    .cashier-section h1, .cashier-section h2, .cashier-section h3, .cashier-section h4, .cashier-section h5,
+    .cashier-section h6, .cashier-section p, .cashier-section span, .cashier-section div,
+    .cashier-section label, .cashier-section a, .cashier-section strong, .cashier-section li,
+    .cashier-section td, .cashier-section th,
+    .tech-stack-section h1, .tech-stack-section h2, .tech-stack-section h3, .tech-stack-section h4, .tech-stack-section h5,
+    .tech-stack-section h6, .tech-stack-section p, .tech-stack-section span, .tech-stack-section div,
+    .tech-stack-section label, .tech-stack-section a, .tech-stack-section strong, .tech-stack-section li,
+    .tech-stack-section td, .tech-stack-section th {
+        font-family: var(--heading-font), sans-serif !important;
+    }
+
+    /* Hero Banner Styling */
+    .about-hero {
+        background: linear-gradient(135deg, #0e2d0a, #004d1a, #0b3d20);
+        color: #ffffff;
+        border-radius: 20px;
+        padding: 40px 30px;
+        margin-bottom: 35px;
+        box-shadow: 0 12px 30px rgba(14, 45, 10, 0.15);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 30px;
+    }
+
+    /* ── Dark Mode Overrides for About Page ── */
+    [data-theme="dark"] .about-card,
+    [data-theme="dark"] .feature-card,
+    [data-theme="dark"] .tech-card,
+    [data-theme="dark"] .developer-card,
+    [data-theme="dark"] .tech-item,
+    [data-theme="dark"] .stat-card,
+    [data-theme="dark"] .info-item,
+    [data-theme="dark"] .feature-item,
+    [data-theme="dark"] .feature-item:hover,
+    [data-theme="dark"] .op-card,
+    [data-theme="dark"] .system-details-card,
+    [data-theme="dark"] .tech-stack-section,
+    [data-theme="dark"] div[class*="card"],
+    [data-theme="dark"] div[class*="box"],
+    [data-theme="dark"] div[class*="section"],
+    [data-theme="dark"] div[style*="background: #f0fdf4"],
+    [data-theme="dark"] div[style*="background: #e8f5e9"],
+    [data-theme="dark"] div[style*="background: #f3f4f6"],
+    [data-theme="dark"] div[style*="background: #ffffff"],
+    [data-theme="dark"] div[style*="background: #fafafa"],
+    [data-theme="dark"] div[style*="background: linear-gradient"] {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    [data-theme="dark"] .logo-wrapper,
+    [data-theme="dark"] .ill-circle,
+    [data-theme="dark"] .about-icon,
+    [data-theme="dark"] .tech-icon,
+    [data-theme="dark"] .feature-icon,
+    [data-theme="dark"] .op-icon {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        border-color: #222222 !important;
+        color: #38bdf8 !important;
+    }
+
+    [data-theme="dark"] .skill-badge,
+    [data-theme="dark"] .profile-card:hover .skill-badge {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #38bdf8 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .contact-icon {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #38bdf8 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .contact-icon:hover {
+        background: #0284c7 !important;
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .staff-card {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        border-color: #1a1a1a !important;
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .staff-name {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .staff-position {
+        color: #34d399 !important;
+    }
+
+    [data-theme="dark"] .staff-department {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] .staff-id {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #cbd5e1 !important;
+    }
+
+    [data-theme="dark"] h1,
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h3,
+    [data-theme="dark"] h4,
+    [data-theme="dark"] h5,
+    [data-theme="dark"] h6,
+    [data-theme="dark"] strong,
+    [data-theme="dark"] b,
+    [data-theme="dark"] span,
+    [data-theme="dark"] li,
+    [data-theme="dark"] td,
+    [data-theme="dark"] th,
+    [data-theme="dark"] p,
+    [data-theme="dark"] .feature-text h4,
+    [data-theme="dark"] .feature-text p,
+    [data-theme="dark"] .op-card h4,
+    [data-theme="dark"] .op-card p {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .text-muted,
+    [data-theme="dark"] .about-sub,
+    [data-theme="dark"] .tech-desc {
+        color: #94a3b8 !important;
+    }
+
+    .about-hero::before {
+        content: '';
+        position: absolute;
+        width: 300px;
+        height: 300px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.03);
+        top: -100px;
+        right: -50px;
+        pointer-events: none;
+    }
+
+    .about-hero-text {
+        flex: 1;
+        max-width: 700px;
+        z-index: 2;
+    }
+
+    .about-hero h1 {
+        font-size: 2.3rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+    }
+
+    .about-hero .version-tag {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.15);
+        color: #a7f3d0;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 99px;
+        margin-bottom: 15px;
+        letter-spacing: 0.05em;
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .about-hero p {
+        font-size: 1.05rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.85);
+        margin: 0;
+    }
+
+    .about-hero-logo {
+        width: 140px;
+        height: 140px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+        color: #a7f3d0;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        animation: floatAnim 4s ease-in-out infinite;
+        z-index: 2;
+    }
+
+    @keyframes floatAnim {
+
+        0%,
+        100% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    /* Section Headers */
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title i {
+        color: #16a34a;
+    }
+
+    /* Grid Layouts */
+    .about-grid {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 30px;
+        margin-bottom: 40px;
+    }
+
+    @media (max-width: 900px) {
+        .about-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .about-hero {
+            flex-direction: column;
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .about-hero-logo {
+            width: 100px;
+            height: 100px;
+            font-size: 3.5rem;
+        }
+    }
+
+    /* Profile Card (Glassmorphism & Interactive) */
+    .profile-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 20px;
+        padding: 30px 24px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+
+    .profile-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 20px 40px rgba(14, 45, 10, 0.08);
+        border-color: rgba(22, 163, 74, 0.25);
+    }
+
+    .avatar-wrapper {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .avatar-glow {
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #047857);
+        opacity: 0;
+        filter: blur(8px);
+        transition: opacity 0.3s ease;
+        z-index: 0;
+    }
+
+    .profile-card:hover .avatar-glow {
+        opacity: 0.4;
+    }
+
+    .developer-avatar-wrapper {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        box-shadow: 0 8px 20px rgba(4, 120, 87, 0.2);
+        z-index: 1;
+        overflow: hidden;
+        border: 3px solid rgba(255, 255, 255, 0.8);
+        background: #dfe6ec;
+        user-select: none;
+        -webkit-user-select: none;
+        transition: all 0.3s ease;
+    }
+
+    .profile-card:hover .developer-avatar-wrapper {
+        transform: scale(1.05);
+        box-shadow: 0 12px 25px rgba(4, 120, 87, 0.35);
+        border-color: #ffffff;
+    }
+
+    .developer-avatar-initials {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: #ffffff;
+        font-size: 3rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2;
+    }
+
+    .developer-avatar-img {
+        position: absolute;
+        inset: 0;
+        background-image: url('/media/developer/dev.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: 3;
+        transition: background-image 0.1s step-end;
+    }
+
+    /* On hover or touch/active state, swap to the second image */
+    .developer-avatar-wrapper:hover .developer-avatar-img,
+    .developer-avatar-wrapper.active .developer-avatar-img {
+        background-image: url('/media/developer/ehh.jpeg');
+    }
+
+    /* Overlay container to block mouse right-clicks and dragging */
+    .developer-avatar-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        background: transparent;
+        cursor: default;
+        pointer-events: auto;
+    }
+
+    .developer-name {
+        font-size: 1.4rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 5px 0 2px;
+    }
+
+    .developer-title {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #15803d;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 15px;
+    }
+
+    .developer-bio {
+        font-size: 0.92rem;
+        color: #4b5563;
+        line-height: 1.6;
+        margin-bottom: 20px;
+        padding: 0 10px;
+    }
+
+    .divider {
+        width: 100%;
+        height: 1px;
+        background: rgba(0, 0, 0, 0.06);
+        margin: 15px 0;
+    }
+
+    .skills-header {
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin-bottom: 10px;
+        letter-spacing: 0.08em;
+    }
+
+    .skills-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        margin-bottom: 20px;
+    }
+
+    .skill-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: #f0fdf4;
+        color: #166534;
+        border: 1px solid #dcfce7;
+        padding: 4px 10px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .profile-card:hover .skill-badge {
+        background: #e8f5e9;
+        border-color: #c8e6c9;
+    }
+
+    .contact-links {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+
+    .contact-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #f3f4f6;
+        color: #4b5563;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: 1px solid #e5e7eb;
+    }
+
+    .contact-icon:hover {
+        background: #15803d;
+        color: #ffffff;
+        border-color: #15803d;
+        transform: translateY(-3px);
+    }
+
+    /* System Details Card */
+    .system-details-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+    }
+
+    .feature-item {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        padding: 16px;
+        border-radius: 14px;
+        border: 1px solid #f3f4f6;
+        background: #fafafa;
+        transition: all 0.25s ease;
+    }
+
+    .feature-item:hover {
+        background: #ffffff;
+        border-color: var(--line);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+        transform: translateY(-2px);
+    }
+
+    .feature-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: #e8f5e9;
+        color: #15803d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .feature-text h4 {
+        font-size: 0.98rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 4px;
+    }
+
+    .feature-text p {
+        font-size: 0.85rem;
+        color: #6b7280;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    /* Technical Stack Card */
+    .tech-stack-section {
+        margin-top: 40px;
+        background: linear-gradient(135deg, #ffffff, #fafbfd);
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.01);
+    }
+
+    .tech-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+        text-align: center;
+    }
+
+    @media (max-width: 768px) {
+        .tech-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .tech-box {
+        padding: 18px;
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #eef2f6;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.01);
+    }
+
+    .tech-box i {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+    }
+
+    .tech-box.django i {
+        color: #092e20;
+    }
+
+    .tech-box.python i {
+        color: #3776ab;
+    }
+
+    .tech-box.js i {
+        color: #f7df1e;
+    }
+
+    .tech-box.db i {
+        color: #00758f;
+    }
+
+    .tech-box h5 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0 0 4px;
+        color: #1f2a37;
+    }
+
+    .tech-box span {
+        font-size: 0.78rem;
+        color: #9ca3af;
+        font-weight: 600;
+    }
+
+    /* ─── Cashier Section (merged from about_cashier) ─── */
+
+    .cashier-section {
+        margin-top: 40px;
+    }
+
+    .operations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .op-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.01);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .op-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(9, 46, 32, 0.05);
+        border-color: rgba(23, 86, 61, 0.25);
+    }
+
+    .op-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .op-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: #e8f5e9;
+        color: #15803d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .op-card h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+    }
+
+    .op-card p {
+        font-size: 0.85rem;
+        color: #6b7280;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .directory-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    .staff-card {
+        width: 270px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        border-radius: 20px;
+        padding: 28px 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+
+    .staff-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(9, 46, 32, 0.06);
+        border-color: rgba(23, 86, 61, 0.28);
+    }
+
+    .staff-avatar-wrapper {
+        position: relative;
+        margin-bottom: 18px;
+    }
+
+    .staff-avatar {
+        width: 105px;
+        height: 105px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: #ffffff;
+        font-size: 2.6rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 15px rgba(4, 120, 87, 0.15);
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .staff-card:hover .staff-avatar {
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(4, 120, 87, 0.25);
+    }
+
+    .staff-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .staff-name {
+        font-size: 1.22rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 5px 0 2px;
+    }
+
+    .staff-position {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #15803d;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+    }
+
+    .staff-department {
+        font-size: 0.82rem;
+        color: #6b7280;
+        margin-bottom: 12px;
+    }
+
+    /* ── MASTER DARK MODE OVERRIDES FOR ABOUT PAGE ── */
+    [data-theme="dark"] .about-card,
+    [data-theme="dark"] .feature-card,
+    [data-theme="dark"] .tech-card,
+    [data-theme="dark"] .developer-card,
+    [data-theme="dark"] .tech-item,
+    [data-theme="dark"] .stat-card,
+    [data-theme="dark"] .info-item,
+    [data-theme="dark"] .feature-item,
+    [data-theme="dark"] .feature-item:hover,
+    [data-theme="dark"] .op-card,
+    [data-theme="dark"] .system-details-card,
+    [data-theme="dark"] .tech-stack-section,
+    [data-theme="dark"] .staff-card,
+    [data-theme="dark"] div[class*="card"],
+    [data-theme="dark"] div[class*="box"],
+    [data-theme="dark"] div[class*="section"],
+    [data-theme="dark"] div[style*="background: #f0fdf4"],
+    [data-theme="dark"] div[style*="background: #e8f5e9"],
+    [data-theme="dark"] div[style*="background: #f3f4f6"],
+    [data-theme="dark"] div[style*="background: #ffffff"],
+    [data-theme="dark"] div[style*="background: #fafafa"],
+    [data-theme="dark"] div[style*="background: linear-gradient"] {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    [data-theme="dark"] .logo-wrapper,
+    [data-theme="dark"] .ill-circle,
+    [data-theme="dark"] .about-icon,
+    [data-theme="dark"] .tech-icon,
+    [data-theme="dark"] .feature-icon,
+    [data-theme="dark"] .op-icon,
+    [data-theme="dark"] .contact-icon {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        border-color: #222222 !important;
+        color: #38bdf8 !important;
+    }
+
+    [data-theme="dark"] .skill-badge,
+    [data-theme="dark"] .profile-card:hover .skill-badge {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #38bdf8 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .staff-card {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        border-color: #1a1a1a !important;
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .staff-name {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .staff-position {
+        color: #34d399 !important;
+    }
+
+    [data-theme="dark"] .staff-department {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] .staff-id {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #cbd5e1 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] h1,
+    [data-theme="dark"] h2,
+    [data-theme="dark"] h3,
+    [data-theme="dark"] h4,
+    [data-theme="dark"] h5,
+    [data-theme="dark"] h6,
+    [data-theme="dark"] strong,
+    [data-theme="dark"] b,
+    [data-theme="dark"] span,
+    [data-theme="dark"] li,
+    [data-theme="dark"] td,
+    [data-theme="dark"] th,
+    [data-theme="dark"] p,
+    [data-theme="dark"] .feature-text h4,
+    [data-theme="dark"] .feature-text p,
+    [data-theme="dark"] .op-card h4,
+    [data-theme="dark"] .op-card p {
+        color: #f8fafc !important;
+    }
+</style>
+
+<div class="about-container">
+    <!-- Page Header removed per user request -->
+
+    <!-- Hero Banner -->
+    <div class="about-hero">
+        <div class="about-hero-text">
+            <span class="version-tag">STABLE v2.5.0</span>
+            <h1>Registry Cheque Management System</h1>
+            <p>
+                An enterprise-level disbursements ledger and financial document repository designed for high-precision
+                treasury workflows. Automate withholding tax allocations, cluster fund balances dynamically, execute
+                secure multi-factor biometrics checkpoints, and export structured registry sheets.
+            </p>
+        </div>
+        <div class="about-hero-logo">
+            <i class="fas fa-money-check-dollar"></i>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="about-grid">
+        <!-- Developer Profile Card -->
+        <div>
+            <div class="section-title">
+                <i class="fas fa-code"></i> Developer Profile
+            </div>
+            <div class="profile-card">
+                <div class="avatar-wrapper">
+                    <div class="avatar-glow"></div>
+                    <div class="developer-avatar-wrapper" id="devAvatarWrapper" oncontextmenu="return false;">
+                        <div class="developer-avatar-initials">DJ</div>
+                        <div class="developer-avatar-img"></div>
+                        <div class="developer-avatar-overlay"></div>
+                    </div>
+                </div>
+                <div class="developer-name">Dee Jay B. Cristobal</div>
+                <div class="developer-title">Lead Web System Architect Developer</div>
+                <div class="developer-bio">
+                    Hi, ako nga pala si DJ.  
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="skills-header">Core Expertise</div>
+                <div class="skills-badges">
+                    <span class="skill-badge">Django MVC</span>
+                    <span class="skill-badge">Security Pipelines</span>
+                    <span class="skill-badge">RFID & MFA</span>
+                    <span class="skill-badge">Postgres/MariaDB</span>
+                    <span class="skill-badge">Vanilla CSS/JS</span>
+                    <span class="skill-badge">API Engineering</span>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="contact-links">
+                    <a href="mailto:deejay.cristobal@protonmail.com" class="contact-icon" title="Email"><i
+                            class="fas fa-envelope"></i></a>
+                    <a href="https://github.com/dheejay282002" target="_blank" class="contact-icon" title="GitHub"><i
+                            class="fab fa-github"></i></a>
+                    <a href="https://linkedin.com" target="_blank" class="contact-icon" title="LinkedIn"><i
+                            class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Features Details -->
+        <div>
+            <div class="section-title">
+                <i class="fas fa-cubes"></i> Core Engines & Modules
+            </div>
+            <div class="system-details-card">
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-money-bill-transfer"></i></div>
+                        <div class="feature-text">
+                            <h4>Disbursement Workflow</h4>
+                            <p>Track full cheque lifecycles from initial draft sequences up to release checkpoints and
+                                bank clearing.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-calculator"></i></div>
+                        <div class="feature-text">
+                            <h4>Auto Tax Calculator</h4>
+                            <p>Compute VAT (1.06 divisor), Professional withholding tax (up to 8 decimal precision), and
+                                EWT inline dynamically.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-shield-halved"></i></div>
+                        <div class="feature-text">
+                            <h4>Biometric & RFID MFA</h4>
+                            <p>Verify administrative operations via secure RFID card scanning, face detection, or
+                                physical fingerprint validation.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-piggy-bank"></i></div>
+                        <div class="feature-text">
+                            <h4>Fund Cluster Allocation</h4>
+                            <p>Maintain separate ledger sheets and track real-time available balances for custom
+                                financial accounts.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-file-pdf"></i></div>
+                        <div class="feature-text">
+                            <h4>PDF & Report Generation</h4>
+                            <p>Instantly compile, format, and export same-month date ranges into clean print-ready PDF
+                                registry summaries.</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <div class="feature-icon"><i class="fas fa-arrows-rotate"></i></div>
+                        <div class="feature-text">
+                            <h4>Audit trail & Backup</h4>
+                            <p>Log all critical actions, track IP session requests, and execute DB backups to ensure
+                                data persistence.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </div>
+</div>
+
+<!-- ─── Cashier Operations (merged from about_cashier) ─── -->
+<div class="cashier-section" style="margin-top: 30px;">
+    <div class="section-title">
+        <i class="fas fa-cubes"></i> Cashiering Services &amp; Core Operations
+    </div>
+    
+    <div class="operations-grid">
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-user-graduate"></i></div>
+                <h4>Tuition &amp; Fees Management</h4>
+            </div>
+            <p>Processes tuition fee payments, laboratory fees, miscellaneous fees, and manages student ledger cards, installment arrangements, and examination clearances.</p>
+        </div>
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-money-check-dollar"></i></div>
+                <h4>Cheque Disbursements</h4>
+            </div>
+            <p>Prepares, records, and releases checks to suppliers, employees, contractors, and other third-party payees, cross-referencing disbursements against UACS budget clusters.</p>
+        </div>
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-percent"></i></div>
+                <h4>Tax Withholding &amp; Divisors</h4>
+            </div>
+            <p>Automatically calculates VAT (using the 1.06 divisor format), Professional Fees withholding taxes, and EWT deductions to ensure compliance with national revenue rules.</p>
+        </div>
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-vault"></i></div>
+                <h4>Vault &amp; Vault Custody</h4>
+            </div>
+            <p>Responsible for balancing cash drawer registers daily, storing safe cash reserves, and prepping daily bank deposits via secure armored transport.</p>
+        </div>
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-wallet"></i></div>
+                <h4>Petty Cash Custody</h4>
+            </div>
+            <p>Maintains and replenishes petty cash funds for quick administrative and departmental expense requisitions, managing vouchers and receipts audits.</p>
+        </div>
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-arrows-rotate"></i></div>
+                <h4>Refunds &amp; Credit Adjustments</h4>
+            </div>
+            <p>Issues credit memos and handles student refunds for dropped courses, overpayments, scholar grants, and formal student withdrawals.</p>
+        </div>
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-fingerprint"></i></div>
+                <h4>Biometric MFA Enforcement</h4>
+            </div>
+            <p>Protects transaction integrity by requiring three levels of verification (RFID badge tapping, fingerprint scans, and facial verification) for administrative ledger entries.</p>
+        </div>
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-file-invoice"></i></div>
+                <h4>RCI Registry Reporting</h4>
+            </div>
+            <p>Compiles and formats structured disbursements journals into Report of Checks Issued (RCI) reports, exporting printable PDF summaries for auditors.</p>
+        </div>
+    </div>
+
+    <!-- Administrative Leadership -->
+    <div class="section-title">
+        <i class="fas fa-sitemap"></i> Administrative Leadership
+    </div>
+    
+    <div class="directory-grid">
+        {% if admins %}
+            {% for profile in admins %}
+                <div class="staff-card">
+                    <div class="staff-avatar-wrapper">
+                        <div class="staff-avatar">
+                            {% if profile.profile_picture %}
+                                <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.get_full_name }}">
+                            {% else %}
+                                <img src="/media/system_assets/2.png" alt="{{ profile.user.get_full_name }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="staff-name">{{ profile.user.get_full_name|default:profile.user.username }}</div>
+                    <div class="staff-position">{{ profile.position|default:"Chief Treasury Admin" }}</div>
+                    <div class="staff-department">{{ profile.department|default:"School Finance Office" }}</div>
+                    <div class="staff-id">EMP ID: {{ profile.employee_id|default:"ADMIN-MEMBER" }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="staff-card-empty" style="text-align: center; color: var(--muted); padding: 20px; grid-column: 1 / -1;">
+                No registered administrative leadership profiles found.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Cashiering Operations -->
+    <div class="section-title">
+        <i class="fas fa-users-gear"></i> Cashiering Operations
+    </div>
+    
+    <div class="directory-grid">
+        {% if cashiers %}
+            {% for profile in cashiers %}
+                <div class="staff-card">
+                    <div class="staff-avatar-wrapper">
+                        <div class="staff-avatar">
+                            {% if profile.profile_picture %}
+                                <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.get_full_name }}">
+                            {% else %}
+                                <img src="/media/system_assets/2.png" alt="{{ profile.user.get_full_name }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="staff-name">{{ profile.user.get_full_name|default:profile.user.username }}</div>
+                    <div class="staff-position">{{ profile.position|default:"Disbursement Cashier" }}</div>
+                    <div class="staff-department">{{ profile.department|default:"Cashiering Unit" }}</div>
+                    <div class="staff-id">EMP ID: {{ profile.employee_id|default:"CASHIER-MEMBER" }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="staff-card-empty" style="text-align: center; color: var(--muted); padding: 20px; grid-column: 1 / -1;">
+                No registered cashier profiles found.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Technical Stack Section -->
+<div class="tech-stack-section" style="margin-top:40px;">
+    <div class="section-title">
+        <i class="fas fa-microchip"></i> System Technology Stack
+    </div>
+    <div class="tech-grid">
+        <div class="tech-box django">
+            <i class="fab fa-envira"></i>
+            <h5>Django Web Framework</h5>
+            <span>Backend Core (v5.0+)</span>
+        </div>
+        <div class="tech-box python">
+            <i class="fab fa-python"></i>
+            <h5>Python 3.12</h5>
+            <span>Core Language Logic</span>
+        </div>
+        <div class="tech-box js">
+            <i class="fab fa-js"></i>
+            <h5>ES6 JavaScript</h5>
+            <span>Dynamic Frontend Interactions</span>
+        </div>
+        <div class="tech-box db">
+            <i class="fas fa-database"></i>
+            <h5>MariaDB / MySQL</h5>
+            <span>Relational Database Engine</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const devAvatar = document.getElementById("devAvatarWrapper");
+        if (devAvatar) {
+            devAvatar.addEventListener("touchstart", () => {
+                devAvatar.classList.add("active");
+            }, { passive: true });
+            devAvatar.addEventListener("touchend", () => {
+                devAvatar.classList.remove("active");
+            }, { passive: true });
+            devAvatar.addEventListener("touchcancel", () => {
+                devAvatar.classList.remove("active");
+            }, { passive: true });
+        }
+    });
+</script>
+{% endblock %}

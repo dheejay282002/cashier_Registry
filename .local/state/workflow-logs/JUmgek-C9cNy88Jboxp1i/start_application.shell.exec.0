@@ -1,0 +1,1000 @@
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 25, 2026 - 04:37:07
+Django version 6.0.4, using settings 'registry.settings'
+Starting development server at http://0.0.0.0:5000/
+Quit the server with CONTROL-C.
+
+[33;1mWARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/[0m
+[25/May/2026 04:37:07] [m"GET / HTTP/1.1" 200 13385[0m
+[25/May/2026 04:37:08] [36m"GET /media/bg.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:37:14] [m"GET / HTTP/1.1" 200 13385[0m
+[25/May/2026 04:37:18] [32m"POST / HTTP/1.1" 302 0[0m
+[25/May/2026 04:37:18] [m"GET /admin-dashboard/ HTTP/1.1" 200 22412[0m
+[25/May/2026 04:37:18] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:37:30] [m"GET /cheques/ HTTP/1.1" 200 21329[0m
+[25/May/2026 04:37:30] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:37:32] [m"GET /cheques/new/ HTTP/1.1" 200 31658[0m
+[25/May/2026 04:37:33] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:37:36] [32m"GET /admin-dashboard/ HTTP/1.1" 302 0[0m
+[25/May/2026 04:37:36] [m"GET /?next=/admin-dashboard/ HTTP/1.1" 200 13385[0m
+[25/May/2026 04:38:36] [m"GET /user-management/ HTTP/1.1" 200 65513[0m
+[25/May/2026 04:38:37] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:38:37] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:38:37] [m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 200 339460[0m
+[25/May/2026 04:38:37] [m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 200 324862[0m
+[25/May/2026 04:38:37] [m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 200 63776[0m
+[25/May/2026 04:38:37] [m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 200 4099991[0m
+[25/May/2026 04:40:06] [m"GET /cheques/ HTTP/1.1" 200 21329[0m
+[25/May/2026 04:40:07] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:40:13] [m"GET /import/ HTTP/1.1" 200 21415[0m
+[25/May/2026 04:40:14] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:40:24] [m"GET /profile-settings/ HTTP/1.1" 200 27975[0m
+[25/May/2026 04:40:25] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:40:40] [m"GET /suppliers/ HTTP/1.1" 200 25536[0m
+[25/May/2026 04:40:40] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:40:46] [m"GET /export/suppliers/?format=csv HTTP/1.1" 200 48[0m
+[25/May/2026 04:40:51] [m"GET /export/suppliers/?format=excel HTTP/1.1" 200 4872[0m
+[25/May/2026 04:41:08] [m"POST /suppliers/ HTTP/1.1" 200 26628[0m
+[25/May/2026 04:41:09] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:41:21] [m"GET /user-management/ HTTP/1.1" 200 65513[0m
+[25/May/2026 04:41:21] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:41:21] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:41:21] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:41:21] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:41:21] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:41:21] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:42:03] [m"GET /system-settings/ HTTP/1.1" 200 23094[0m
+[25/May/2026 04:42:04] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:42:10] [m"GET /admin-dashboard/ HTTP/1.1" 200 22647[0m
+[25/May/2026 04:42:10] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+Not Found: /rfid-scan/
+[25/May/2026 04:42:16] [33m"GET /rfid-scan/?uid=4657675457854 HTTP/1.1" 404 35[0m
+Not Found: /rfid-scan/
+[25/May/2026 04:42:16] [33m"GET /rfid-scan/?uid=4657675457854 HTTP/1.1" 404 35[0m
+[25/May/2026 04:44:46] [m"GET /user-management/ HTTP/1.1" 200 65513[0m
+[25/May/2026 04:44:46] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:44:46] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:44:46] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:44:46] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:44:46] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:44:46] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:44:56] [m"GET /audit-log/ HTTP/1.1" 200 19379[0m
+[25/May/2026 04:44:56] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:07] [m"GET /import/ HTTP/1.1" 200 21415[0m
+[25/May/2026 04:45:07] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:10] [m"GET /profile-settings/ HTTP/1.1" 200 27975[0m
+[25/May/2026 04:45:10] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:12] [m"GET /import/ HTTP/1.1" 200 21415[0m
+[25/May/2026 04:45:12] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:14] [m"GET /user-management/ HTTP/1.1" 200 65513[0m
+[25/May/2026 04:45:14] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:45:14] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:14] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:14] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:14] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:14] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:16] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+[25/May/2026 04:45:33] [m"GET /admin-dashboard/ HTTP/1.1" 200 22647[0m
+[25/May/2026 04:45:33] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:35] [m"GET /user-management/ HTTP/1.1" 200 65513[0m
+[25/May/2026 04:45:35] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:35] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:45:35] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:35] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:35] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:35] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:45:37] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+Bad Request: /face-enroll/
+[25/May/2026 04:46:02] [31;1m"POST /face-enroll/ HTTP/1.1" 400 52[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:46:11] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:46:13] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:46:15] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:46:17] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:46:18] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:46:19] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+[25/May/2026 04:46:52] [32m"GET /user-management/ HTTP/1.1" 302 0[0m
+[25/May/2026 04:46:52] [m"GET /?next=/user-management/ HTTP/1.1" 200 13385[0m
+[25/May/2026 04:46:52] [36m"GET /media/bg.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:46:52] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:46:56] [m"GET /user-management/ HTTP/1.1" 200 65513[0m
+[25/May/2026 04:46:57] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:46:57] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:46:57] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:46:57] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:46:57] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:46:57] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:47:49] [m"GET /user-management/ HTTP/1.1" 200 65513[0m
+[25/May/2026 04:47:49] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:47:49] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:47:49] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:47:49] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:47:49] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:47:49] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:47:54] [m"GET /audit-log/ HTTP/1.1" 200 19379[0m
+[25/May/2026 04:47:54] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:47:59] [m"GET /fund-clusters/ HTTP/1.1" 200 23907[0m
+[25/May/2026 04:47:59] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:48:12] [m"POST /fund-clusters/ HTTP/1.1" 200 24781[0m
+[25/May/2026 04:48:12] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+Internal Server Error: /fund-clusters/
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/admin_panel/views.py", line 215, in fund_clusters
+    return render(request, "admin_panel/fund_clusters.html", context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 202, in render
+    len_values = len(values)
+                 ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 127, in __iter__
+    for row in compiler.results_iter(results):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1542, in apply_converters
+    value = converter(value, expression, connection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/backends/sqlite3/operations.py", line 334, in converter
+    return create_decimal(value).quantize(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+[25/May/2026 04:48:26] [35;1m"POST /fund-clusters/ HTTP/1.1" 500 262279[0m
+Internal Server Error: /fund-clusters/
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/admin_panel/views.py", line 215, in fund_clusters
+    return render(request, "admin_panel/fund_clusters.html", context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 202, in render
+    len_values = len(values)
+                 ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 127, in __iter__
+    for row in compiler.results_iter(results):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1542, in apply_converters
+    value = converter(value, expression, connection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/backends/sqlite3/operations.py", line 334, in converter
+    return create_decimal(value).quantize(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+[25/May/2026 04:48:37] [35;1m"POST /fund-clusters/ HTTP/1.1" 500 262071[0m
+Internal Server Error: /fund-clusters/
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/admin_panel/views.py", line 215, in fund_clusters
+    return render(request, "admin_panel/fund_clusters.html", context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 202, in render
+    len_values = len(values)
+                 ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 127, in __iter__
+    for row in compiler.results_iter(results):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1542, in apply_converters
+    value = converter(value, expression, connection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/backends/sqlite3/operations.py", line 334, in converter
+    return create_decimal(value).quantize(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+[25/May/2026 04:48:48] [35;1m"POST /fund-clusters/ HTTP/1.1" 500 262063[0m
+Internal Server Error: /fund-clusters/
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/admin_panel/views.py", line 215, in fund_clusters
+    return render(request, "admin_panel/fund_clusters.html", context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 202, in render
+    len_values = len(values)
+                 ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 127, in __iter__
+    for row in compiler.results_iter(results):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1542, in apply_converters
+    value = converter(value, expression, connection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/backends/sqlite3/operations.py", line 334, in converter
+    return create_decimal(value).quantize(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+[25/May/2026 04:48:54] [35;1m"GET /fund-clusters/ HTTP/1.1" 500 259707[0m
+[25/May/2026 04:49:01] [m"GET /audit-log/ HTTP/1.1" 200 20304[0m
+[25/May/2026 04:49:01] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:49:06] [m"GET /reports/ HTTP/1.1" 200 22370[0m
+[25/May/2026 04:49:06] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:49:11] [32m"POST /reports/ HTTP/1.1" 302 0[0m
+[25/May/2026 04:49:11] [m"GET /reports/1/ HTTP/1.1" 200 21513[0m
+[25/May/2026 04:49:11] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:49:20] [m"GET /suppliers/ HTTP/1.1" 200 26513[0m
+[25/May/2026 04:49:21] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+Internal Server Error: /fund-clusters/
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/admin_panel/views.py", line 215, in fund_clusters
+    return render(request, "admin_panel/fund_clusters.html", context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 202, in render
+    len_values = len(values)
+                 ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 127, in __iter__
+    for row in compiler.results_iter(results):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1542, in apply_converters
+    value = converter(value, expression, connection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/backends/sqlite3/operations.py", line 334, in converter
+    return create_decimal(value).quantize(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+[25/May/2026 04:49:24] [35;1m"GET /fund-clusters/ HTTP/1.1" 500 259755[0m
+Internal Server Error: /fund-clusters/
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/admin_panel/views.py", line 215, in fund_clusters
+    return render(request, "admin_panel/fund_clusters.html", context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 202, in render
+    len_values = len(values)
+                 ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 127, in __iter__
+    for row in compiler.results_iter(results):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1542, in apply_converters
+    value = converter(value, expression, connection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/backends/sqlite3/operations.py", line 334, in converter
+    return create_decimal(value).quantize(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+[25/May/2026 04:49:28] [35;1m"GET /fund-clusters/ HTTP/1.1" 500 259755[0m
+[25/May/2026 04:49:31] [m"GET /cheques/ HTTP/1.1" 200 21329[0m
+[25/May/2026 04:49:31] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+Internal Server Error: /cheques/new/
+Traceback (most recent call last):
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/core/handlers/base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 59, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/admin_panel/views.py", line 341, in cheque_create
+    return render(request, "admin_panel/cheque_editor.html", context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/shortcuts.py", line 25, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/backends/django.py", line 107, in render
+    return self.template.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 174, in render
+    return self._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 160, in render
+    return compiled_parent._render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 166, in _render
+    return self.nodelist.render(context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/loader_tags.py", line 66, in render
+    result = block.nodelist.render(context)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1091, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/base.py", line 1052, in render_annotated
+    return self.render(context)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/template/defaulttags.py", line 202, in render
+    len_values = len(values)
+                 ^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 372, in __len__
+    self._fetch_all()
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 2000, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/query.py", line 127, in __iter__
+    for row in compiler.results_iter(results):
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/models/sql/compiler.py", line 1542, in apply_converters
+    value = converter(value, expression, connection)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/workspace/.pythonlibs/lib/python3.12/site-packages/django/db/backends/sqlite3/operations.py", line 334, in converter
+    return create_decimal(value).quantize(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+decimal.InvalidOperation: [<class 'decimal.InvalidOperation'>]
+[25/May/2026 04:49:34] [35;1m"GET /cheques/new/ HTTP/1.1" 500 264930[0m
+[25/May/2026 04:50:26] [m"GET /cheques/ HTTP/1.1" 200 20990[0m
+[25/May/2026 04:50:26] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:27] [m"GET /cheques/ HTTP/1.1" 200 20990[0m
+[25/May/2026 04:50:27] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:28] [m"GET /cheques/ HTTP/1.1" 200 20990[0m
+[25/May/2026 04:50:29] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:29] [m"GET /admin-dashboard/ HTTP/1.1" 200 23387[0m
+[25/May/2026 04:50:30] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:32] [m"GET /user-management/ HTTP/1.1" 200 62642[0m
+[25/May/2026 04:50:32] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:32] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:50:32] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:32] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:32] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:32] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:50:37] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:40] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:43] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:44] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:44] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:44] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:45] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:45] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:45] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:45] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:45] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:46] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:46] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:46] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:46] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:46] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:46] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:47] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:47] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:47] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:47] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:47] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:48] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:49] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:50:50] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+[25/May/2026 04:51:20] [32m"GET /user-management/ HTTP/1.1" 302 0[0m
+[25/May/2026 04:51:20] [m"GET /?next=/user-management/ HTTP/1.1" 200 13385[0m
+[25/May/2026 04:51:20] [36m"GET /media/bg.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:21] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:38] [m"GET /reports/ HTTP/1.1" 200 22406[0m
+[25/May/2026 04:51:38] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:42] [m"GET /reports/1/ HTTP/1.1" 200 21174[0m
+[25/May/2026 04:51:42] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:44] [m"GET /reports/ HTTP/1.1" 200 22406[0m
+[25/May/2026 04:51:44] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:47] [m"GET /user-management/ HTTP/1.1" 200 62642[0m
+[25/May/2026 04:51:47] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:47] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:51:47] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:47] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:47] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:47] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:51] [m"GET /user-management/ HTTP/1.1" 200 62642[0m
+[25/May/2026 04:51:52] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:52] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:51:52] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:52] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:52] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:52] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:51:53] [m"GET /import/ HTTP/1.1" 200 21076[0m
+[25/May/2026 04:51:54] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:06] [m"GET /suppliers/ HTTP/1.1" 200 26174[0m
+[25/May/2026 04:52:06] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:07] [m"GET /fund-clusters/ HTTP/1.1" 200 25280[0m
+[25/May/2026 04:52:07] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:09] [m"GET /reports/ HTTP/1.1" 200 22406[0m
+[25/May/2026 04:52:09] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:11] [m"GET /reports/1/ HTTP/1.1" 200 21174[0m
+[25/May/2026 04:52:11] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:25] [m"GET /suppliers/ HTTP/1.1" 200 26174[0m
+[25/May/2026 04:52:25] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:26] [m"GET /fund-clusters/ HTTP/1.1" 200 25280[0m
+[25/May/2026 04:52:27] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:28] [m"GET /reports/ HTTP/1.1" 200 22406[0m
+[25/May/2026 04:52:29] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:32] [m"GET /cheques/ HTTP/1.1" 200 20990[0m
+[25/May/2026 04:52:32] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:52:36] [m"GET /export/cheques/ HTTP/1.1" 200 5093[0m
+[25/May/2026 04:52:39] [m"GET /cheques/new/ HTTP/1.1" 200 31672[0m
+[25/May/2026 04:52:40] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+/home/runner/workspace/cashier/models.py changed, reloading.
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 25, 2026 - 04:52:59
+Django version 6.0.4, using settings 'registry.settings'
+Starting development server at http://0.0.0.0:5000/
+Quit the server with CONTROL-C.
+
+[33;1mWARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/[0m
+[25/May/2026 04:52:59] [m"GET / HTTP/1.1" 200 13385[0m
+[25/May/2026 04:53:00] [36m"GET /media/bg.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:53:09] [32m"POST / HTTP/1.1" 302 0[0m
+[25/May/2026 04:53:09] [m"GET /admin-dashboard/ HTTP/1.1" 200 23752[0m
+[25/May/2026 04:53:09] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:53:11] [m"GET /fund-clusters/ HTTP/1.1" 200 25280[0m
+[25/May/2026 04:53:11] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:53:12] [m"GET /cheques/ HTTP/1.1" 200 20990[0m
+[25/May/2026 04:53:12] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:53:14] [m"GET /cheques/new/ HTTP/1.1" 200 31672[0m
+[25/May/2026 04:53:15] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:21] [32m"POST /cheques/new/ HTTP/1.1" 302 0[0m
+[25/May/2026 04:54:21] [m"GET /cheques/1/edit/ HTTP/1.1" 200 32239[0m
+[25/May/2026 04:54:22] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:27] [m"POST /cheques/1/edit/ HTTP/1.1" 200 32301[0m
+[25/May/2026 04:54:27] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:29] [m"GET /cheques/1/print/ HTTP/1.1" 200 23776[0m
+[25/May/2026 04:54:29] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:55] [m"GET /cheques/ HTTP/1.1" 200 22181[0m
+[25/May/2026 04:54:55] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:57] [m"GET /user-management/ HTTP/1.1" 200 62540[0m
+[25/May/2026 04:54:57] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:57] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:54:58] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:58] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:58] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:58] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:54:59] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:55:15] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+[25/May/2026 04:57:01] [m"GET /cheques/ HTTP/1.1" 200 22181[0m
+[25/May/2026 04:57:01] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:04] [m"GET /user-management/ HTTP/1.1" 200 62540[0m
+[25/May/2026 04:57:04] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:04] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:57:04] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:04] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:04] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:04] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:05] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+[25/May/2026 04:57:29] [m"GET /user-management/ HTTP/1.1" 200 62540[0m
+[25/May/2026 04:57:29] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:29] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:57:29] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:29] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:29] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:29] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:57:30] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+[25/May/2026 04:58:16] [m"GET /user-management/ HTTP/1.1" 200 62540[0m
+[25/May/2026 04:58:16] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:16] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:58:16] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:16] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:16] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:16] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:18] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:20] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:27] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:28] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:28] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:29] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:29] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:29] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:30] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:30] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:31] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:31] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:31] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:32] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:32] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:32] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:32] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:33] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:33] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:33] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:33] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:33] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:34] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:34] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:34] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:34] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:34] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:35] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:35] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:35] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:35] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:35] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:36] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:36] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:36] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:36] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:36] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:37] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:37] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:37] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:38] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:38] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:38] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:39] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:39] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:40] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:41] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:42] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:43] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+Not Implemented: /start-fingerprint-enroll/
+[25/May/2026 04:58:43] [35;1m"POST /start-fingerprint-enroll/ HTTP/1.1" 501 105[0m
+[25/May/2026 04:58:46] [m"GET /user-management/ HTTP/1.1" 200 62540[0m
+[25/May/2026 04:58:46] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:58:46] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:46] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:46] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:46] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:58:46] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+/home/runner/workspace/cashier/models.py changed, reloading.
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 25, 2026 - 04:59:42
+Django version 6.0.4, using settings 'registry.settings'
+Starting development server at http://0.0.0.0:5000/
+Quit the server with CONTROL-C.
+
+[33;1mWARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/[0m
+[25/May/2026 04:59:42] [m"GET / HTTP/1.1" 200 13385[0m
+[25/May/2026 04:59:42] [36m"GET /media/bg.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:59:48] [32m"POST / HTTP/1.1" 302 0[0m
+[25/May/2026 04:59:48] [m"GET /admin-dashboard/ HTTP/1.1" 200 24478[0m
+[25/May/2026 04:59:48] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:59:51] [m"GET /user-management/ HTTP/1.1" 200 62540[0m
+[25/May/2026 04:59:51] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 04:59:51] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 04:59:51] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:59:51] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:59:51] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 04:59:51] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 04:59:53] [m"GET /role-permissions/ HTTP/1.1" 200 366[0m
+/home/runner/workspace/admin_panel/views.py changed, reloading.
+Watching for file changes with StatReloader
+Performing system checks...
+
+System check identified no issues (0 silenced).
+May 25, 2026 - 04:59:55
+Django version 6.0.4, using settings 'registry.settings'
+Starting development server at http://0.0.0.0:5000/
+Quit the server with CONTROL-C.
+
+[33;1mWARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
+For more information on production servers see: https://docs.djangoproject.com/en/6.0/howto/deployment/[0m
+[25/May/2026 04:59:56] [m"GET / HTTP/1.1" 200 13385[0m
+[25/May/2026 04:59:56] [36m"GET /media/bg.png HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:06] [32m"POST / HTTP/1.1" 302 0[0m
+[25/May/2026 05:00:06] [m"GET /admin-dashboard/ HTTP/1.1" 200 24478[0m
+[25/May/2026 05:00:06] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:15] [m"GET /audit-log/ HTTP/1.1" 200 22247[0m
+[25/May/2026 05:00:15] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:47] [m"GET /user-management/ HTTP/1.1" 200 59846[0m
+[25/May/2026 05:00:47] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:47] [33m"GET /static/default.png HTTP/1.1" 404 1903[0m
+[25/May/2026 05:00:47] [36m"GET /media/profile_pictures/Planet9_3840x2160_i1E14cR.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:47] [36m"GET /media/profile_pictures/IMG_20260319_220958.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:47] [36m"GET /media/profile_pictures/9162840_wyaGGCQ.jpg HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:47] [36m"GET /media/profile_pictures/IMG_20251107_111100_908.webp HTTP/1.1" 304 0[0m
+[25/May/2026 05:00:48] [m"GET /role-permissions/ HTTP/1.1" 200 1762[0m
+[25/May/2026 05:01:45] [m"GET /reports/ HTTP/1.1" 200 22406[0m
+[25/May/2026 05:01:45] [36m"GET /media/system_assets/Hogwarts-Logo-500x281.png HTTP/1.1" 304 0[0m

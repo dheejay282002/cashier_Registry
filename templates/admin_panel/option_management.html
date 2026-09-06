@@ -1,0 +1,568 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+/* =========================
+   PAGE
+========================= */
+.page-header{
+    margin-bottom:20px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+.page-header h2{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:0;
+    font-size:1.5rem;
+    font-weight:700;
+}
+
+/* =========================
+   ALERTS
+========================= */
+.alert{
+    padding:14px 16px;
+    border-radius:12px;
+    margin-bottom:18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-weight:500;
+}
+
+.alert-error{
+    background:#fff1f2;
+    color:#b42318;
+    border:1px solid #fecdd3;
+}
+
+.alert-success{
+    background:#ecfdf3;
+    color:#027a48;
+    border:1px solid #abefc6;
+}
+
+/* =========================
+   CARD
+========================= */
+.option-card{
+    width:100%;
+    max-width:950px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 4px 20px rgba(0,0,0,.04);
+}
+
+/* =========================
+   TABLE
+========================= */
+.table-wrap{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#f8fafc;
+}
+
+thead th{
+    padding:16px;
+    text-align:left;
+    font-size:.9rem;
+    font-weight:700;
+    border-bottom:1px solid var(--line);
+}
+
+tbody td{
+    padding:16px;
+    border-bottom:1px solid #f1f5f9;
+    vertical-align:middle;
+}
+
+tbody tr:hover{
+    background:#fafafa;
+}
+
+tbody tr:last-child td{
+    border-bottom:none;
+}
+
+.empty-state{
+    text-align:center;
+    color:var(--muted);
+    padding:30px !important;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+.btn{
+    border:none;
+    cursor:pointer;
+    border-radius:10px;
+    padding:10px 16px;
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    transition:.2s ease;
+}
+
+.btn-primary{
+    background:var(--primary);
+    color:#fff;
+}
+
+.btn-primary:hover{
+    background:var(--primary-hover);
+}
+
+.btn-danger{
+    background:#dc2626;
+    color:#fff;
+}
+
+.btn-danger:hover{
+    background:#b91c1c;
+}
+
+.btn-sm{
+    padding:8px 12px;
+    font-size:.85rem;
+}
+
+/* =========================
+   MODAL
+========================= */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:999;
+}
+
+.modal.show{
+    display:flex;
+}
+
+.modal-box{
+    width:100%;
+    max-width:500px;
+    background:#fff;
+    border-radius:18px;
+    overflow:hidden;
+    animation:modalShow .2s ease;
+    box-shadow:0 10px 40px rgba(0,0,0,.15);
+}
+
+@keyframes modalShow{
+    from{
+        opacity:0;
+        transform:translateY(10px) scale(.98);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0) scale(1);
+    }
+}
+
+.modal-header{
+    padding:18px 22px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.modal-header h3{
+    margin:0;
+    font-size:1.1rem;
+}
+
+.modal-close{
+    background:none;
+    border:none;
+    font-size:1.2rem;
+    cursor:pointer;
+    color:#667085;
+}
+
+.modal-body{
+    padding:22px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.form-group label{
+    font-weight:600;
+    font-size:.92rem;
+}
+
+.form-input{
+    width:100%;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    outline:none;
+    transition:.2s ease;
+    font-size:.95rem;
+}
+
+.form-input:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 4px rgba(0,79,17,.08);
+}
+
+.modal-footer{
+    padding:18px 22px;
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+}
+
+.btn-secondary{
+    background:#f3f4f6;
+    color:#111827;
+}
+
+.btn-secondary:hover{
+    background:#e5e7eb;
+}
+
+/* =========================
+   MOBILE
+========================= */
+@media (max-width:640px){
+
+    .page-header{
+        align-items:flex-start;
+    }
+
+    .page-header .btn{
+        width:100%;
+        justify-content:center;
+    }
+
+    .modal-box{
+        max-width:100%;
+    }
+
+    .modal-footer{
+        flex-direction:column;
+    }
+
+    .modal-footer .btn{
+        width:100%;
+        justify-content:center;
+    }
+}
+/* =========================
+   MODAL
+========================= */
+.modal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:999;
+}
+
+.modal.show{
+    display:flex;
+}
+
+.modal-box{
+    width:100%;
+    max-width:500px;
+    background:#fff;
+    border-radius:6px; /* slightly sharper corners like the image */
+    overflow:hidden;
+    animation:modalShow .2s ease;
+    box-shadow:0 10px 40px rgba(0,0,0,.15);
+}
+
+@keyframes modalShow{
+    from{ opacity:0; transform:translateY(10px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+}
+
+/* Green Header */
+.modal-header{
+    padding:20px 22px;
+    background:#17563d;
+    color:#ffffff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.modal-header h3{
+    margin:0;
+    font-size:1.4rem;
+    font-weight:700;
+}
+
+.modal-body{
+    padding:30px 40px 10px;
+}
+
+/* Joined Input Group */
+.tax-input-group {
+    display: flex;
+    border: 1px solid #8e8e8e;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.tax-input-group input {
+    border: none;
+    padding: 10px 16px;
+    outline: none;
+    font-size: 0.85rem;
+    color: #333;
+}
+
+.tax-name-input {
+    flex: 1;
+    border-right: 1px solid #8e8e8e !important;
+}
+
+.tax-value-input {
+    width: 120px;
+    text-align: center;
+}
+
+.tax-helper-text {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 10px;
+    font-weight: 500;
+}
+
+/* Footer & Pill Buttons */
+.modal-footer{
+    padding:20px 22px 30px;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 20px;
+    display:flex;
+    justify-content:center;
+    gap:16px;
+}
+
+.btn-pill {
+    border-radius: 25px;
+    padding: 8px 36px;
+    font-weight: 600;
+    font-size: 1.05rem;
+    border: 1px solid transparent;
+}
+
+.btn-cancel {
+    background: #cccccc;
+    color: #000;
+    border-color: #8e8e8e;
+}
+
+.btn-cancel:hover {
+    background: #b3b3b3;
+}
+
+.btn-ok {
+    background: #335c2b;
+    color: #ffffff;
+}
+
+.btn-ok:hover {
+    background: #24421e;
+}
+
+</style>
+
+{% if error %}
+<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>
+{% endif %}
+
+{% if success %}
+<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>
+{% endif %}
+
+<div class="page-header">
+    <h2>
+        <i class="fas fa-list-check"></i>
+        {{ heading }}
+    </h2>
+
+    <button class="btn btn-primary" onclick="openModal()">
+        <i class="fas fa-plus"></i>
+        Add New
+    </button>
+</div>
+
+<div class="option-card">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:70px;">#</th>
+                    {% if heading == 'Tax Management' %}
+                    <th>Tax Name</th>
+                    <th>Value(0%/0% or 0%)</th>
+                    {% else %}
+                    <th>Value</th>
+                    {% endif %}
+                    <th style="width:140px;">Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for option in options %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+
+                    {% if heading == 'Tax Management' %}
+                    <td>{{ option.value }}</td>
+                    <td>{{ option.uacs|default:"—" }}</td>
+                    {% else %}
+                    <td>{{ option.value }}</td>
+                    {% endif %}
+
+                    <td>
+                        <form method="post"
+                              onsubmit="return confirm('Delete this item?')"
+                              style="display:inline;">
+                            {% csrf_token %}
+
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="option_id" value="{{ option.pk }}">
+
+                            <button type="submit" class="btn btn-danger btn-sm">
+                                <i class="fas fa-trash"></i>
+                                Delete
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="empty-state">
+                        No records yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="addModal">
+    <div class="modal-box">
+        
+        <div class="modal-header">
+            <h3>{% if heading == 'Tax Management' %}Add New Tax{% else %}Add New Option{% endif %}</h3>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+
+            <div class="modal-body">
+                {% if heading == 'Tax Management' %}
+                <div class="tax-input-group">
+                    <input 
+                        type="text" 
+                        name="name" 
+                        class="tax-name-input" 
+                        placeholder="Tax Name" 
+                        required
+                    >
+                    <input 
+                        type="text" 
+                        name="value" 
+                        class="tax-value-input" 
+                        placeholder="Tax Value" 
+                        required
+                    >
+                </div>
+                
+                <div class="tax-helper-text">
+                    Tax Value must be 0%/0%, or 0%
+                </div>
+                {% else %}
+                <div class="form-group">
+                    <label>{{ placeholder }}</label>
+                    <input 
+                        type="text" 
+                        name="value" 
+                        class="form-input" 
+                        placeholder="{{ placeholder }}" 
+                        required
+                    >
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-pill btn-cancel" onclick="closeModal()">
+                    Cancel
+                </button>
+                
+                <button type="submit" class="btn btn-pill btn-ok">
+                    OK!
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+const modal = document.getElementById('addModal');
+
+function openModal(){
+    modal.classList.add('show');
+}
+
+function closeModal(){
+    modal.classList.remove('show');
+}
+
+window.addEventListener('click', function(e){
+    if(e.target === modal){
+        closeModal();
+    }
+});
+
+window.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+        closeModal();
+    }
+});
+</script>
+
+{% endblock %}

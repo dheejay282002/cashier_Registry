@@ -1,0 +1,1581 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+<style>
+:root {
+  --primary: #004f11;
+  --primary-hover: #076319;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+  --line: #e2e8f0;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #050505;
+  --muted: #64748b;
+  --radius: 16px;
+}
+
+.backup-container {
+  max-width: 680px;
+  margin: 40px auto;
+  padding: 0 16px;
+  text-align: center;
+}
+
+/* Centered Illustration */
+.backup-illustration {
+  margin-bottom: 24px;
+  display: inline-block;
+}
+
+.illustration-circle {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  background: #f0fdf4;
+  border: 1px solid #dcfce7;
+  color: #16a34a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  box-shadow: 0 8px 24px rgba(22, 163, 74, 0.06);
+}
+
+.sync-badge {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
+  background: #16a34a;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  animation: spinSlow 12s linear infinite;
+}
+
+/* ── Dark Mode Overrides for Backup & Restore ── */
+[data-theme="dark"] .illustration-circle {
+  background: #064e3b !important;
+  border-color: #047857 !important;
+  color: #34d399 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .sync-badge {
+  border-color: #111111 !important;
+}
+
+[data-theme="dark"] div[style*="background:white"],
+[data-theme="dark"] div[style*="background: white"],
+[data-theme="dark"] div[style*="background:#fff"],
+[data-theme="dark"] div[style*="background: #fff"] {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border-color: #1a1a1a !important;
+}
+
+@keyframes spinSlow {
+  to { transform: rotate(360deg); }
+}
+
+.backup-container h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.backup-container p.subtitle {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0 auto 36px;
+  max-width: 500px;
+}
+
+/* Accordion cards */
+.accordion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.accordion-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.accordion-card:hover {
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+  border-color: #cbd5e1;
+}
+
+.accordion-card.expanded {
+  border-color: #94a3b8;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  padding: 20px 24px;
+  cursor: pointer;
+  user-select: none;
+  gap: 18px;
+}
+
+.accordion-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.icon-backup {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.icon-restore {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.icon-reset {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.accordion-info {
+  flex: 1;
+}
+
+.accordion-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.accordion-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.accordion-chevron {
+  color: #94a3b8;
+  font-size: 13px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-card.expanded .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.accordion-inner {
+  padding: 0 24px 24px 90px;
+  border-top: 1px dashed var(--line);
+  padding-top: 20px;
+}
+
+@media (max-width: 600px) {
+  .accordion-inner {
+    padding: 20px;
+  }
+  .accordion-header {
+    padding: 16px;
+  }
+}
+
+/* Forms and buttons */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.form-control {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  outline: none;
+  font-size: 14px;
+  transition: .2s ease;
+  box-sizing: border-box;
+}
+
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 79, 17, 0.1);
+}
+
+.btn {
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: .2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: var(--danger-hover);
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.alert-error {
+  background: #fff1f2;
+  color: #9f1239;
+  border: 1px solid #ffe4e6;
+}
+
+/* Modal and preview table styling */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  padding: 20px;
+}
+
+.preview-modal-content {
+  width: 100%;
+  max-width: 1100px;
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+  animation: popup .2s ease;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  position: relative;
+}
+
+@keyframes popup {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.preview-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.preview-modal-footer {
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  margin-top: 16px;
+}
+
+.preview-tabs-nav {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  overflow-x: auto;
+}
+
+.preview-tab-btn {
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-tab-btn:hover {
+  background: #f1f5f9;
+  color: var(--text);
+}
+
+.preview-tab-btn.active {
+  background: #e6f4ea;
+  color: #0f5132;
+}
+
+.preview-tab-content {
+  display: none;
+}
+
+.preview-tab-content.active {
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-table-container {
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  max-height: 40vh;
+}
+
+.preview-table-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.preview-table-container th {
+  position: sticky;
+  top: 0;
+  background: var(--primary);
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 10px 14px;
+  text-align: left;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.preview-table-container td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text);
+}
+
+.preview-table-container tr:hover td {
+  background: #f8fafc;
+}
+
+.preview-empty-state {
+  padding: 30px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.preview-empty-state i {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: var(--line);
+  display: block;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.badge {
+  background: #f1f5f9;
+  color: #475569;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.preview-box {
+  margin-top: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--line);
+}
+
+.preview-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.preview-item {
+  background: white;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+}
+
+.preview-item span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.preview-item strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Retention Info Modal */
+.retention-modal-content {
+  width: 100%;
+  max-width: 480px;
+  background: white;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+  animation: popup .2s ease;
+  border: 1px solid var(--line);
+}
+
+.retention-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.retention-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: #f0f9ff;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.retention-header-text h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.retention-header-text p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.retention-body {
+  margin-bottom: 20px;
+}
+
+.retention-section {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.retention-section:last-child { margin-bottom: 0; }
+
+.retention-section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.retention-section-title i { font-size: 12px; }
+
+.retention-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.retention-row:last-child { border-bottom: none; }
+
+.retention-row span {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.retention-row strong {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.retention-note {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.retention-note i {
+  color: #d97706;
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+.retention-note span {
+  font-size: 12px;
+  color: #92400e;
+  line-height: 1.5;
+}
+
+/* ── MASTER DARK MODE OVERRIDES FOR BACKUP & RESTORE ── */
+[data-theme="dark"] .illustration-circle {
+  background: #064e3b !important;
+  border-color: #047857 !important;
+  color: #34d399 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .sync-badge {
+  border-color: #111111 !important;
+}
+
+[data-theme="dark"] .accordion-card,
+[data-theme="dark"] .accordion-inner,
+[data-theme="dark"] .preview-box,
+[data-theme="dark"] div[class*="box"],
+[data-theme="dark"] div[class*="card"] {
+  background: #111827 !important;
+  background-color: #111827 !important;
+  color: #f8fafc !important;
+  border-color: #1a1a1a !important;
+}
+
+[data-theme="dark"] .icon-backup {
+  background: #064e3b !important;
+  background-color: #064e3b !important;
+  color: #34d399 !important;
+  border: 1px solid #047857 !important;
+}
+
+[data-theme="dark"] .icon-restore {
+  background: #0c4a6e !important;
+  background-color: #0c4a6e !important;
+  color: #38bdf8 !important;
+  border: 1px solid #0369a1 !important;
+}
+
+[data-theme="dark"] .icon-reset {
+  background: #7f1d1d !important;
+  background-color: #7f1d1d !important;
+  color: #f87171 !important;
+  border: 1px solid #b91c1c !important;
+}
+
+[data-theme="dark"] .alert.alert-error,
+[data-theme="dark"] .alert-error {
+  background: #7f1d1d !important;
+  background-color: #7f1d1d !important;
+  color: #f87171 !important;
+  border: 1px solid #b91c1c !important;
+}
+
+[data-theme="dark"] .alert.alert-error *,
+[data-theme="dark"] .alert-error * {
+  color: #f87171 !important;
+}
+
+[data-theme="dark"] .accordion-title,
+[data-theme="dark"] label,
+[data-theme="dark"] strong {
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .accordion-desc,
+[data-theme="dark"] .retention-note span {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="file"],
+[data-theme="dark"] .form-control {
+  background: #111111 !important;
+  color: #ffffff !important;
+  border-color: #222222 !important;
+}
+</style>
+
+<div class="backup-container">
+
+  <!-- Centered Illustration -->
+  <div class="backup-illustration">
+    <div class="illustration-circle">
+      <i class="fas fa-server"></i>
+      <div class="sync-badge">
+        <i class="fas fa-arrows-rotate"></i>
+      </div>
+    </div>
+  </div>
+
+  <h2>Backup and Restore</h2>
+  <p class="subtitle">This is the description of this backup and restore setting</p>
+
+  {% if error %}
+    <script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>
+  {% endif %}
+
+  {% if success %}
+    <script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>
+  {% endif %}
+
+  <div class="accordion-list">
+
+    <!-- ACCORDION CARD 1: CREATE BACKUP -->
+    <div class="accordion-card" id="card-backup">
+      <div class="accordion-header">
+        <div class="accordion-icon icon-backup">
+          <i class="fas fa-cloud-arrow-down"></i>
+        </div>
+        <div class="accordion-info">
+          <div class="accordion-title">Create Backup</div>
+          <div class="accordion-desc">Package database, media files, and settings into a download archive.</div>
+        </div>
+        <div class="accordion-chevron">
+          <i class="fas fa-chevron-down"></i>
+        </div>
+      </div>
+      <div class="accordion-content">
+        <div class="accordion-inner">
+          <form id="backupDownloadForm" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="download">
+            <div class="form-group">
+              <label>Confirm Admin Password</label>
+              <input
+                type="password"
+                name="admin_password"
+                class="form-control"
+                placeholder="Enter admin password to download backup"
+                required
+              >
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 14px;">
+              <button class="btn btn-primary" type="submit">
+                <i class="fas fa-download"></i> Create & Download
+              </button>
+              <button class="btn btn-secondary" type="button" onclick="showRetentionInfo()">
+                <i class="fas fa-circle-info"></i> Retention Info
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCORDION CARD 2: RESTORE BACKUP -->
+    <div class="accordion-card {% if restore_preview %}expanded{% endif %}" id="card-restore">
+      <div class="accordion-header">
+        <div class="accordion-icon icon-restore">
+          <i class="fas fa-cloud-arrow-up"></i>
+        </div>
+        <div class="accordion-info">
+          <div class="accordion-title">Restore Backup</div>
+          <div class="accordion-desc">Upload a previous backup archive file to restore system database tables.</div>
+        </div>
+        <div class="accordion-chevron">
+          <i class="fas fa-chevron-down"></i>
+        </div>
+      </div>
+      <div class="accordion-content">
+        <div class="accordion-inner">
+          {% if not restore_preview %}
+            <!-- Upload Form -->
+            <form id="restorePreviewForm" method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="preview">
+              <div class="form-group">
+                <label>Select Backup File (.bak, .zip)</label>
+                <input
+                  type="file"
+                  name="backup_file"
+                  class="form-control"
+                  accept=".bak,.zip"
+                  required
+                >
+              </div>
+              <div class="form-group">
+                <label>Confirm Admin Password</label>
+                <input
+                  type="password"
+                  name="admin_password"
+                  class="form-control"
+                  placeholder="Enter admin password to upload"
+                  required
+                >
+              </div>
+              <div style="margin-top: 14px;">
+                <button class="btn btn-primary" type="submit">
+                  <i class="fas fa-upload"></i> Upload & Preview
+                </button>
+              </div>
+            </form>
+          {% else %}
+            <!-- Preview and Confirmation Box -->
+            <div class="preview-box">
+              <div class="preview-meta">
+                <div class="preview-item">
+                  <span>Uploaded Backup</span>
+                  <strong>{{ restore_preview.filename }}</strong>
+                </div>
+                <div class="preview-item">
+                  <span>Created At</span>
+                  <strong>{{ restore_preview.created_at }}</strong>
+                </div>
+                <div class="preview-item">
+                  <span>Created By</span>
+                  <strong>{{ restore_preview.created_by_username }}</strong>
+                </div>
+              </div>
+              <div class="badges">
+                {% for k, v in restore_preview.counts.items %}
+                  <div class="badge">{{ k }}: {{ v }}</div>
+                {% endfor %}
+              </div>
+              <div style="margin-top: 18px; display: flex; gap: 10px;">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="openPreviewModal()"
+                  style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;"
+                >
+                  <i class="fas fa-magnifying-glass-plus"></i> View Backup Data Preview
+                </button>
+                <a
+                  href="{% url 'backup_restore' %}"
+                  class="btn btn-secondary"
+                  style="display: flex; align-items: center; justify-content: center; gap: 8px;"
+                >
+                  <i class="fas fa-trash-can"></i> Cancel Restore
+                </a>
+              </div>
+
+              <form id="restoreConfirmForm" method="post" style="margin-top: 24px; border-top: 1px dashed var(--line); padding-top: 20px;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="restore">
+                <input type="hidden" name="restore_token" value="{{ restore_token }}">
+                
+                <div class="alert alert-error" style="display: flex; gap: 12px; align-items: flex-start; text-align: left;">
+                  <i class="fas fa-triangle-exclamation" style="font-size: 18px; color: #dc2626; margin-top: 2px;"></i>
+                  <div>
+                    <strong>Critical Action:</strong> Applying this restore will overwrite all current system records. This cannot be undone.
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Verify Admin Password</label>
+                  <input
+                    type="password"
+                    name="admin_password"
+                    class="form-control"
+                    placeholder="Enter admin password to apply restore"
+                    required
+                  >
+                </div>
+                <div style="margin-top: 14px;">
+                  <button class="btn btn-danger" type="submit">
+                    <i class="fas fa-circle-check"></i> Confirm & Apply Restore
+                  </button>
+                </div>
+              </form>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCORDION CARD 3: RESET SYSTEM -->
+    <div class="accordion-card" id="card-reset">
+      <div class="accordion-header">
+        <div class="accordion-icon icon-reset">
+          <i class="fas fa-triangle-exclamation"></i>
+        </div>
+        <div class="accordion-info">
+          <div class="accordion-title">Reset System</div>
+          <div class="accordion-desc">Permanently wipe transaction histories, reports, and non-admin users.</div>
+        </div>
+        <div class="accordion-chevron">
+          <i class="fas fa-chevron-down"></i>
+        </div>
+      </div>
+      <div class="accordion-content">
+        <div class="accordion-inner">
+          <div class="alert alert-error" style="display: flex; gap: 12px; align-items: flex-start; text-align: left; margin-bottom: 16px;">
+            <i class="fas fa-triangle-exclamation" style="font-size: 18px; color: #dc2626; margin-top: 2px;"></i>
+            <div>
+              <strong>Warning:</strong> Permanently clear all transactional data (cheques, transactions, reports, suppliers, audit logs) and non-admin user accounts. The system will retain only your current administrator account.
+            </div>
+          </div>
+          <form id="resetConfirmForm" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reset">
+            <div class="form-group">
+              <label>Verify Admin Password</label>
+              <input
+                type="password"
+                name="admin_password"
+                class="form-control"
+                placeholder="Enter admin password to reset system"
+                required
+              >
+            </div>
+            <div style="margin-top: 14px;">
+              <button class="btn btn-danger" type="submit">
+                <i class="fas fa-trash-can"></i> Yes, Reset System Data
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  {% if restore_preview %}
+  <!-- BACKUP PREVIEW MODAL -->
+  <div class="modal" id="backupPreviewModal">
+    <div class="preview-modal-content">
+
+      <!-- MODAL HEADER -->
+      <div class="preview-modal-header">
+        <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-database" style="color: var(--primary);"></i> Backup Data Preview
+          </h3>
+          <span style="font-size: 12px; color: var(--muted);">
+            Inspect database records contained in <strong>{{ restore_preview.filename }}</strong> before confirming.
+          </span>
+        </div>
+        <button type="button" onclick="closeModal('backupPreviewModal')" style="border: none; background: transparent; cursor: pointer; color: var(--muted); font-size: 16px;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- METADATA & BADGES BAR -->
+      <div style="background: #f8fafc; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; text-align: left;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+          <div>
+            <span style="display: block; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px;">Backup Date Created</span>
+            <strong style="font-size: 13px; color: var(--text);">{{ restore_preview.created_at }}</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px;">Created By User</span>
+            <strong style="font-size: 13px; color: var(--text);">{{ restore_preview.created_by_username }}</strong>
+          </div>
+        </div>
+        <div class="badges" style="margin-top: 0;">
+          {% for k, v in restore_preview.counts.items %}
+            <div class="badge" style="background: #e2e8f0; color: #475569; font-size: 11px; padding: 4px 10px;">
+              {{ k }}: {{ v }}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- TABS NAVIGATION -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+        <div class="preview-tabs-nav" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
+          <button class="preview-tab-btn active" onclick="switchPreviewTab('clusters')">
+            <i class="fas fa-folder-open"></i> Clusters ({{ restore_preview.data_preview.fund_clusters|length }})
+          </button>
+          <button class="preview-tab-btn" onclick="switchPreviewTab('suppliers')">
+            <i class="fas fa-building"></i> Suppliers ({{ restore_preview.data_preview.suppliers|length }})
+          </button>
+          <button class="preview-tab-btn" onclick="switchPreviewTab('users')">
+            <i class="fas fa-users"></i> Users ({{ restore_preview.data_preview.users|length }})
+          </button>
+          <button class="preview-tab-btn" onclick="switchPreviewTab('account-titles')">
+            <i class="fas fa-list-ol"></i> Account Titles ({{ restore_preview.data_preview.account_titles|length }})
+          </button>
+          <button class="preview-tab-btn" onclick="switchPreviewTab('reports')">
+            <i class="fas fa-file-invoice-dollar"></i> Reports ({{ restore_preview.data_preview.reports|length }})
+          </button>
+          <button class="preview-tab-btn" onclick="switchPreviewTab('cheques')">
+            <i class="fas fa-money-check-alt"></i> Cheques ({{ restore_preview.data_preview.cheques|length }})
+          </button>
+        </div>
+        <div style="position: relative; min-width: 200px;">
+          <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 12px;"></i>
+          <input type="text" id="previewSearch" placeholder="Search preview..." onkeyup="filterPreviewData()" style="width: 100%; padding: 8px 12px 8px 30px; border-radius: 8px; border: 1px solid var(--line); outline: none; font-size: 13px;">
+        </div>
+      </div>
+
+      <!-- TAB PANES CONTAINER -->
+      <div style="flex: 1; min-height: 0; overflow-y: auto;">
+        
+        <!-- CLUSTERS -->
+        <div class="preview-tab-content active" id="clusters-pane">
+          <div class="preview-table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Name</th>
+                  <th>Description</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody class="searchable-rows">
+                {% for fc in restore_preview.data_preview.fund_clusters %}
+                <tr>
+                  <td><strong>{{ fc.code }}</strong></td>
+                  <td>{{ fc.name }}</td>
+                  <td>{{ fc.description|default:"-" }}</td>
+                  <td>₱{{ fc.balance }}</td>
+                  <td>
+                    {% if fc.is_active %}
+                    <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Active</span>
+                    {% else %}
+                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">Inactive</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="5" class="preview-empty-state">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No Fund Clusters in this backup</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SUPPLIERS -->
+        <div class="preview-tab-content" id="suppliers-pane">
+          <div class="preview-table-container" style="overflow-x: auto;">
+            <table style="min-width: 1200px; width: 100%;">
+              <thead>
+                <tr>
+                  <th>Account Name</th>
+                  <th>Code Line</th>
+                  <th>Line</th>
+                  <th>Nature of Collections</th>
+                  <th>Amount</th>
+                  <th>Remarks</th>
+                  <th>Address</th>
+                  <th>TIN</th>
+                  <th>Status</th>
+                  <th>OR Number</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody class="searchable-rows">
+                {% for s in restore_preview.data_preview.suppliers %}
+                <tr>
+                  <td><strong>{{ s.account_name }}</strong></td>
+                  <td>{{ s.code_line|default:"-" }}</td>
+                  <td>{{ s.line|default:"-" }}</td>
+                  <td>{{ s.nature_of_collections|default:"-" }}</td>
+                  <td><strong>₱{{ s.amount }}</strong></td>
+                  <td>{{ s.remarks|default:"-" }}</td>
+                  <td>{{ s.address|default:"-" }}</td>
+                  <td>{{ s.tin|default:"-" }}</td>
+                  <td>
+                    {% if s.status == 'active' %}
+                    <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Active</span>
+                    {% elif s.status == 'inactive' %}
+                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">Inactive</span>
+                    {% elif s.status == 'blacklisted' %}
+                    <span class="badge" style="background: #1a1a1a; color: #f9fafb; font-size: 11px;">Blacklisted</span>
+                    {% else %}
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px;">{{ s.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ s.or_number|default:"-" }}</td>
+                  <td>{{ s.date|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="11" class="preview-empty-state">
+                    <i class="fas fa-building"></i>
+                    <p>No Suppliers in this backup</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- USERS -->
+        <div class="preview-tab-content" id="users-pane">
+          <div class="preview-table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee ID</th>
+                  <th>Full Name</th>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Dept / Position</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody class="searchable-rows">
+                {% for u in restore_preview.data_preview.users %}
+                <tr>
+                  <td><code>{{ u.employee_id }}</code></td>
+                  <td><strong>{{ u.full_name }}</strong></td>
+                  <td>{{ u.username }}</td>
+                  <td>{{ u.email|default:"-" }}</td>
+                  <td><span class="badge" style="text-transform: capitalize; background: #e0f2fe; color: #0369a1; font-size: 11px;">{{ u.role }}</span></td>
+                  <td>{{ u.department }} / {{ u.position }}</td>
+                  <td>
+                    {% if u.status == 'active' %}
+                    <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Active</span>
+                    {% else %}
+                    <span class="badge" style="text-transform: capitalize; background: #fee2e2; color: #991b1b; font-size: 11px;">{{ u.status }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="preview-empty-state">
+                    <i class="fas fa-users"></i>
+                    <p>No User profiles in this backup</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ACCOUNT TITLES -->
+        <div class="preview-tab-content" id="account-titles-pane">
+          <div class="preview-table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Account Title</th>
+                  <th>UACS Code</th>
+                  <th>Group</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody class="searchable-rows">
+                {% for at in restore_preview.data_preview.account_titles %}
+                <tr>
+                  <td><strong>{{ at.value }}</strong></td>
+                  <td><code>{{ at.uacs|default:"-" }}</code></td>
+                  <td>{{ at.group_name }}</td>
+                  <td>
+                    {% if at.is_active %}
+                    <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Active</span>
+                    {% else %}
+                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">Inactive</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="preview-empty-state">
+                    <i class="fas fa-list-ol"></i>
+                    <p>No Account Titles in this backup</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- REPORTS -->
+        <div class="preview-tab-content" id="reports-pane">
+          <div class="preview-table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Date Covered</th>
+                  <th>Generated At</th>
+                </tr>
+              </thead>
+              <tbody class="searchable-rows">
+                {% for r in restore_preview.data_preview.reports %}
+                <tr>
+                  <td><strong>{{ r.title }}</strong></td>
+                  <td><span class="badge" style="text-transform: uppercase; background: #fef3c7; color: #92400e; font-size: 11px;">{{ r.report_type }}</span></td>
+                  <td>
+                    {% if r.date_from and r.date_to %}
+                      {{ r.date_from }} to {{ r.date_to }}
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td>{{ r.generated_at }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="4" class="preview-empty-state">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    <p>No Reports in this backup</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- CHEQUES -->
+        <div class="preview-tab-content" id="cheques-pane">
+          <div class="preview-table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cheque Number</th>
+                  <th>Payee</th>
+                  <th>Amount</th>
+                  <th>Date</th>
+                  <th>Purpose</th>
+                  <th>Bank</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody class="searchable-rows">
+                {% for c in restore_preview.data_preview.cheques %}
+                <tr>
+                  <td><code>{{ c.cheque_number }}</code></td>
+                  <td><strong>{{ c.payee_name }}</strong></td>
+                  <td>₱{{ c.amount }}</td>
+                  <td>{{ c.date }}</td>
+                  <td>{{ c.purpose|default:"-" }}</td>
+                  <td>{{ c.bank_name|default:"-" }}</td>
+                  <td>
+                    {% if c.status == 'released' %}
+                    <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Released</span>
+                    {% elif c.status == 'pending' %}
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px;">Pending</span>
+                    {% elif c.status == 'voided' %}
+                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">Voided</span>
+                    {% elif c.status == 'stale' %}
+                    <span class="badge" style="background: #f3f4f6; color: #374151; font-size: 11px;">Stale</span>
+                    {% else %}
+                    <span class="badge" style="background: #e2e8f0; color: #475569; font-size: 11px;">Draft</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="7" class="preview-empty-state">
+                    <i class="fas fa-money-check-alt"></i>
+                    <p>No Cheques in this backup</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- RETENTION INFO MODAL -->
+<div class="modal" id="retentionModal">
+  <div class="retention-modal-content">
+    <div class="retention-header">
+      <div class="retention-icon">
+        <i class="fas fa-clock-rotate-left"></i>
+      </div>
+      <div class="retention-header-text">
+        <h3>Backup Retention Policy</h3>
+        <p>Automatic backup management settings</p>
+      </div>
+    </div>
+
+    <div class="retention-body">
+      <div class="retention-section">
+        <div class="retention-section-title">
+          <i class="fas fa-info-circle"></i> What is Retention?
+        </div>
+        <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.6;">
+          Retention policy automatically manages old backups by deleting them after a specified period or when a maximum count is reached. This helps conserve storage space while keeping recent backups available.
+        </p>
+      </div>
+
+      <div class="retention-section">
+        <div class="retention-section-title">
+          <i class="fas fa-cog"></i> Current Status
+        </div>
+        <div class="retention-row">
+          <span>Retention Policy</span>
+          {% if system_setting.retention_enabled %}
+            <strong style="color:#16a34a;">Enabled</strong>
+          {% else %}
+            <strong style="color:#d97706;">Not Configured</strong>
+          {% endif %}
+        </div>
+        <div class="retention-row">
+          <span>Auto-Delete Old Backups</span>
+          {% if system_setting.retention_auto_delete %}
+            <strong style="color:#16a34a;">Enabled</strong>
+          {% else %}
+            <strong style="color:#d97706;">Disabled</strong>
+          {% endif %}
+        </div>
+        <div class="retention-row">
+          <span>Max Backup Age</span>
+          {% if system_setting.retention_enabled %}
+            <strong>{{ system_setting.retention_max_age_days }} days</strong>
+          {% else %}
+            <strong>—</strong>
+          {% endif %}
+        </div>
+        <div class="retention-row">
+          <span>Max Backup Count</span>
+          {% if system_setting.retention_enabled %}
+            {% if system_setting.retention_max_count == 0 %}
+              <strong>Unlimited</strong>
+            {% else %}
+              <strong>{{ system_setting.retention_max_count }} backups</strong>
+            {% endif %}
+          {% else %}
+            <strong>—</strong>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="retention-section">
+        <div class="retention-section-title">
+          <i class="fas fa-lightbulb"></i> Recommended Settings
+        </div>
+        <div class="retention-row">
+          <span>Keep backups for at least</span>
+          <strong>30 days</strong>
+        </div>
+        <div class="retention-row">
+          <span>Maximum backup count</span>
+          <strong>10 backups</strong>
+        </div>
+        <div class="retention-row">
+          <span>Auto-delete after</span>
+          <strong>90 days</strong>
+        </div>
+      </div>
+
+      <div class="retention-note">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Retention settings can be configured in <strong>System Settings</strong> under the Backup & Maintenance section. Until configured, all backups will be kept indefinitely and must be managed manually.</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal('retentionModal')">
+        <i class="fas fa-times"></i> Close
+      </button>
+      <a href="{% url 'system_settings' %}" class="btn btn-primary" style="flex:1;text-decoration:none;">
+        <i class="fas fa-cog"></i> Configure in Settings
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+// Accordion Toggle Logic
+document.querySelectorAll('.accordion-header').forEach(header => {
+  header.addEventListener('click', () => {
+    const card = header.closest('.accordion-card');
+    const isExpanded = card.classList.contains('expanded');
+    
+    // Collapse all other cards
+    document.querySelectorAll('.accordion-card').forEach(otherCard => {
+      if (otherCard !== card) {
+        otherCard.classList.remove('expanded');
+        const content = otherCard.querySelector('.accordion-content');
+        content.style.maxHeight = null;
+      }
+    });
+    
+    // Toggle current card
+    if (isExpanded) {
+      const content = card.querySelector('.accordion-content');
+      content.style.maxHeight = content.scrollHeight + 'px';
+      // Force layout reflow to make the transition work
+      content.offsetHeight;
+      card.classList.remove('expanded');
+      content.style.maxHeight = null;
+    } else {
+      card.classList.add('expanded');
+      const content = card.querySelector('.accordion-content');
+      content.style.maxHeight = content.scrollHeight + 'px';
+      
+      // Set to auto/none after animation ends to allow dynamic sizing changes
+      setTimeout(() => {
+        if (card.classList.contains('expanded')) {
+          content.style.maxHeight = 'none';
+        }
+      }, 300);
+    }
+  });
+});
+
+// Auto-expand card if restore_preview is present or on load
+document.addEventListener("DOMContentLoaded", function() {
+  const activeCard = document.querySelector('.accordion-card.expanded');
+  if (activeCard) {
+    const content = activeCard.querySelector('.accordion-content');
+    content.style.maxHeight = content.scrollHeight + 'px';
+    setTimeout(() => {
+      content.style.maxHeight = 'none';
+    }, 300);
+  }
+});
+
+// AJAX/Fetch Form Submit Handler for Creating & Downloading Backups (No stuck loader!)
+const backupForm = document.getElementById('backupDownloadForm');
+if (backupForm) {
+  backupForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Show global loading progress overlay
+    window.showLoading('Creating Backup...', 'Packaging your database for download');
+    
+    const formData = new FormData(backupForm);
+    
+    fetch(window.location.href, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+    .then(async response => {
+      if (!response.ok) {
+        let errMsg = 'Backup failed';
+        try {
+          const data = await response.json();
+          errMsg = data.error || errMsg;
+        } catch (err) {}
+        throw new Error(errMsg);
+      }
+      
+      // Try to parse filename from headers
+      let filename = 'system_backup.bak';
+      const disposition = response.headers.get('Content-Disposition');
+      if (disposition && disposition.indexOf('attachment') !== -1) {
+        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+        const matches = filenameRegex.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      return response.blob().then(blob => ({ blob, filename }));
+    })
+    .then(({ blob, filename }) => {
+      // Complete progress loader bar to 100%
+      const bar = document.getElementById('loadingBar');
+      const pct = document.getElementById('loadingPercent');
+      if (bar) bar.style.width = '100%';
+      if (pct) pct.textContent = '100%';
+      
+      // Trigger instant browser download dialog
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Hide the loader panel and clear input field after 1 second
+      setTimeout(() => {
+        window.hideLoading();
+        backupForm.reset();
+        showToast('success', 'Success', 'Backup created and downloaded successfully!');
+      }, 1000);
+    })
+    .catch(err => {
+      window.hideLoading();
+      showToast('error', 'Error', err.message);
+    });
+  });
+}
+
+function openPreviewModal(){
+  const modal = document.getElementById('backupPreviewModal');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeModal(id){
+  document.getElementById(id).style.display = 'none';
+}
+
+window.onclick = function(e){
+  if(e.target.classList.contains('modal')){
+    e.target.style.display = 'none';
+  }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  {% if restore_preview %}
+  openPreviewModal();
+  {% endif %}
+});
+
+function showRetentionInfo(){
+  document.getElementById('retentionModal').style.display = 'flex';
+}
+
+function switchPreviewTab(tabId) {
+  document.querySelectorAll('.preview-tab-content').forEach(pane => {
+    pane.classList.remove('active');
+  });
+  document.querySelectorAll('.preview-tab-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.getElementById(tabId + '-pane').classList.add('active');
+  
+  const btn = document.querySelector(`.preview-tab-btn[onclick*="${tabId}"]`);
+  if (btn) btn.classList.add('active');
+  
+  filterPreviewData();
+}
+
+function filterPreviewData() {
+  const query = document.getElementById('previewSearch').value.toLowerCase().trim();
+  const activePane = document.querySelector('.preview-tab-content.active');
+  if (!activePane) return;
+  
+  const rows = activePane.querySelectorAll('.searchable-rows tr');
+  let matchCount = 0;
+  
+  rows.forEach(row => {
+    if (row.querySelector('.preview-empty-state')) return;
+    
+    const text = row.textContent.toLowerCase();
+    if (text.includes(query)) {
+      row.style.display = '';
+      matchCount++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  
+  let noMatchRow = activePane.querySelector('.no-match-row');
+  if (matchCount === 0 && query !== '') {
+    if (!noMatchRow) {
+      const colCount = activePane.querySelectorAll('thead th').length;
+      noMatchRow = document.createElement('tr');
+      noMatchRow.className = 'no-match-row';
+      noMatchRow.innerHTML = `
+        <td colspan="${colCount}" class="preview-empty-state">
+          <i class="fas fa-search-minus"></i>
+          <p>No matching records found for "${query}"</p>
+        </td>
+      `;
+      activePane.querySelector('.searchable-rows').appendChild(noMatchRow);
+    }
+  } else {
+    if (noMatchRow) {
+      noMatchRow.remove();
+    }
+  }
+}
+</script>
+{% endblock %}

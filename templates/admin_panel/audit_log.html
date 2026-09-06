@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Audit Log{% endblock %}
+{% block nav_audit %}active{% endblock %}
+{% block content %}
+
+<div class="page-center">
+  <h2>Audit Log</h2>
+  <p class="page-sub">Track all system activities, user actions, and administrative changes.</p>
+</div>
+
+<div style="max-width:1100px; margin:0 auto; padding:0 16px;">
+<div class="page-header">
+    <h2 style="display:none;"></h2>
+    <form method="get" style="display:flex; gap:8px; align-items:center;">
+        <input type="text" name="q" value="{{ search }}" placeholder="Search action or user..." style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; width:240px;">
+        <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-search"></i></button>
+        {% if search %}<a href="{% url 'audit_log' %}" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i></a>{% endif %}
+    </form>
+</div>
+
+<style>
+.table-wrap thead th {
+    background: linear-gradient(135deg, #0f3d2e, #17563d);
+    color: #ffffff;
+    border-bottom: 1px solid #0b2f23;
+    text-align: center;
+}
+
+/* ── Dark Mode Overrides for Audit Log ── */
+[data-theme="dark"] .ill-circle.crimson {
+    background: #881337 !important;
+    border-color: #be123c !important;
+    color: #fb7185 !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .ill-badge {
+    border-color: #111111 !important;
+}
+
+[data-theme="dark"] input[name="q"] {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border-color: #222222 !important;
+}
+
+[data-theme="dark"] .table-wrap {
+    background: #111827 !important;
+    border-color: #1a1a1a !important;
+}
+</style>
+
+
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+        <tr>
+            <td style="white-space:nowrap; font-size:12px; color:var(--muted);">{{ log.timestamp|date:"Y-m-d H:i:s" }}</td>
+            <td><strong>{{ log.admin.username|default:"System" }}</strong></td>
+            <td>{{ log.action }}</td>
+            <td style="font-size:12px; color:var(--muted); max-width:300px;">
+                {% if log.details %}<span class="json-detail">{{ log.details|safe }}</span>{% else %}—{% endif %}
+            </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">No audit logs found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+<script>
+document.querySelectorAll('.json-detail').forEach(el => {
+    try {
+        const raw = el.textContent.trim();
+        // Convert Python dict repr to JSON: single quotes -> double quotes
+        const jsonStr = raw.replace(/'/g, '"');
+        const obj = JSON.parse(jsonStr);
+        el.textContent = JSON.stringify(obj);
+    } catch(e) {}
+});
+</script>
+{% endblock %}

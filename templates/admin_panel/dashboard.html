@@ -1,0 +1,1150 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block content %}
+
+{% if request.GET.welcome == '1' %}
+<div id="welcomeModal" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fadeIn 0.3s both;">
+    <div style="background:#fff;border-radius:24px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.25);animation:slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;">
+        <div style="position:relative;width:88px;height:88px;margin:0 auto 24px;">
+            <div style="width:88px;height:88px;border-radius:50%;{% if user.profile.totp_enabled and user.profile.email_otp_enabled %}border:2.5px solid #10b981;{% elif user.profile.totp_enabled or user.profile.email_otp_enabled %}border:2.5px solid #3b82f6;{% else %}border:2.5px solid #ef4444;{% endif %}overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.12);">
+                {% if user.profile.profile_picture %}
+                    <img src="{{ user.profile.profile_picture.url }}" alt="{{ user.username }}" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                    <span style="font-size:28px;font-weight:600;color:#fff;">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
+                {% endif %}
+            </div>
+            {% if user.profile.totp_enabled or user.profile.email_otp_enabled %}
+            <span style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:22px;height:22px;z-index:2;">
+                <img src="/media/system_assets/badge.png" alt="MFA" style="width:100%;height:100%;object-fit:contain;">
+            </span>
+            {% endif %}
+        </div>
+        <h2 style="font-size:24px;font-weight:800;color:#102218;margin:0 0 8px;">Welcome back, {{ user.get_full_name|default:user.username }}!</h2>
+        <p style="font-size:14px;color:#667085;margin:0 0 28px;line-height:1.6;">You're now signed in to the admin dashboard. Manage your system with full access.</p>
+        <button onclick="document.getElementById('welcomeModal').remove();" style="padding:14px 40px;border:none;border-radius:12px;background:linear-gradient(135deg,#043107,#075618);color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(14,45,10,0.3);transition:all 0.2s;">Get Started</button>
+    </div>
+</div>
+<style>
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+</style>
+<script>
+(function() {
+    var url = new URL(window.location);
+    url.searchParams.delete('welcome');
+    window.history.replaceState({}, '', url);
+})();
+</script>
+{% endif %}
+<style>
+    .dashboard-wrap {
+        background: #ffffff;
+        border: 1px solid #e5eaf0;
+        border-radius: 18px;
+        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        padding: 22px;
+    }
+
+    .dashboard-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 16px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-top h2 {
+        font-size: 1.375rem;
+        font-weight: 800;
+        color: #102033;
+    }
+
+    .dashboard-top p {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.8125rem;
+    }
+
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .stat-card {
+        background: #ffffff;
+        border: 1px solid #e5eaf0;
+        border-radius: 14px;
+        padding: 18px 12px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+        min-height: 110px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #102033;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        max-width: 100%;
+    }
+
+    .stat-card .stat-label {
+        margin: 0;
+        margin-top: 6px;
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+    .stat-card .stat-meta {
+        margin: 0;
+        margin-top: 4px;
+        font-size: 0.6875rem;
+        color: #667085;
+    }
+
+    .icon-green {
+        background: #dcfce7;
+        color: #16a34a;
+    }
+
+    .icon-blue {
+        background: #dbeafe;
+        color: #2563eb;
+    }
+
+    .icon-yellow {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .icon-purple {
+        background: #ede9fe;
+        color: #7c3aed;
+    }
+
+    .icon-teal {
+        background: #ccfbf1;
+        color: #0f766e;
+    }
+
+    .icon-orange {
+        background: #ffedd5;
+        color: #ea580c;
+    }
+
+    .icon-red {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+
+    .icon-slate {
+        background: #e2e8f0;
+        color: #222222;
+    }
+
+    .section-grid {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr 1fr;
+        gap: 18px;
+        margin-top: 10px;
+    }
+
+    .funds-panel {
+        grid-column: 2 / span 2;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+    }
+
+    .section-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e5eaf0;
+        overflow: hidden;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .section-card-head {
+        padding: 14px 18px;
+        border-bottom: 1px solid #eef2f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-card-head h3 {
+        font-size: 0.875rem;
+        font-weight: 800;
+        color: #102033;
+    }
+
+    .section-card-body {
+        padding: 6px 0;
+    }
+
+    .mini-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 12px 18px;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.8125rem;
+    }
+
+    .mini-row:last-child {
+        border-bottom: none;
+    }
+
+    .mini-row strong {
+        color: #102033;
+    }
+
+    .mini-subtle {
+        font-size: 0.75rem;
+        color: var(--muted);
+        margin-top: 2px;
+    }
+
+    .empty-state {
+        color: var(--muted);
+        justify-content: center;
+        padding: 22px 18px;
+    }
+
+    .fund-bars {
+        padding: 14px 18px 18px;
+    }
+
+    .fund-distribution-card {
+        background: #ffffff;
+        border-radius: 16px;
+        border: 1px solid #e5eaf0;
+        overflow: hidden;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .fund-distribution-body {
+        padding: 14px 18px 18px;
+    }
+
+    .fund-distribution-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .fund-distribution-total {
+        margin-top: 8px;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #102033;
+        line-height: 1.1;
+    }
+
+    .fund-distribution-caption {
+        margin-top: 8px;
+        font-size: 0.75rem;
+        color: #667085;
+    }
+
+    .distribution-track {
+        margin-top: 14px;
+        width: 100%;
+        height: 18px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: #e2e8f0;
+        display: flex;
+    }
+
+    .distribution-segment {
+        height: 100%;
+    }
+
+    .distribution-legend {
+        margin-top: 14px;
+        display: grid;
+        gap: 8px;
+    }
+
+    .distribution-legend-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 0.75rem;
+        color: #222222;
+    }
+
+    .distribution-legend-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        font-weight: 700;
+    }
+
+    .distribution-legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        flex: 0 0 auto;
+    }
+
+    .distribution-legend-percent {
+        color: var(--muted);
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .fund-bar-row {
+        margin-bottom: 14px;
+    }
+
+    .fund-bar-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .fund-bar-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+        font-size: 0.8125rem;
+    }
+
+    .fund-bar-track {
+        width: 100%;
+        height: 10px;
+        border-radius: 999px;
+        background: #edf2f7;
+        overflow: hidden;
+    }
+
+    .fund-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #610e0e, #0b3d1e);
+    }
+
+    .quick-list {
+        padding: 12px 18px 18px;
+    }
+
+    .quick-list-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 0;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.8125rem;
+    }
+
+    .quick-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .quick-list-item .label {
+        color: #102033;
+        font-weight: 700;
+    }
+
+    .quick-list-item .value {
+        color: var(--muted);
+        text-align: right;
+    }
+
+    .dashboard-footer {
+        margin: 20px 0 0;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .footer-card {
+        background: #ffffff;
+        border: 1px solid #e5eaf0;
+        border-radius: 14px;
+        padding: 16px 18px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+    }
+
+    .footer-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #eef2f6;
+    }
+
+    .footer-card-head h3 {
+        font-size: 0.875rem;
+        font-weight: 800;
+        color: #102033;
+    }
+
+    .footer-card .footer-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-weight: 600;
+    }
+
+    .footer-card .footer-value {
+        margin-top: 6px;
+        font-size: 1.375rem;
+        font-weight: 800;
+        color: #102033;
+    }
+
+    .footer-card .footer-note {
+        margin-top: 6px;
+        font-size: 0.75rem;
+        color: var(--muted);
+    }
+
+    .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 18px;
+    }
+
+    .charts-row-3 {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 18px;
+        margin-bottom: 18px;
+    }
+
+    .chart-card {
+        background: #ffffff;
+        border: 1px solid #e5eaf0;
+        border-radius: 16px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+        position: relative;
+        z-index: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .chart-card-head {
+        padding: 14px 18px;
+        border-bottom: 1px solid #eef2f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        z-index: 2;
+    }
+
+    .chart-card-head h3 {
+        font-size: 0.875rem;
+        font-weight: 800;
+        color: #102033;
+    }
+
+    .chart-period-toggle {
+        display: flex;
+        gap: 4px;
+        background: #f1f5f9;
+        border-radius: 8px;
+        padding: 3px;
+    }
+
+    .period-btn {
+        padding: 5px 12px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: #64748b;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .period-btn:hover {
+        color: #222222;
+        background: #e2e8f0;
+    }
+
+    .period-btn.active {
+        background: #ffffff;
+        color: #102033;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .chart-card-body {
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .chart-empty {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        color: #94a3b8;
+        text-align: center;
+        width: 100%;
+    }
+
+    .chart-empty i {
+        font-size: 2.25rem;
+        margin-bottom: 12px;
+        opacity: 0.5;
+    }
+
+    .chart-empty p {
+        font-size: 0.8125rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    @media (max-width: 1280px) {
+        .stat-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .section-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .funds-panel {
+            grid-column: auto;
+            grid-template-columns: 1fr;
+        }
+
+        .charts-row {
+            grid-template-columns: 1fr;
+        }
+
+        .charts-row-3 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .stat-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .dashboard-footer {
+            grid-template-columns: 1fr;
+        }
+
+        .charts-row-3 {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="dashboard-wrap">
+
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total_cheques }}</div>
+            <div class="stat-label">Total Cheques</div>
+            <div class="stat-meta">All recorded cheques</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ pending_cheques }}</div>
+            <div class="stat-label">Pending Cheques</div>
+            <div class="stat-meta">Waiting for release</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ released_cheques }}</div>
+            <div class="stat-label">Released Cheques</div>
+            <div class="stat-meta">Already disbursed</div>
+        </div>
+        <div class="stat-card" style="border-color: #fed7aa;">
+            <div class="stat-value" style="color: #ea580c;">{{ unreleased_cheques }}</div>
+            <div class="stat-label" style="color: #ea580c;">Not Released</div>
+            <div class="stat-meta">Draft &amp; Pending only</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="font-size:1.25rem;">₱{{ total_amount|floatformat:2|intcomma }}</div>
+            <div class="stat-label">Total Released Amount</div>
+            <div class="stat-meta">Current payout total</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ total_suppliers }}</div>
+            <div class="stat-label">Active Suppliers</div>
+            <div class="stat-meta">Ready for transactions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ radai_total }}</div>
+            <div class="stat-label">RADAI Entries</div>
+            <div class="stat-meta">₱{{ radai_amount|floatformat:2|intcomma }} total</div>
+        </div>
+    </div>
+
+    <!-- Today's Activity + Processing Speed -->
+    <div class="charts-row" style="margin-bottom:18px;">
+        <div class="section-card" style="margin:0;">
+            <div class="section-card-head">
+                <h3><i class="fas fa-calendar-day" style="margin-right:6px;"></i> Today's Activity</h3>
+            </div>
+            <div class="fund-distribution-body" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; padding:18px;">
+                <div>
+                    <div class="fund-distribution-title">Created</div>
+                    <div class="fund-distribution-total">{{ today_created }}</div>
+                    <div class="fund-distribution-caption">cheques today</div>
+                </div>
+                <div>
+                    <div class="fund-distribution-title">Released</div>
+                    <div class="fund-distribution-total" style="color:#16a34a;">{{ today_released }}</div>
+                    <div class="fund-distribution-caption">cheques released</div>
+                </div>
+                <div>
+                    <div class="fund-distribution-title">Amount Released</div>
+                    <div class="fund-distribution-total" style="color:#2563eb; font-size:1.125rem;">₱{{ today_amount|floatformat:2|intcomma }}</div>
+                    <div class="fund-distribution-caption">disbursed today</div>
+                </div>
+            </div>
+        </div>
+        <div class="section-card" style="margin:0;">
+            <div class="section-card-head">
+                <h3><i class="fas fa-gauge-high" style="margin-right:6px;"></i> Processing Speed</h3>
+            </div>
+            <div class="fund-distribution-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;">
+                <div class="fund-distribution-total" style="font-size:2rem; color:#0f766e;">{{ avg_processing_days }}</div>
+                <div class="fund-distribution-caption">avg. days to release</div>
+                <div style="margin-top:10px; font-size:0.6875rem; color:var(--muted);">Based on all released cheques</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-chart-pie" style="margin-right:6px;"></i> Cheque Status Distribution</h3>
+            </div>
+            <div class="chart-card-body" style="height:280px;">
+                <canvas id="chequeStatusChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-chart-bar" style="margin-right:6px;"></i> Cheques Released</h3>
+                <div class="chart-period-toggle" id="releasedPeriodToggle">
+                    <button class="period-btn" data-period="daily">Daily</button>
+                    <button class="period-btn" data-period="weekly">Weekly</button>
+                    <button class="period-btn active" data-period="monthly">Monthly</button>
+                    <button class="period-btn" data-period="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="chart-card-body" style="height:280px;">
+                <div class="chart-empty" id="releasedChartEmpty">
+                    <i class="fas fa-chart-bar"></i>
+                    <p>No released cheque data available</p>
+                </div>
+                <canvas id="releasedChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-card" style="grid-column: 1 / -1;">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-truck-arrow-right" style="margin-right:6px;"></i> New Suppliers Added</h3>
+                <div class="chart-period-toggle" id="suppliersPeriodToggle">
+                    <button class="period-btn" data-period="weekly">This Week</button>
+                    <button class="period-btn active" data-period="monthly">This Month</button>
+                    <button class="period-btn" data-period="yearly">This Year</button>
+                </div>
+            </div>
+            <div class="chart-card-body" style="height:260px;">
+                <div class="chart-empty" id="suppliersChartEmpty">
+                    <i class="fas fa-truck-arrow-right"></i>
+                    <p>No new supplier data available</p>
+                </div>
+                <canvas id="suppliersChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Section -->
+    {% if alerts %}
+    <div style="margin-bottom:18px;">
+        <div class="section-card">
+            <div class="section-card-head">
+                <h3><i class="fas fa-bell" style="margin-right:6px;"></i> System Alerts</h3>
+            </div>
+            <div class="section-card-body">
+                {% for alert in alerts %}
+                <div class="mini-row" style="border-left:3px solid {{ alert.color }}; padding-left:14px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <i class="{{ alert.icon }}" style="color:{{ alert.color }}; font-size:0.875rem;"></i>
+                        <span style="font-weight:600; color:#102033;">{{ alert.message }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Monthly Trend Sparkline + Top Funds + Cashier Performance + Stale Cheques -->
+    <div class="section-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:18px;">
+        <!-- Monthly Trend Sparkline -->
+        <div class="section-card">
+            <div class="section-card-head">
+                <h3><i class="fas fa-chart-line" style="margin-right:6px;"></i> Monthly Trend</h3>
+            </div>
+            <div class="chart-card-body" style="height:200px;">
+                <canvas id="sparklineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Fund Clusters by Released Amount -->
+        <div class="section-card">
+            <div class="section-card-head">
+                <h3><i class="fas fa-piggy-bank" style="margin-right:6px;"></i> Fund Clusters - Total Disbursed</h3>
+                <a href="{% url 'fund_clusters' %}" class="btn btn-sm btn-secondary">View All</a>
+            </div>
+            <div class="section-card-body">
+                {% for fund in top_funds %}
+                <div class="mini-row">
+                    <div>
+                        <div style="font-weight:700; color:#102033;">{{ fund.code }}</div>
+                        <div class="mini-subtle">{{ fund.name|truncatechars:25 }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:800; color:#0d3a1e;">₱{{ fund.released_amount|floatformat:2|intcomma }}</div>
+                        <div class="mini-subtle">total disbursed</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="mini-row empty-state">No fund clusters available.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Cashier Performance -->
+        <div class="section-card">
+            <div class="section-card-head">
+                <h3><i class="fas fa-trophy" style="margin-right:6px;"></i> Top Cashiers</h3>
+            </div>
+            <div class="section-card-body">
+                {% for cashier in cashier_performance %}
+                <div class="mini-row">
+                    <div>
+                        <div style="font-weight:700; color:#102033;">{{ cashier.first_name|default:cashier.username }}</div>
+                        <div class="mini-subtle">cheques created this month</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:800; color:#2563eb;">{{ cashier.cheque_count }}</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="mini-row empty-state">No activity this month.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+        <div class="dashboard-footer" style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+            <div class="footer-card">
+                <div class="footer-card-head">
+                    <h3><i class="fas fa-money-check-dollar"></i> Recent Cheques</h3>
+                    <a href="{% url 'cheque_list' %}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="quick-list" style="padding:0;">
+                    {% for c in recent_cheques %}
+                    <div class="quick-list-item">
+                        <div>
+                            <div class="label">{{ c.payee_name|default:"—"|truncatechars:34 }}</div>
+                            <div class="mini-subtle">{{ c.date }} · {{ c.fund_cluster.code|default:"No Fund" }}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:800; color:#102033;">₱{{ c.amount|floatformat:2|intcomma }}</div>
+                            <div style="font-size:10px; font-weight:700; color:#64748b; letter-spacing:0.3px;">REMAINING DAYS: {{ c.remaining_days }}/180</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="mini-row empty-state">No cheques yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="footer-card">
+                <div class="footer-card-head">
+                    <h3><i class="fas fa-shield-halved"></i> Recent Activity</h3>
+                    <a href="{% url 'audit_log' %}" class="btn btn-sm btn-secondary">View All</a>
+                </div>
+                <div class="quick-list" style="padding:0;">
+                    {% for log in recent_audit %}
+                    <div class="quick-list-item">
+                        <div>
+                            <div class="label">{{ log.action|truncatechars:34 }}</div>
+                            <div class="mini-subtle">{{ log.admin.username|default:"System" }}</div>
+                        </div>
+                        <div class="value">{{ log.timestamp|date:"M d, H:i" }}</div>
+                    </div>
+                    {% empty %}
+                    <div class="mini-row empty-state">No activity yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        {% endblock %}
+
+{% block extra_js %}
+<script src="/media/chartjs/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var statusChart = null;
+    var releasedChart = null;
+    var suppliersChart = null;
+    var currentPeriod = 'monthly';
+    var currentSuppliersPeriod = 'monthly';
+
+    function getCookie(name) {
+        var v = null;
+        if (document.cookie) {
+            document.cookie.split(';').forEach(function(c) {
+                c = c.trim();
+                if (c.startsWith(name + '=')) {
+                    v = decodeURIComponent(c.slice(name.length + 1));
+                }
+            });
+        }
+        return v;
+    }
+
+    function getChartTheme() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        return {
+            textColor: isDark ? '#f8fafc' : '#111111',
+            mutedColor: isDark ? '#94a3b8' : '#64748b',
+            gridColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(0, 0, 0, 0.05)',
+            borderColor: isDark ? '#1a1a1a' : '#ffffff'
+        };
+    }
+
+    function initStatusChart(data) {
+        var ctx = document.getElementById('chequeStatusChart');
+        if (!ctx) return;
+        if (statusChart) statusChart.destroy();
+        var theme = getChartTheme();
+        statusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Draft', 'Pending', 'Released', 'Voided', 'Stale'],
+                datasets: [{
+                    data: [
+                        (data.status && data.status.draft) || 0,
+                        (data.status && data.status.pending) || 0,
+                        (data.status && data.status.released) || 0,
+                        (data.status && data.status.voided) || 0,
+                        (data.status && data.status.stale) || 0
+                    ],
+                    backgroundColor: ['#94a3b8', '#f59e0b', '#22c55e', '#ef4444', '#6b7280'],
+                    borderWidth: 2,
+                    borderColor: theme.borderColor
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                animation: { animateRotate: true, duration: 800 },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: theme.textColor, padding: 16, usePointStyle: true, pointStyleWidth: 10, font: { size: '0.75rem', weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+
+    function initReleasedChart(data) {
+        var ctx = document.getElementById('releasedChart');
+        var emptyEl = document.getElementById('releasedChartEmpty');
+        if (!ctx) return;
+
+        var hasData = data.labels && data.labels.length > 0 && data.counts && data.counts.some(function(c) { return c > 0; });
+
+        if (!hasData) {
+            ctx.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = 'flex';
+            if (releasedChart) { releasedChart.destroy(); releasedChart = null; }
+            return;
+        }
+
+        ctx.style.display = 'block';
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        if (releasedChart) releasedChart.destroy();
+        var theme = getChartTheme();
+        releasedChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Cheques Created',
+                    data: data.counts,
+                    backgroundColor: '#22c55e',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    maxBarThickness: 40,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Total Amount (\u20b1)',
+                    data: data.amounts,
+                    backgroundColor: '#3b82f6',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    maxBarThickness: 40,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                animation: { duration: 800 },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: theme.mutedColor, font: { size: '0.6875rem', weight: '600' } } },
+                    y: {
+                        position: 'left', beginAtZero: true, grid: { color: theme.gridColor },
+                        ticks: { color: theme.mutedColor, font: { size: '0.6875rem' }, precision: 0 },
+                        title: { display: true, text: 'Count', color: theme.textColor, font: { size: '0.6875rem', weight: '600' } }
+                    },
+                    y1: {
+                        position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
+                        ticks: { color: theme.mutedColor, font: { size: '0.6875rem' }, callback: function(val) { return '\u20b1' + val.toLocaleString(); } },
+                        title: { display: true, text: 'Amount', color: theme.textColor, font: { size: '0.6875rem', weight: '600' } }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: theme.textColor, padding: 16, usePointStyle: true, pointStyleWidth: 10, font: { size: '0.75rem', weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+
+    function initSuppliersChart(data) {
+        var ctx = document.getElementById('suppliersChart');
+        var emptyEl = document.getElementById('suppliersChartEmpty');
+        if (!ctx) return;
+
+        var hasSupplierData = data.supplier_counts && data.supplier_counts.some(function(c) { return c > 0; });
+        var hasRadaiData = data.radai_counts && data.radai_counts.some(function(c) { return c > 0; });
+        var hasData = hasSupplierData || hasRadaiData;
+
+        if (!hasData) {
+            ctx.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = 'flex';
+            if (suppliersChart) { suppliersChart.destroy(); suppliersChart = null; }
+            return;
+        }
+
+        ctx.style.display = 'block';
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        if (suppliersChart) suppliersChart.destroy();
+        var theme = getChartTheme();
+        suppliersChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'New Suppliers',
+                    data: data.supplier_counts || [],
+                    borderColor: '#a855f7',
+                    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#a855f7',
+                    pointBorderColor: theme.borderColor,
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }, {
+                    label: 'New RADAI',
+                    data: data.radai_counts || [],
+                    borderColor: '#22c55e',
+                    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#22c55e',
+                    pointBorderColor: theme.borderColor,
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                animation: { duration: 800 },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: theme.mutedColor, font: { size: '0.6875rem', weight: '600' } } },
+                    y: {
+                        beginAtZero: true, grid: { color: theme.gridColor },
+                        ticks: { color: theme.mutedColor, font: { size: '0.6875rem' }, precision: 0 },
+                        title: { display: true, text: 'Count', color: theme.textColor, font: { size: '0.6875rem', weight: '600' } }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: theme.textColor, padding: 16, usePointStyle: true, pointStyleWidth: 10, font: { size: '0.75rem', weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+
+    // Monthly trend sparkline
+    var sparklineCtx = document.getElementById('sparklineChart');
+    if (sparklineCtx) {
+        var theme = getChartTheme();
+        new Chart(sparklineCtx, {
+            type: 'line',
+            data: {
+                labels: [{% for label in month_labels_12 %}'{{ label }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                datasets: [{
+                    label: 'Cheques Created',
+                    data: [{% for count in month_counts_12 %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: theme.borderColor,
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                animation: { duration: 600 },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: theme.mutedColor, font: { size: '0.625rem', weight: '600' }, maxRotation: 45 }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: theme.gridColor },
+                        ticks: { color: theme.mutedColor, font: { size: '0.625rem' }, precision: 0 }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: theme.textColor, padding: 12, usePointStyle: true, pointStyleWidth: 8, font: { size: '0.6875rem', weight: '600' } }
+                    }
+                }
+            }
+        });
+    }
+
+    function fetchChartData() {
+        fetch('{% url "admin_dashboard_chart_data" %}', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) { console.warn('Status chart API error:', data.error); return; }
+            initStatusChart(data);
+        })
+        .catch(function(err) { console.error('Chart data fetch error:', err); });
+    }
+
+    function fetchReleasedChart(period) {
+        fetch('{% url "admin_chart_released_data" %}?period=' + encodeURIComponent(period), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) { console.warn('Released chart API error:', data.error); return; }
+            initReleasedChart(data);
+        })
+        .catch(function(err) { console.error('Released chart data fetch error:', err); });
+    }
+
+    function fetchSuppliersChart(period) {
+        fetch('{% url "admin_suppliers_chart_data" %}?period=' + encodeURIComponent(period), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.error) { console.warn('Suppliers chart API error:', data.error); return; }
+            initSuppliersChart(data);
+        })
+        .catch(function(err) { console.error('Suppliers chart data fetch error:', err); });
+    }
+
+    var toggleEl = document.getElementById('releasedPeriodToggle');
+    if (toggleEl) {
+        toggleEl.addEventListener('click', function(e) {
+            var btn = e.target.closest('.period-btn');
+            if (!btn) return;
+            toggleEl.querySelectorAll('.period-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentPeriod = btn.getAttribute('data-period');
+            fetchReleasedChart(currentPeriod);
+        });
+    }
+
+    var suppliersToggleEl = document.getElementById('suppliersPeriodToggle');
+    if (suppliersToggleEl) {
+        suppliersToggleEl.addEventListener('click', function(e) {
+            var btn = e.target.closest('.period-btn');
+            if (!btn) return;
+            suppliersToggleEl.querySelectorAll('.period-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            currentSuppliersPeriod = btn.getAttribute('data-period');
+            fetchSuppliersChart(currentSuppliersPeriod);
+        });
+    }
+
+    fetchChartData();
+    fetchReleasedChart(currentPeriod);
+    fetchSuppliersChart(currentSuppliersPeriod);
+    setInterval(fetchChartData, 30000);
+    setInterval(function() { fetchReleasedChart(currentPeriod); }, 30000);
+    setInterval(function() { fetchSuppliersChart(currentSuppliersPeriod); }, 30000);
+});
+</script>
+{% endblock %}

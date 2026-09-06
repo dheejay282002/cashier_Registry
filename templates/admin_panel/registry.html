@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Registry{% endblock %}
+{% block nav_registry %}active{% endblock %}
+{% block nav_registry_c %}active{% endblock %}
+{% block content %}
+
+{% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+{% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+<div class="page-header">
+	<div>
+		<h2><i class="fas fa-table"></i> Registry</h2>
+		<div style="font-size:13px; color:var(--muted); margin-top:4px;">Plain registry view for imported supplier data.</div>
+	</div>
+	<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+		<span class="badge badge-info">Rows: <span id="rowCount">{{ supplier_rows|length }}</span></span>
+		<span class="badge badge-success">Columns: <span id="colCount">{{ sheet_columns|length }}</span></span>
+		<a href="{% url 'suppliers' %}" class="btn btn-secondary btn-sm"><i class="fas fa-building"></i> Supplier List</a>
+		{% if is_admin %}
+		<a href="{% url 'export_suppliers' %}?format=excel" class="btn btn-secondary btn-sm"><i class="fas fa-file-excel"></i> Export Excel</a>
+		<a href="{% url 'export_suppliers' %}?format=csv" class="btn btn-secondary btn-sm"><i class="fas fa-file-csv"></i> Export CSV</a>
+		{% endif %}
+	</div>
+</div>
+
+<div class="toolbar" style="margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+	{% if is_admin %}
+	<button type="button" onclick="addRow()"><i class="fas fa-plus"></i> Add Row</button>
+	<button type="button" onclick="addColumn()"><i class="fas fa-columns"></i> Add Column</button>
+	{% endif %}
+	<a href="{% url 'import_data' %}" class="soft-button" style="text-decoration:none;"><i class="fas fa-file-import"></i> Import Data</a>
+</div>
+
+<style>
+	.registry-wrap {
+		width: 100%;
+		overflow: auto;
+		background: white;
+		border: 1px solid #d9e1ea;
+		border-radius: 10px;
+		box-shadow: 0 10px 20px rgba(15, 23, 42, 0.06);
+	}
+
+	.registry-wrap table {
+		border-collapse: collapse;
+		min-width: 1000px;
+		width: 100%;
+	}
+
+	.registry-wrap th,
+	.registry-wrap td {
+		border: 1px solid #e5ebf2;
+		padding: 10px 12px;
+		vertical-align: top;
+	}
+
+	.registry-wrap th {
+		background: #f8fafc;
+		color: #222222;
+		font-size: 13px;
+		font-weight: 700;
+		text-align: left;
+	}
+
+	.registry-wrap td {
+		background: white;
+		font-size: 13px;
+		min-height: 40px;
+	}
+
+	.registry-wrap td[contenteditable="true"]:focus,
+	.registry-wrap th[contenteditable="true"]:focus {
+		outline: 2px solid #107c41;
+		background: #f9fff9;
+	}
+
+	.registry-wrap th:first-child,
+	.registry-wrap td:first-child {
+		width: 60px;
+		min-width: 60px;
+		max-width: 60px;
+		text-align: center;
+		background: #f3f4f6;
+		font-weight: 700;
+	}
+
+	.toolbar button {
+		padding: 10px 15px;
+		border: none;
+		background: #107c41;
+		color: white;
+		border-radius: 8px;
+		cursor: pointer;
+		transition: 0.2s;
+		font-weight: 700;
+	}
+
+	.toolbar button:hover {
+		background: #0d5c30;
+	}
+
+	.toolbar .soft-button {
+		background: #6b7280;
+	}
+
+	.toolbar .soft-button:hover {
+		background: #4b5563;
+	}
+</style>
+
+<div class="registry-wrap">
+	<table id="registryTable">
+		<thead>
+			<tr>
+				<th>#</th>
+				{% for column in sheet_columns %}
+				<th contenteditable="{% if is_admin %}true{% else %}false{% endif %}">{{ column }}</th>
+				{% endfor %}
+			</tr>
+		</thead>
+		<tbody id="registryBody">
+			{% for row in supplier_rows %}
+			<tr data-supplier-id="{{ row.supplier.pk }}">
+				<td>{{ forloop.counter }}</td>
+				{% for cell in row.cells %}
+				<td contenteditable="{% if is_admin %}true{% else %}false{% endif %}">{{ cell|default:'' }}</td>
+				{% endfor %}
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+
+<script>
+	const registryTable = document.getElementById('registryTable');
+	const registryBody = document.getElementById('registryBody');
+	const rowCount = document.getElementById('rowCount');
+	const colCount = document.getElementById('colCount');
+
+	function updateCounts() {
+		rowCount.textContent = registryBody.querySelectorAll('tr').length;
+		colCount.textContent = registryTable.tHead.rows[0].cells.length - 1;
+	}
+
+	function renumberRows() {
+		registryBody.querySelectorAll('tr').forEach((row, index) => {
+			if (row.cells.length) {
+				row.cells[0].textContent = index + 1;
+			}
+		});
+		updateCounts();
+	}
+
+	function addRow() {
+		const columnCount = registryTable.tHead.rows[0].cells.length - 1;
+		const row = document.createElement('tr');
+		row.dataset.supplierId = '';
+
+		const rowNumber = document.createElement('td');
+		rowNumber.textContent = registryBody.querySelectorAll('tr').length + 1;
+		row.appendChild(rowNumber);
+
+		for (let i = 0; i < columnCount; i++) {
+			const cell = document.createElement('td');
+			cell.contentEditable = '{% if is_admin %}true{% else %}false{% endif %}';
+			row.appendChild(cell);
+		}
+
+		registryBody.appendChild(row);
+		updateCounts();
+	}
+
+	function addColumn() {
+		const headerRow = registryTable.tHead.rows[0];
+		const newHeader = document.createElement('th');
+		newHeader.contentEditable = '{% if is_admin %}true{% else %}false{% endif %}';
+		newHeader.textContent = 'New Column';
+		headerRow.appendChild(newHeader);
+
+		registryBody.querySelectorAll('tr').forEach(row => {
+			const cell = document.createElement('td');
+			cell.contentEditable = '{% if is_admin %}true{% else %}false{% endif %}';
+			row.appendChild(cell);
+		});
+
+		updateCounts();
+	}
+
+	updateCounts();
+</script>
+
+{% endblock %}

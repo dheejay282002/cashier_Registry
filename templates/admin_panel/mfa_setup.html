@@ -1,0 +1,1262 @@
+{% extends 'base.html' %}
+{% block title %}Security Setup - {{ system_name|default:"Registry" }}{% endblock %}
+{% block content %}
+
+<style>
+    .mfa-page {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 20px 16px;
+    }
+
+    .mfa-page i, .mfa-page i::before {
+        font-family: 'Font Awesome 6 Free' !important;
+        font-weight: 900;
+    }
+
+    .mfa-page * {
+        text-transform: none !important;
+    }
+
+    .mfa-page h1, .mfa-page h3, .mfa-page p, .mfa-page span,
+    .mfa-page label, .mfa-page button, .mfa-page div,
+    .mfa-page a, .mfa-page strong, .mfa-page input {
+        font-family: var(--heading-font), sans-serif !important;
+    }
+
+    .mfa-page-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    .mfa-page-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #0e2d0a 0%, #1a6630 100%);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 14px;
+        box-shadow: 0 8px 24px rgba(14, 45, 10, 0.25);
+    }
+
+    .mfa-page-icon i {
+        font-size: 28px;
+        color: #ffffff;
+    }
+
+    .mfa-page-header h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--ink);
+        margin: 0 0 6px;
+    }
+
+    .mfa-page-header p {
+        font-family: var(--heading-font), sans-serif;
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .mfa-option-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: box-shadow 0.2s, border-color 0.2s;
+    }
+
+    .mfa-option-card:hover {
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    /* ── Dark Mode Overrides for Security Setup (MFA) ── */
+    [data-theme="dark"] .ill-circle {
+        background: #7f1d1d !important;
+        border-color: #b91c1c !important;
+        color: #f87171 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    [data-theme="dark"] .ill-badge {
+        border-color: #111111 !important;
+    }
+
+    [data-theme="dark"] .mfa-option-card,
+    [data-theme="dark"] .mfa-detail-inner,
+    [data-theme="dark"] .mfa-steps,
+    [data-theme="dark"] .mfa-step,
+    [data-theme="dark"] .mfa-recovery-box {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .mfa-option-icon {
+        background: #111111 !important;
+        color: #38bdf8 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .mfa-page-header h1,
+    [data-theme="dark"] .mfa-option-text h3,
+    [data-theme="dark"] .mfa-step-title,
+    [data-theme="dark"] label {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .mfa-page-header p,
+    [data-theme="dark"] .mfa-option-text p {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] input[type="text"],
+    [data-theme="dark"] input[type="password"] {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    .mfa-option-card.active {
+        border-color: #16a34a;
+    }
+
+    .mfa-option-header {
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .mfa-option-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .mfa-option-icon.totp {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+    }
+
+    .mfa-option-icon.email {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+    }
+
+    .mfa-option-icon.recovery {
+        background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+        box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
+    }
+
+    .mfa-option-icon i {
+        font-size: 18px;
+        color: #ffffff;
+    }
+
+    .mfa-option-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .mfa-option-text h3 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--ink);
+        margin: 0 0 2px;
+    }
+
+    .mfa-option-text p {
+        font-family: var(--heading-font), sans-serif;
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    .mfa-option-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 20px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .mfa-option-status.on {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .mfa-option-status.off {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .mfa-option-chevron {
+        color: #94a3b8;
+        font-size: 12px;
+        transition: transform 0.25s ease;
+        flex-shrink: 0;
+        margin-left: 4px;
+    }
+
+    .mfa-option-card.open .mfa-option-chevron {
+        transform: rotate(180deg);
+    }
+
+    .mfa-option-detail {
+        display: none;
+        padding: 0 18px 18px;
+        border-top: 1px solid var(--line);
+    }
+
+    .mfa-option-card.open .mfa-option-detail {
+        display: block;
+    }
+
+    .mfa-detail-inner {
+        padding-top: 16px;
+    }
+
+    .mfa-steps {
+        margin-bottom: 16px;
+    }
+
+    .mfa-step {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .mfa-step-num {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
+
+    .mfa-step-text {
+        font-size: 13px;
+        color: var(--muted);
+        line-height: 1.5;
+    }
+
+    .mfa-divider {
+        height: 1px;
+        background: var(--line);
+        margin: 14px 0;
+    }
+
+    .mfa-qr-section {
+        text-align: center;
+        padding: 20px;
+        background: #f8fafc;
+        border-radius: 12px;
+        margin-bottom: 14px;
+    }
+
+    .mfa-qr-wrapper {
+        display: inline-block;
+        padding: 10px;
+        background: #ffffff;
+        border-radius: 10px;
+        border: 2px solid var(--line);
+        margin-bottom: 10px;
+    }
+
+    .mfa-qr-wrapper img {
+        display: block;
+        width: 160px;
+        height: 160px;
+    }
+
+    .mfa-secret-key {
+        display: inline-block;
+        padding: 8px 16px;
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: #050505;
+        letter-spacing: 1.5px;
+        word-break: break-all;
+    }
+
+    .mfa-form-group {
+        margin-bottom: 14px;
+    }
+
+    .mfa-form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 6px;
+    }
+
+    .mfa-code-input {
+        width: 100%;
+        padding: 12px 14px;
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        font-size: 22px;
+        font-weight: 700;
+        text-align: center;
+        letter-spacing: 10px;
+        color: var(--ink);
+        background: #f8fafc;
+        outline: none;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .mfa-code-input:focus {
+        border-color: #3b82f6;
+        background: #ffffff;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .mfa-code-input::placeholder {
+        color: #94a3b8;
+        letter-spacing: normal;
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    .mfa-btn {
+        width: 100%;
+        padding: 12px 18px;
+        border: none;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .mfa-btn-primary {
+        background: linear-gradient(135deg, #15803d 0%, #166534 100%);
+        color: #ffffff;
+        border: 1px solid #14532d;
+        box-shadow: 0 4px 10px rgba(22, 101, 52, 0.25);
+    }
+
+    .mfa-btn-primary:hover {
+        background: linear-gradient(135deg, #166534 0%, #14532d 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(22, 101, 52, 0.35);
+    }
+
+    .mfa-btn-danger {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: #ffffff;
+        box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+    }
+
+    .mfa-btn-danger:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 14px rgba(239, 68, 68, 0.35);
+    }
+
+    .mfa-email-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background: #f8fafc;
+        border-radius: 8px;
+        margin-bottom: 14px;
+    }
+
+    .mfa-email-bar i {
+        color: #f59e0b;
+        font-size: 14px;
+    }
+
+    .mfa-email-bar span {
+        font-size: 13px;
+        color: var(--ink);
+        font-weight: 500;
+    }
+
+    .mfa-no-email {
+        text-align: center;
+        padding: 16px;
+        background: #fef2f2;
+        border-radius: 10px;
+        border: 1px solid #fecaca;
+        margin-bottom: 14px;
+    }
+
+    .mfa-no-email i {
+        font-size: 20px;
+        color: #ef4444;
+        margin-bottom: 6px;
+    }
+
+    .mfa-no-email p {
+        font-size: 13px;
+        color: #991b1b;
+        margin: 0;
+    }
+
+    .mfa-codes-box {
+        position: relative;
+        margin-bottom: 12px;
+    }
+
+    .mfa-codes-list {
+        background: #f8fafc;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: 0.5px;
+        line-height: 2;
+        filter: blur(4px);
+        transition: filter 0.3s;
+        user-select: none;
+    }
+
+    .mfa-codes-list.revealed {
+        filter: none;
+        user-select: text;
+    }
+
+    .mfa-codes-list .code-item {
+        padding: 3px 0;
+    }
+
+    .mfa-codes-list .code-item:not(:last-child) {
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .mfa-codes-list .code-empty {
+        font-family: var(--body-font), sans-serif;
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0;
+    }
+
+    .mfa-codes-toggle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--nav);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 8px 18px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        transition: all 0.2s;
+    }
+
+    .mfa-codes-toggle:hover {
+        background: #145218;
+    }
+
+    .mfa-copy-btn {
+        font-size: 12px;
+        color: var(--primary, #2563eb);
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-bottom: 14px;
+    }
+
+    .mfa-copy-btn:hover {
+        text-decoration: underline;
+    }
+
+    .mfa-email-note {
+        font-size: 11px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 10px;
+    }
+
+    .mfa-email-note i {
+        color: #f59e0b;
+    }
+
+    .mfa-email-note strong {
+        color: var(--ink);
+    }
+
+    @media (max-width: 600px) {
+        .mfa-page { padding: 12px 8px; }
+        .mfa-option-header { padding: 14px 14px; }
+        .mfa-option-detail { padding: 0 14px 14px; }
+    }
+
+    /* ── MASTER DARK MODE OVERRIDES FOR MFA SETUP ── */
+    [data-theme="dark"] .mfa-option-card,
+    [data-theme="dark"] .mfa-detail-inner,
+    [data-theme="dark"] .mfa-steps,
+    [data-theme="dark"] .mfa-step,
+    [data-theme="dark"] .mfa-recovery-box {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        color: #f8fafc !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .ill-circle,
+    [data-theme="dark"] .mfa-page-icon {
+        background: #7f1d1d !important;
+        background-color: #7f1d1d !important;
+        border-color: #b91c1c !important;
+        color: #f87171 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    [data-theme="dark"] .mfa-option-icon {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #38bdf8 !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .mfa-option-status.on {
+        background: #064e3b !important;
+        background-color: #064e3b !important;
+        color: #34d399 !important;
+        border: 1px solid #047857 !important;
+    }
+
+    [data-theme="dark"] .mfa-option-status.off {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #94a3b8 !important;
+        border: 1px solid #222222 !important;
+    }
+
+    [data-theme="dark"] .mfa-page-header h1,
+    [data-theme="dark"] .mfa-option-text h3,
+    [data-theme="dark"] .mfa-step-title,
+    [data-theme="dark"] label {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .mfa-page-header p,
+    [data-theme="dark"] .mfa-option-text p {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] .mfa-email-bar {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        border: 1px solid #222222 !important;
+    }
+
+    [data-theme="dark"] .mfa-email-bar span {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .mfa-no-email {
+        background: #7f1d1d !important;
+        background-color: #7f1d1d !important;
+        color: #f87171 !important;
+        border-color: #b91c1c !important;
+    }
+
+    [data-theme="dark"] .mfa-step-num {
+        background: #111111 !important;
+        background-color: #111111 !important;
+        color: #38bdf8 !important;
+        border: 1px solid #222222 !important;
+    }
+
+    [data-theme="dark"] .mfa-step-text {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] input[type="text"],
+    [data-theme="dark"] input[type="password"] {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .mfa-secret-key,
+    html.dark-mode .mfa-secret-key {
+        background: #111111 !important;
+        border: 1px solid #222222 !important;
+        color: #38bdf8 !important;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    [data-theme="dark"] .mfa-qr-section,
+    html.dark-mode .mfa-qr-section {
+        background: #050505 !important;
+        border: 1px solid #111111 !important;
+    }
+
+    [data-theme="dark"] .mfa-code-input,
+    html.dark-mode .mfa-code-input {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .mfa-code-input:focus,
+    html.dark-mode .mfa-code-input:focus {
+        border-color: #10b981 !important;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    [data-theme="dark"] .mfa-btn-primary,
+    html.dark-mode .mfa-btn-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #34d399 !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    [data-theme="dark"] .mfa-btn-primary:hover,
+    html.dark-mode .mfa-btn-primary:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.6) !important;
+    }
+
+    [data-theme="dark"] .mfa-codes-list,
+    html.dark-mode .mfa-codes-list {
+        background: #111111 !important;
+        border-color: #222222 !important;
+        color: #f8fafc !important;
+    }
+
+    .mfa-modal-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+    }
+
+    .mfa-modal-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 20px;
+        color: #dc2626;
+    }
+
+    .mfa-modal-cancel-btn {
+        font-weight: 500;
+        width: auto;
+        padding: 10px 20px;
+        background: #f1f5f9;
+        color: var(--ink);
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .mfa-modal-cancel-btn:hover {
+        background: #e2e8f0;
+    }
+
+    .mfa-resend-btn {
+        background: none;
+        border: none;
+        color: #2563eb;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        text-decoration: underline;
+    }
+
+    [data-theme="dark"] .mfa-modal-card,
+    html.dark-mode .mfa-modal-card {
+        background: #111827 !important;
+        border: 1px solid #1a1a1a !important;
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .mfa-modal-icon,
+    [data-theme="dark"] .mfa-modal-icon.red,
+    html.dark-mode .mfa-modal-icon,
+    html.dark-mode .mfa-modal-icon.red {
+        background: #7f1d1d !important;
+        background-color: #7f1d1d !important;
+        border: 1px solid #b91c1c !important;
+        color: #f87171 !important;
+        box-shadow: 0 4px 12px rgba(185, 28, 28, 0.35) !important;
+    }
+
+    [data-theme="dark"] .mfa-modal-title,
+    html.dark-mode .mfa-modal-title {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .mfa-modal-subtitle,
+    html.dark-mode .mfa-modal-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    [data-theme="dark"] .mfa-modal-desc,
+    html.dark-mode .mfa-modal-desc {
+        color: #e2e8f0 !important;
+    }
+
+    [data-theme="dark"] .mfa-email-highlight,
+    html.dark-mode .mfa-email-highlight {
+        color: #ffffff !important;
+    }
+
+    [data-theme="dark"] .mfa-modal-cancel-btn,
+    html.dark-mode .mfa-modal-cancel-btn {
+        background: #4b5563 !important;
+        color: #ffffff !important;
+        border: 1px solid #6b7280 !important;
+    }
+
+    [data-theme="dark"] .mfa-modal-cancel-btn:hover,
+    html.dark-mode .mfa-modal-cancel-btn:hover {
+        background: #374151 !important;
+    }
+
+    [data-theme="dark"] .mfa-resend-btn,
+    html.dark-mode .mfa-resend-btn {
+        color: #38bdf8 !important;
+    }
+</style>
+
+{% if error %}
+<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>
+{% endif %}
+{% if success %}
+<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>
+{% endif %}
+
+<div class="mfa-page">
+    <div class="mfa-page-header">
+        <h1>Security Setup</h1>
+        <p>Add extra layers of protection to your account with multi-factor authentication.</p>
+    </div>
+
+    <!-- Authenticator App -->
+    <div class="mfa-option-card" id="card-totp">
+        <div class="mfa-option-header" onclick="toggleMfaCard('card-totp', event)">
+            <div class="mfa-option-icon totp">
+                <i class="fas fa-mobile-screen-button"></i>
+            </div>
+            <div class="mfa-option-text">
+                <h3>Authenticator App</h3>
+                <p>Use Google Authenticator, Authy, or any TOTP-compatible app.</p>
+            </div>
+            {% if profile.totp_enabled %}
+            <span class="mfa-option-status on"><i class="fas fa-check-circle"></i> Active</span>
+            {% else %}
+            <span class="mfa-option-status off"><i class="fas fa-circle-xmark"></i> Off</span>
+            {% endif %}
+            <i class="fas fa-chevron-down mfa-option-chevron"></i>
+        </div>
+        <div class="mfa-option-detail" onclick="event.stopPropagation()">
+            <div class="mfa-detail-inner">
+                {% if profile.totp_enabled %}
+                <div class="mfa-steps">
+                    <div class="mfa-step">
+                        <div class="mfa-step-num">1</div>
+                        <div class="mfa-step-text">Open your authenticator app</div>
+                    </div>
+                    <div class="mfa-step">
+                        <div class="mfa-step-num">2</div>
+                        <div class="mfa-step-text">Enter the 6-digit code from the app to confirm</div>
+                    </div>
+                </div>
+                <div class="mfa-divider"></div>
+                <div id="disableTotpSection">
+                    <button type="button" class="mfa-btn mfa-btn-danger" onclick="event.stopPropagation(); sendDisableTotpOtp();">
+                        <i class="fas fa-trash-can"></i> Remove Authenticator
+                    </button>
+                </div>
+                <div id="disableTotpOtpSection" style="display:none; margin-top:12px;">
+                    <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">
+                        <i class="fas fa-envelope" style="margin-right:4px;"></i> A verification code has been sent to <strong>{{ request.user.email }}</strong>
+                    </div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="disable_totp">
+                        <div class="mfa-form-group">
+                            <label>Enter 6-digit verification code</label>
+                            <input type="text" class="mfa-code-input" name="otp_code" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" required autocomplete="off">
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="submit" class="mfa-btn mfa-btn-danger">
+                                <i class="fas fa-trash-can"></i> Disable
+                            </button>
+                            <button type="button" class="mfa-btn mfa-btn-secondary" onclick="event.stopPropagation(); cancelDisableTotp();">
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+
+                {% if show_qr and new_secret %}
+                <div class="mfa-qr-section">
+                    <div class="mfa-qr-wrapper">
+                        <img src="{% url 'mfa_totp_qr' %}?secret={{ new_secret }}" alt="QR Code">
+                    </div>
+                    <p style="font-size:12px; color:var(--muted); margin:0 0 6px;">Scan this QR code with your authenticator app</p>
+                    <p style="font-size:11px; color:var(--muted); margin:0;">Or enter manually:</p>
+                    <div class="mfa-secret-key">{{ new_secret }}</div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="enable_totp">
+                    <input type="hidden" name="secret" value="{{ new_secret }}">
+                    <div class="mfa-form-group">
+                        <label>Enter 6-digit verification code</label>
+                        <input type="text" class="mfa-code-input" name="code" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" required autocomplete="off">
+                    </div>
+                    <button type="submit" class="mfa-btn mfa-btn-primary">
+                        <i class="fas fa-link"></i> Verify &amp; Enable
+                    </button>
+                </form>
+                {% else %}
+                <div class="mfa-steps">
+                    <div class="mfa-step">
+                        <div class="mfa-step-num">1</div>
+                        <div class="mfa-step-text">Install an authenticator app on your phone</div>
+                    </div>
+                    <div class="mfa-step">
+                        <div class="mfa-step-num">2</div>
+                        <div class="mfa-step-text">Scan the QR code we'll generate for you</div>
+                    </div>
+                    <div class="mfa-step">
+                        <div class="mfa-step-num">3</div>
+                        <div class="mfa-step-text">Enter the code to verify and activate</div>
+                    </div>
+                </div>
+                <div class="mfa-divider"></div>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="setup_totp">
+                    <button type="submit" class="mfa-btn mfa-btn-primary">
+                        <i class="fas fa-qrcode"></i> Generate QR Code
+                    </button>
+                </form>
+                {% endif %}
+
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Email OTP -->
+    <div class="mfa-option-card" id="card-email">
+        <div class="mfa-option-header" onclick="toggleMfaCard('card-email', event)">
+            <div class="mfa-option-icon email">
+                <i class="fas fa-envelope"></i>
+            </div>
+            <div class="mfa-option-text">
+                <h3>Email OTP</h3>
+                <p>Receive a one-time verification code via email each time you log in.</p>
+            </div>
+            {% if profile.email_otp_enabled %}
+            <span class="mfa-option-status on"><i class="fas fa-check-circle"></i> Active</span>
+            {% else %}
+            <span class="mfa-option-status off"><i class="fas fa-circle-xmark"></i> Off</span>
+            {% endif %}
+            <i class="fas fa-chevron-down mfa-option-chevron"></i>
+        </div>
+        <div class="mfa-option-detail" onclick="event.stopPropagation()">
+            <div class="mfa-detail-inner">
+                {% if profile.email_otp_enabled %}
+                <div class="mfa-email-bar">
+                    <i class="fas fa-at"></i>
+                    <span>{{ request.user.email }}</span>
+                </div>
+                <div class="mfa-divider"></div>
+                <button type="button" class="mfa-btn mfa-btn-danger" onclick="event.stopPropagation(); openDisableEmailOtpModal();">
+                    <i class="fas fa-toggle-off"></i> Disable Email OTP
+                </button>
+                {% else %}
+                {% if request.user.email %}
+                <div class="mfa-email-bar">
+                    <i class="fas fa-at"></i>
+                    <span>{{ request.user.email }}</span>
+                </div>
+                <div class="mfa-divider"></div>
+                <form method="post" onclick="event.stopPropagation();">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="enable_email_otp">
+                    <button type="submit" class="mfa-btn mfa-btn-primary">
+                        <i class="fas fa-toggle-on"></i> Enable Email OTP
+                    </button>
+                </form>
+                {% else %}
+                <div class="mfa-no-email">
+                    <i class="fas fa-triangle-exclamation"></i>
+                    <p>No email address found. Please add an email to your account first.</p>
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recovery Codes (only show if authenticator is enabled) -->
+    {% if profile.totp_enabled %}
+    <div class="mfa-option-card" id="card-recovery">
+        <div class="mfa-option-header" onclick="toggleMfaCard('card-recovery', event)">
+            <div class="mfa-option-icon recovery">
+                <i class="fas fa-key"></i>
+            </div>
+            <div class="mfa-option-text">
+                <h3>Recovery Codes</h3>
+                <p>One-time use codes to access your account if you lose your authentication access.</p>
+            </div>
+            {% if profile.mfa_recovery_codes %}
+            <span class="mfa-option-status on"><i class="fas fa-check-circle"></i> {{ profile.mfa_recovery_codes|length }} codes left</span>
+            {% else %}
+            <span class="mfa-option-status off"><i class="fas fa-circle-xmark"></i> No codes</span>
+            {% endif %}
+            <i class="fas fa-chevron-down mfa-option-chevron"></i>
+        </div>
+        <div class="mfa-option-detail" onclick="event.stopPropagation()">
+            <div class="mfa-detail-inner">
+                {% if profile.mfa_recovery_codes %}
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:12px; font-weight:700; color:var(--ink); margin-bottom:4px;">Your Recovery Codes</div>
+
+                    {% if recovery_codes_raw %}
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">Save these codes in a secure location. Each code can only be used once.</div>
+
+                    <div class="mfa-codes-box">
+                        <div id="recoveryCodesList" class="mfa-codes-list">
+                            {% for code in recovery_codes_raw %}
+                            <div class="code-item">{{ code }}</div>
+                            {% endfor %}
+                        </div>
+                        <button type="button" onclick="event.stopPropagation(); toggleRecoveryCodes();" id="toggleCodesBtn" class="mfa-codes-toggle">
+                            <i class="fas fa-eye"></i> Show Codes
+                        </button>
+                    </div>
+
+                    <button type="button" onclick="event.stopPropagation(); copyRecoveryCodes();" class="mfa-copy-btn">
+                        <i class="fas fa-copy"></i> Copy all codes
+                    </button>
+                    {% else %}
+                    <div style="font-size:11px; color:var(--muted); margin-bottom:10px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px;">
+                        <i class="fas fa-info-circle" style="color:#64748b; margin-right:4px;"></i>
+                        Recovery codes were already displayed when generated. For security, they cannot be shown again. Generate new codes if you need fresh ones.
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="mfa-divider"></div>
+                {% endif %}
+
+                <form method="post" onclick="event.stopPropagation();">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="generate_recovery_codes">
+                    <button type="submit" class="mfa-btn mfa-btn-primary" onclick="return confirm('Generate new recovery codes? This will invalidate your existing codes.')">
+                        <i class="fas fa-rotate"></i> Generate New Codes
+                    </button>
+                </form>
+                <div class="mfa-email-note">
+                    <i class="fas fa-envelope"></i>
+                    New codes will be sent to your email: <strong>{{ request.user.email|default:"No email set" }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Disable Email OTP Confirmation Modal -->
+<div id="disableEmailOtpModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.6); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+  <div class="mfa-modal-card" style="border-radius:16px; width:440px; max-width:95vw; box-shadow:0 20px 60px rgba(0,0,0,0.35); overflow:hidden;">
+    <div style="padding:28px 32px 0;">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+        <div class="mfa-modal-icon red">
+          <i class="fas fa-shield-halved"></i>
+        </div>
+        <div>
+          <h3 style="margin:0; font-size:17px; font-weight:700;" class="mfa-modal-title">Disable Email OTP</h3>
+          <p style="margin:2px 0 0; font-size:13px;" class="mfa-modal-subtitle">Verification required</p>
+        </div>
+      </div>
+      <p style="font-size:14px; line-height:1.6; margin:0 0 16px;" class="mfa-modal-desc">
+        A one-time code will be sent to <strong class="mfa-email-highlight">{{ request.user.email }}</strong> to confirm this action.
+      </p>
+    </div>
+    <form id="disableEmailOtpForm" onsubmit="submitDisableEmailOtp(event)">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="disable_email_otp">
+      <div style="padding:0 32px;">
+        <div id="disableOtpSendSection">
+          <button type="button" id="disableOtpSendBtn" class="mfa-btn mfa-btn-primary" style="margin-bottom:20px;" onclick="sendDisableEmailOtp()">
+            <i class="fas fa-paper-plane"></i> Send Verification Code
+          </button>
+        </div>
+        <div id="disableOtpInputSection" style="display:none;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:6px;">Enter 6-digit code</label>
+          <input type="text" name="otp_code" id="disableOtpInput" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code"
+                 class="mfa-code-input"
+                 placeholder="000000" required>
+          <p id="disableOtpError" style="color:#ef4444; font-size:13px; margin:8px 0 0; display:none;"></p>
+          <p id="disableOtpResendRow" style="font-size:13px; margin:10px 0 0;">
+            Didn't receive it? <button type="button" onclick="sendDisableEmailOtp()" class="mfa-resend-btn">Resend</button>
+          </p>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; padding:20px 32px 24px; justify-content:flex-end;">
+        <button type="button" class="mfa-modal-cancel-btn" onclick="closeDisableEmailOtpModal()">Cancel</button>
+        <button type="submit" id="disableOtpConfirmBtn" class="mfa-btn mfa-btn-danger" style="display:none; width:auto; padding:10px 20px;">
+          <i class="fas fa-toggle-off"></i> Confirm Disable
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function getCookie(name) {
+    let v = null;
+    if (document.cookie) {
+        document.cookie.split(';').forEach(c => {
+            c = c.trim();
+            if (c.startsWith(name + '=')) {
+                v = decodeURIComponent(c.slice(name.length + 1));
+            }
+        });
+    }
+    return v;
+}
+
+function toggleMfaCard(id, ev) {
+    if (ev && typeof ev.stopPropagation === 'function') {
+        ev.stopPropagation();
+    }
+    const card = document.getElementById(id);
+    if (!card) return;
+    const wasOpen = card.classList.contains('open');
+    document.querySelectorAll('.mfa-option-card.open').forEach(c => {
+        if (c.id !== id) c.classList.remove('open');
+    });
+    if (wasOpen) {
+        card.classList.remove('open');
+    } else {
+        card.classList.add('open');
+    }
+}
+
+function openDisableEmailOtpModal() {
+    const modal = document.getElementById('disableEmailOtpModal');
+    modal.style.display = 'flex';
+    document.getElementById('disableOtpSendSection').style.display = '';
+    document.getElementById('disableOtpInputSection').style.display = 'none';
+    document.getElementById('disableOtpConfirmBtn').style.display = 'none';
+    document.getElementById('disableOtpError').style.display = 'none';
+    document.getElementById('disableOtpInput').value = '';
+}
+
+function closeDisableEmailOtpModal() {
+    document.getElementById('disableEmailOtpModal').style.display = 'none';
+}
+
+function sendDisableEmailOtp() {
+    const btn = document.getElementById('disableOtpSendBtn');
+    const origHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+    btn.disabled = true;
+    fetch("{% url 'mfa_send_disable_email_otp' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('#disableEmailOtpForm input[name="csrfmiddlewaretoken"]').value,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        if (data.ok) {
+            document.getElementById('disableOtpSendSection').style.display = 'none';
+            document.getElementById('disableOtpInputSection').style.display = '';
+            document.getElementById('disableOtpConfirmBtn').style.display = '';
+            document.getElementById('disableOtpInput').focus();
+        } else {
+            showToast('error', 'Failed', data.error || 'Could not send OTP.');
+        }
+    })
+    .catch(() => {
+        btn.innerHTML = origHtml;
+        btn.disabled = false;
+        showToast('error', 'Error', 'Network error. Please try again.');
+    });
+}
+
+function submitDisableEmailOtp(e) {
+    e.preventDefault();
+    const code = document.getElementById('disableOtpInput').value.trim();
+    if (!code || code.length !== 6) {
+        showDisableOtpError('Please enter a valid 6-digit code.');
+        return;
+    }
+    const btn = document.getElementById('disableOtpConfirmBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+    btn.disabled = true;
+
+    const form = document.getElementById('disableEmailOtpForm');
+    const formData = new FormData(form);
+    formData.set('otp_code', code);
+
+    fetch("{% url 'mfa_setup' %}", {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.innerHTML = '<i class="fas fa-toggle-off"></i> Confirm Disable';
+        btn.disabled = false;
+        if (data.ok) {
+            closeDisableEmailOtpModal();
+            showToast('success', 'Disabled', data.success || 'Email OTP has been disabled.');
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            showDisableOtpError(data.error || 'Verification failed.');
+        }
+    })
+    .catch(() => {
+        btn.innerHTML = '<i class="fas fa-toggle-off"></i> Confirm Disable';
+        btn.disabled = false;
+        showDisableOtpError('Network error. Please try again.');
+    });
+}
+
+function showDisableOtpError(msg) {
+    const el = document.getElementById('disableOtpError');
+    el.textContent = msg;
+    el.style.display = 'block';
+}
+
+function copyRecoveryCodes() {
+    const list = document.getElementById('recoveryCodesList');
+    if (!list) return;
+    const codes = [];
+    list.querySelectorAll('.code-item').forEach(el => {
+        const text = el.textContent.trim();
+        if (text && !text.includes('No recovery codes')) {
+            codes.push(text);
+        }
+    });
+    if (codes.length === 0) {
+        showToast('error', 'No codes', 'No recovery codes to copy.');
+        return;
+    }
+    navigator.clipboard.writeText(codes.join('\n')).then(() => {
+        showToast('success', 'Copied', 'Recovery codes copied to clipboard.');
+    }).catch(() => {
+        showToast('error', 'Failed', 'Could not copy codes.');
+    });
+}
+
+let codesVisible = false;
+function toggleRecoveryCodes() {
+    const list = document.getElementById('recoveryCodesList');
+    const btn = document.getElementById('toggleCodesBtn');
+    if (!list || !btn) return;
+    codesVisible = !codesVisible;
+    if (codesVisible) {
+        list.classList.add('revealed');
+        btn.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Codes';
+    } else {
+        list.classList.remove('revealed');
+        btn.innerHTML = '<i class="fas fa-eye"></i> Show Codes';
+    }
+}
+
+function sendDisableTotpOtp() {
+    const section = document.getElementById('disableTotpSection');
+    const otpSection = document.getElementById('disableTotpOtpSection');
+    section.innerHTML = '<div style="font-size:12px; color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Sending verification code...</div>';
+    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]') ? document.querySelector('input[name="csrfmiddlewaretoken"]').value : getCookie('csrftoken');
+    fetch("{% url 'mfa_send_disable_totp_otp' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.ok) {
+            section.style.display = 'none';
+            otpSection.style.display = '';
+            otpSection.querySelector('input[name="otp_code"]').focus();
+        } else {
+            section.innerHTML = '<div style="font-size:12px; color:#dc2626; margin-bottom:8px;">' + (data.error || 'Failed to send code.') + '</div><button type="button" class="mfa-btn mfa-btn-danger" onclick="event.stopPropagation(); sendDisableTotpOtp();"><i class="fas fa-trash-can"></i> Remove Authenticator</button>';
+        }
+    })
+    .catch(() => {
+        section.innerHTML = '<div style="font-size:12px; color:#dc2626; margin-bottom:8px;">Network error. Please try again.</div><button type="button" class="mfa-btn mfa-btn-danger" onclick="event.stopPropagation(); sendDisableTotpOtp();"><i class="fas fa-trash-can"></i> Remove Authenticator</button>';
+    });
+}
+
+function cancelDisableTotp() {
+    document.getElementById('disableTotpSection').style.display = '';
+    document.getElementById('disableTotpSection').innerHTML = '<button type="button" class="mfa-btn mfa-btn-danger" onclick="event.stopPropagation(); sendDisableTotpOtp();"><i class="fas fa-trash-can"></i> Remove Authenticator</button>';
+    document.getElementById('disableTotpOtpSection').style.display = 'none';
+}
+</script>
+
+{% endblock %}

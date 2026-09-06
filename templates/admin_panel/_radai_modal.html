@@ -1,0 +1,456 @@
+<style>
+    .radai-modal-backdrop {
+        display:none; position:fixed; inset:0; z-index:5000;
+        background:rgba(15,23,42,0.58); align-items:center; justify-content:center; padding:18px;
+    }
+    .radai-modal {
+        width:min(700px,100%); max-height:92vh; overflow:auto;
+        background:#fff; border-radius:18px; box-shadow:0 24px 80px rgba(15,23,42,0.35);
+        border:1px solid rgba(255,255,255,0.35);
+    }
+    .radai-modal-head {
+        position:sticky; top:0; z-index:2; display:flex; align-items:center;
+        justify-content:space-between; padding:18px 22px;
+        background:linear-gradient(135deg,#0f3d2e,#17563d); color:#fff;
+    }
+    .radai-modal-head h3 { margin:0; font-size:18px; }
+    .radai-modal-body { padding:22px; }
+    .radai-section { margin-bottom:18px; padding:16px; border:1px solid #e5eaf0; border-radius:14px; background:#fbfdff; }
+    .radai-section h4 { margin:0 0 14px; font-size:14px; color:#163c2a; }
+    .radai-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .radai-grid-3 { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+    .radai-field { display:flex; flex-direction:column; gap:4px; }
+    .radai-field label { font-size:13px; font-weight:600; color:var(--ink); }
+    .radai-field input, .radai-field select, .radai-field textarea {
+        width:100%; padding:9px 12px; border:1px solid #d6dde7;
+        border-radius:8px; background:#fff; font-size:14px; box-sizing:border-box;
+    }
+    .radai-field input.auto-readonly, .radai-field input:disabled {
+        background:#f8fafc; cursor:default; pointer-events:none; user-select:none;
+    }
+    .radai-field textarea { resize:vertical; min-height:70px; }
+    .radai-actions { display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:18px; }
+
+    [data-theme="dark"] .radai-modal {
+        background: #111827 !important;
+        border-color: #1a1a1a !important;
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .radai-section {
+        background: #111827 !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .radai-section h4,
+    [data-theme="dark"] .radai-field label {
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .radai-field input,
+    [data-theme="dark"] .radai-field select,
+    [data-theme="dark"] .radai-field textarea {
+        background: #111111 !important;
+        color: #ffffff !important;
+        border-color: #222222 !important;
+    }
+
+    [data-theme="dark"] .radai-field input.auto-readonly,
+    [data-theme="dark"] .radai-field input:disabled {
+        background: #050505 !important;
+        color: #94a3b8 !important;
+    }
+
+    @media (max-width:700px) { .radai-grid, .radai-grid-3 { grid-template-columns:1fr; } }
+</style>
+
+<div id="radaiModal" class="radai-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="radai-modal">
+        <div class="radai-modal-head">
+            <h3 id="radaiModalTitle"><i class="fas fa-plus"></i> Add RADAI Record</h3>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeRadaiModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="radai-modal-body">
+            <form method="post" id="radaiForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" id="radaiAction" value="create">
+                <input type="hidden" name="radai_id" id="radaiId" value="">
+
+                <div class="radai-section">
+                    <h4>Record Details</h4>
+                    <div class="radai-grid">
+                        <div class="radai-field">
+                            <label>Date</label>
+                            <input type="date" name="date" id="radaiFieldDate">
+                        </div>
+                    <div class="radai-field">
+                        <label>Serial No.</label>
+                        <input type="text" name="check_serial" id="radaiFieldSerial" placeholder="Auto-generated" autocomplete="off"">
+                    </div>
+                    </div>
+                    <div class="radai-grid" style="margin-top:12px;">
+                        <div class="radai-field">
+                            <label>Payee *</label>
+                            <input type="text" name="payee" id="radaiFieldPayee" list="radaiPayeeChoices" required placeholder="Type or select payee..." autocomplete="off">
+                            <datalist id="radaiPayeeChoices">
+                                {% for name in payee_choices %}
+                                <option value="{{ name|escape }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    <div class="radai-field">
+                        <label>Amount (₱)</label>
+                        <input type="number" name="amount" id="radaiFieldAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+                    </div>
+                    </div>
+                    <div class="radai-grid" style="margin-top:12px;">
+                        <div class="radai-field" style="grid-column:span 2;">
+                            <label>Nature of Payment</label>
+                            <input type="text" name="nature_of_payments" id="radaiFieldNature" placeholder="e.g. Payment for services" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="radai-section">
+                    <h4>Document Reference</h4>
+                    <div class="radai-grid">
+                        <div class="radai-field">
+                            <label>DV/Payroll No.</label>
+                            <input type="text" name="dv_payroll" id="radaiFieldDvPayroll" placeholder="e.g. DV-2024-001" autocomplete="off">
+                        </div>
+                        <div class="radai-field">
+                            <label>UACS Object Code</label>
+                            <input type="text" name="uacs" id="radaiFieldUacs" placeholder="e.g. 50201010" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="radai-grid" style="margin-top:12px;">
+                        <div class="radai-field" style="grid-column:span 2;">
+                            <label>ORS/BURS No. &amp; Responsibility Center</label>
+                            <input type="text" name="reference_code" id="radaiFieldReference" placeholder="e.g. ORS-2024-001 | RC-CODE" autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="radai-section">
+                    <h4>Other</h4>
+                    <div class="radai-grid">
+                        <div class="radai-field">
+                            <label>Fund Cluster</label>
+                            <select name="fund_cluster" id="radaiFieldFundCluster">
+                                <option value="">-- select fund cluster --</option>
+                                {% for fc in fund_clusters %}
+                                <option value="{{ fc.pk }}">{{ fc.code }} — {{ fc.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="radai-field">
+                            <label>Status</label>
+                            <select name="status" id="radaiFieldStatus">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="blacklisted">Blacklisted</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="radai-grid" style="margin-top:12px;">
+                        <div class="radai-field" style="grid-column:span 2;">
+                            <label>Remarks</label>
+                            <textarea name="remarks" id="radaiFieldRemarks" placeholder="Optional notes..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="radai-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeRadaiModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="radaiSubmitBtn"><i class="fas fa-check"></i> Add Record</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DEFAULT_RADAI_VALUES = {
+        check_serial: '',
+        date: '',
+        dv_payroll: '',
+        reference_code: '',
+    };
+
+    function getNextRadaiSequence(columnIndex, fallbackPrefix, fallbackPad) {
+        let maxNum = -1;
+        let lastFormat = '';
+        const rows = document.querySelectorAll('#radaiTableBody tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length > columnIndex) {
+                const text = (cells[columnIndex]?.textContent || '').trim().replace(/\s+/g, '');
+                if (!text || text === '\u2014' || text === ' ') return;
+                const match = text.match(/(\d+)\s*$/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNum) {
+                        maxNum = num;
+                        lastFormat = text.replace(/\d+\s*$/, '');
+                    }
+                }
+            }
+        });
+        if (maxNum < 0) return fallbackPrefix + '1'.padStart(fallbackPad, '0');
+        const nextNum = maxNum + 1;
+        const padLen = String(maxNum).length;
+        return lastFormat + String(nextNum).padStart(padLen, '0');
+    }
+
+    function computeRadaiDefaults() {
+        DEFAULT_RADAI_VALUES.check_serial = getNextRadaiSequence(2, '', 3);
+        DEFAULT_RADAI_VALUES.dv_payroll = getNextRadaiSequence(3, 'DV-', 3);
+        var lastRef = getNextRadaiSequence(4, '', 4);
+        if (lastRef && lastRef !== '0001' && lastRef !== '0') {
+            DEFAULT_RADAI_VALUES.reference_code = lastRef;
+        }
+    }
+
+    (function() {
+        function pad2(n) { return (n < 10 ? '0' + n : String(n)); }
+        try {
+            const now = new Date();
+            const isoDate = now.toISOString().slice(0, 10);
+            if (!DEFAULT_RADAI_VALUES.date) DEFAULT_RADAI_VALUES.date = isoDate;
+            computeRadaiDefaults();
+        } catch (e) {}
+    })();
+
+    function setFieldValue(id, value) {
+        const f = document.getElementById(id);
+        if (f) f.value = value || '';
+    }
+
+    function openRadaiModal(mode, trigger) {
+        const modal = document.getElementById('radaiModal');
+        const title = document.getElementById('radaiModalTitle');
+        const action = document.getElementById('radaiAction');
+        const submitBtn = document.getElementById('radaiSubmitBtn');
+
+        if (mode === 'edit' && trigger) {
+            title.innerHTML = '<i class="fas fa-pen"></i> Edit RADAI Record';
+            action.value = 'edit';
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Save Changes';
+            setFieldValue('radaiId', trigger.dataset.id);
+            setFieldValue('radaiFieldSerial', trigger.dataset.mrOr);
+            setFieldValue('radaiFieldDate', trigger.dataset.date);
+            setFieldValue('radaiFieldPayee', trigger.dataset.payee);
+            setFieldValue('radaiFieldNature', trigger.dataset.nature);
+            setFieldValue('radaiFieldAmount', trigger.dataset.amount);
+            setFieldValue('radaiFieldDvPayroll', trigger.dataset.dvPayroll);
+            setFieldValue('radaiFieldUacs', trigger.dataset.uacs);
+            setFieldValue('radaiFieldFundCluster', trigger.dataset.fundCluster || '');
+            setFieldValue('radaiFieldRemarks', trigger.dataset.remarks);
+            setFieldValue('radaiFieldStatus', trigger.dataset.status || 'active');
+            setFieldValue('radaiFieldReference', trigger.dataset.reference || '');
+        } else {
+            title.innerHTML = '<i class="fas fa-plus"></i> Add RADAI Record';
+            action.value = 'create';
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Record';
+            computeRadaiDefaults();
+            setFieldValue('radaiId', '');
+            setFieldValue('radaiFieldSerial', DEFAULT_RADAI_VALUES.check_serial);
+            setFieldValue('radaiFieldDate', DEFAULT_RADAI_VALUES.date);
+            setFieldValue('radaiFieldPayee', '');
+            setFieldValue('radaiFieldNature', '');
+            setFieldValue('radaiFieldAmount', '');
+            setFieldValue('radaiFieldDvPayroll', DEFAULT_RADAI_VALUES.dv_payroll);
+            setFieldValue('radaiFieldUacs', '');
+            setFieldValue('radaiFieldFundCluster', '');
+            setFieldValue('radaiFieldRemarks', '');
+            setFieldValue('radaiFieldStatus', 'active');
+            setFieldValue('radaiFieldReference', DEFAULT_RADAI_VALUES.reference_code);
+        }
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeRadaiModal() {
+        const modal = document.getElementById('radaiModal');
+        if (!modal) return;
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    document.getElementById('radaiModal')?.addEventListener('click', function(e) {
+        if (e.target === this) closeRadaiModal();
+    });
+
+    document.getElementById('radaiForm')?.addEventListener('submit', function(e) {
+    const payeeInput = document.getElementById('radaiFieldPayee');
+    const serialInput = document.getElementById('radaiFieldSerial');
+
+    if (payeeInput && !payeeInput.value.trim()) {
+        const last = payeeInput.getAttribute('data-last-val');
+        if (last) payeeInput.value = last;
+    }
+
+    // Clean up trailing dashes from serial number before database write actions
+    if (serialInput && serialInput.value) {
+        let cleaned = serialInput.value.replace(/-+/g, '-');
+        if (cleaned.endsWith('-')) {
+            cleaned = cleaned.slice(0, -1);
+        }
+        serialInput.value = cleaned;
+    }
+
+    // Duplicate validation for create action
+    const action = document.getElementById('radaiAction')?.value;
+    if (action === 'create') {
+        const serial = document.getElementById('radaiFieldSerial')?.value.trim();
+        const dvPayroll = document.getElementById('radaiFieldDvPayroll')?.value.trim();
+        const orsBurs = document.getElementById('radaiFieldReference')?.value.trim();
+
+        const rows = document.querySelectorAll('#radaiTableBody tr');
+        for (const row of rows) {
+            const cells = row.querySelectorAll('td');
+            if (cells.length > 4) {
+                const existingSerial = cells[2]?.textContent.trim();
+                const existingDv = cells[3]?.textContent.trim();
+                const existingOrs = cells[4]?.textContent.trim();
+
+                if (serial && existingSerial && existingSerial === serial) {
+                    e.preventDefault();
+                    showRadaiDuplicateModal('Serial No.', serial);
+                    return false;
+                }
+                if (dvPayroll && existingDv && existingDv === dvPayroll) {
+                    e.preventDefault();
+                    showRadaiDuplicateModal('DV/Payroll No.', dvPayroll);
+                    return false;
+                }
+                if (orsBurs && existingOrs && existingOrs === orsBurs) {
+                    e.preventDefault();
+                    showRadaiDuplicateModal('ORS/BURS & Responsibility Center', orsBurs);
+                    return false;
+                }
+            }
+        }
+    }
+});
+
+    function showRadaiDuplicateModal(fieldName, value) {
+        let modal = document.getElementById('radaiDuplicateModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'radaiDuplicateModal';
+            modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:#fff;border-radius:16px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
+                    <div style="padding:28px 32px;text-align:center;">
+                        <div style="width:64px;height:64px;border-radius:50%;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:28px;color:#dc2626;"></i>
+                        </div>
+                        <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111827;">Duplicate Entry Found</h3>
+                        <p style="margin:0 0 6px;font-size:14px;color:#6b7280;">The <strong style="color:#111827;" id="radaiDupFieldName"></strong> <strong style="color:#111827;" id="radaiDupFieldValue"></strong> already exists in the system.</p>
+                        <p style="margin:0;font-size:13px;color:#9ca3af;">Please use a different value before saving.</p>
+                    </div>
+                    <div style="padding:0 32px 24px;text-align:center;">
+                        <button onclick="document.getElementById('radaiDuplicateModal').style.display='none'" style="background:var(--nav);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;">OK, Got it</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('radaiDupFieldName').textContent = fieldName;
+        document.getElementById('radaiDupFieldValue').textContent = value;
+        modal.style.display = 'flex';
+    }
+
+    ['radaiFieldPayee'].forEach(function(id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+        input.addEventListener('focus', function() {
+            if (!this.hasAttribute('data-orig-placeholder')) {
+                this.setAttribute('data-orig-placeholder', this.placeholder || '');
+            }
+            this.setAttribute('data-user-cleared', 'false');
+            if (this.value) {
+                this.setAttribute('data-last-val', this.value);
+                this.placeholder = this.value;
+                this.value = '';
+            }
+        });
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' || e.key === 'Delete') this.setAttribute('data-user-cleared', 'true');
+        });
+        input.addEventListener('input', function() {
+            if (this.value === '') this.setAttribute('data-user-cleared', 'true');
+        });
+        input.addEventListener('blur', function() {
+            setTimeout(() => {
+                if (!this.value.trim() && this.getAttribute('data-user-cleared') !== 'true') {
+                    this.value = this.getAttribute('data-last-val') || '';
+                }
+                this.placeholder = this.getAttribute('data-orig-placeholder') || '';
+            }, 150);
+        });
+    });
+
+    function openRadaiSettingsModal() {
+        const currentVal = document.getElementById('radaiFieldReference')?.value || '';
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = 'position:fixed;inset:0;z-index:6000;background:rgba(15,23,42,0.58);display:flex;align-items:center;justify-content:center;padding:18px;';
+        backdrop.innerHTML = `
+            <div style="width:min(450px,100%);background:#fff;border-radius:18px;box-shadow:0 24px 80px rgba(15,23,42,0.35);padding:24px;">
+                <h3 style="margin:0 0 16px;font-size:16px;">RADAI Shared Reference</h3>
+                <form method="post" action="/radai/settings/">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <div style="margin-bottom:18px;">
+                        <label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px;">ORS/BURS &amp; Responsibility Center</label>
+                        <input type="text" name="reference_code" value="${currentVal}" placeholder="e.g. ORS-2024-001 | RC-CODE" style="width:100%;padding:9px 12px;border:1px solid #d6dde7;border-radius:8px;font-size:14px;box-sizing:border-box;">
+                        <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block;">Use <code>|</code> to separate ORS/BURS and Responsibility Center.</span>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('[style*=\\'fixed\\']').remove()">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(backdrop);
+        backdrop.addEventListener('click', function(e) { if (e.target === this) this.remove(); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    const serialInput = document.getElementById('radaiFieldSerial');
+    const amountInput = document.getElementById('radaiFieldAmount');
+
+    // 1. Strict formatting logic for Serial Number (allows numbers 0-9 and dashes '-' only)
+    if (serialInput) {
+        serialInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9-]/g, '');
+        });
+
+        // Prevents pasting invalid text formats containing letters or special characters into Serial Number
+        serialInput.addEventListener('paste', function(e) {
+            const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+            if (/[^0-9-]/.test(pasteData)) {
+                e.preventDefault();
+            }
+        });
+    }
+
+    // 2. Prevent invalid mathematical exponential keys (like 'e', 'E', '+', '-') in the Amount field
+    if (amountInput) {
+        amountInput.addEventListener('keydown', function(e) {
+            const invalidKeys = ['e', 'E', '+', '-'];
+            if (invalidKeys.includes(e.key)) {
+                e.preventDefault();
+            }
+        });
+
+        // Prevents pasting invalid text formats into Amount
+        amountInput.addEventListener('paste', function(e) {
+            const pasteData = (e.clipboardData || window.clipboardData).getData('text');
+            if (isNaN(parseFloat(pasteData))) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>

@@ -1,0 +1,769 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+{% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+<style>
+.at-card { background:#fff; border-radius:12px; border:1px solid var(--line); padding:24px; width:100%; box-sizing:border-box; }
+
+.at-table-wrap { overflow-x:auto; border-radius:8px; border:1px solid var(--line); }
+.at-table { width:100%; border-collapse:collapse; font-size:14px; }
+.at-table th { background:#0f3d2e; color:#ffffff; font-size:12px; font-weight:700; padding:10px 14px; text-align:left; border-bottom:1px solid var(--line); }
+.at-table td { padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:middle; }
+
+[data-theme="dark"] .at-table-wrap { border-color:#1a1a1a !important; }
+[data-theme="dark"] .at-table th,
+[data-theme="dark"] .at-table thead th { background:#111111 !important; color:#f8fafc !important; border-color:#222222 !important; }
+[data-theme="dark"] .at-table td { border-color:#1a1a1a !important; color:#f8fafc !important; }
+[data-theme="dark"] .at-table tr:hover td { background:#111111 !important; }
+
+/* Group cards grid */
+.groups-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:18px; }
+.group-card {
+    background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:20px 22px; display:flex; flex-direction:column; gap:10px;
+    transition:box-shadow 0.18s, border-color 0.18s; position:relative; overflow:hidden;
+}
+.group-card:hover { box-shadow:0 6px 24px rgba(0,0,0,0.10); border-color:#a5b4c3; }
+.group-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--nav); }
+.group-card-name { font-size:15px; font-weight:700; color:var(--ink); }
+.group-card-count { display:inline-flex; align-items:center; gap:6px; background:#f0fdf4; color:#15803d; border:1px solid #86efac; border-radius:999px; padding:3px 12px; font-size:12px; font-weight:700; width:fit-content; }
+.group-card-uacs { display:inline-block; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:2px 9px; font-family:'Courier New',monospace; font-size:11px; color:#374151; width:fit-content; }
+.group-card-actions { display:flex; gap:8px; margin-top:auto; padding-top:12px; border-top:1px solid var(--line); }
+.group-card-actions a, .group-card-actions button { flex:1; text-align:center; justify-content:center; }
+
+/* Modals Redesign */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.25s ease;
+}
+.modal-overlay.open {
+    display: flex;
+}
+.modal-box {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    overflow: hidden;
+    padding: 0;
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+[data-theme="dark"] .modal-box {
+    background: #111827 !important;
+    border-color: #1a1a1a !important;
+    color: #f8fafc !important;
+}
+
+[data-theme="dark"] .modal-body input,
+[data-theme="dark"] .modal-field input,
+[data-theme="dark"] .modal-box input {
+    background: #111111 !important;
+    background-color: #111111 !important;
+    color: #ffffff !important;
+    border-color: #222222 !important;
+}
+
+[data-theme="dark"] .group-card {
+    background: #111827 !important;
+    border-color: #1a1a1a !important;
+}
+
+[data-theme="dark"] .group-card-name {
+    color: #f8fafc !important;
+}
+.modal-box.wide {
+    max-width: 800px;
+}
+@keyframes modalIn {
+    from { transform: scale(0.95) translateY(12px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-header {
+    background: linear-gradient(135deg, #0d382b, #154c3a) !important;
+    padding: 20px 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 0 !important;
+}
+.modal-header h3 {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+.modal-header h3 i {
+    color: #34d399 !important; /* light green icon for high contrast */
+    font-size: 20px !important;
+}
+#editModal .modal-header h3 i {
+    color: #fbbf24 !important; /* warning/gold icon for Rename */
+}
+#importModal .modal-header h3 i {
+    color: #818cf8 !important; /* indigo icon for Import */
+}
+.modal-close {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-size: 14px !important;
+}
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    transform: rotate(90deg) !important;
+}
+.modal-body {
+    padding: 24px;
+}
+.modal-field {
+    margin-bottom: 20px;
+}
+.modal-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #222222;
+}
+.modal-field input[type="text"] {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+}
+.modal-field input[type="text"]:focus {
+    outline: none;
+    border-color: #059669;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 18px;
+}
+
+/* UACS toggle */
+.uacs-toggle-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 13px;
+    color: #059669;
+    font-weight: 600;
+    transition: color 0.15s ease;
+}
+.uacs-toggle-row:hover {
+    color: #047857;
+}
+.uacs-toggle-row .chevron {
+    font-size: 10px;
+    transition: transform 0.2s ease;
+}
+.uacs-collapsible {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.uacs-collapsible.open {
+    max-height: 80px;
+    opacity: 1;
+    margin-top: 10px;
+    margin-bottom: 12px;
+}
+
+/* Import preview */
+.import-preview-wrap { max-height:52vh; overflow-y:auto; border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:#f8fafc; margin-top:8px; }
+.preview-group { margin-bottom:18px; }
+.preview-group:last-child { margin-bottom:0; }
+.preview-group-name { font-size:13px; font-weight:800; color:var(--ink); text-transform:uppercase; letter-spacing:0.06em; display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.preview-group-uacs { font-family:'Courier New',monospace; font-size:11px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:5px; padding:1px 7px; }
+.preview-title-row { display:flex; align-items:center; justify-content:space-between; padding:4px 8px 4px 18px; border-bottom:1px solid #e9ecef; font-size:13px; }
+.preview-title-row:last-child { border-bottom:none; }
+.preview-title-uacs { font-family:'Courier New',monospace; font-size:11px; color:#6b7280; }
+
+/* Upload drop zone */
+.drop-zone {
+    border:2px dashed #cbd5e1; border-radius:10px; padding:30px 20px;
+    text-align:center; cursor:pointer; transition:border-color 0.2s, background 0.2s;
+    color:var(--muted); font-size:13px;
+}
+.drop-zone.drag-over { border-color:var(--nav); background:#f0fdf4; }
+.drop-zone i { font-size:32px; display:block; margin-bottom:10px; opacity:0.4; }
+
+/* Badge */
+.badge-count { display:inline-flex; align-items:center; gap:5px; background:#e0f2fe; color:#0369a1; border-radius:999px; padding:2px 10px; font-size:11px; font-weight:700; }
+</style>
+
+<div class="page-header">
+    <h2><i class="fas fa-layer-group"></i> Account Titles Management</h2>
+    <div style="display:flex; gap:8px;">
+        <button type="button" class="btn btn-secondary" onclick="openImportModal()">
+            <i class="fas fa-file-import"></i> Import
+        </button>
+        <button type="button" class="btn btn-primary" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Add New Table
+        </button>
+    </div>
+</div>
+
+<div class="at-card">
+    <!-- Search -->
+    <form method="get" action="" id="searchForm" style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <div style="position:relative; flex:1; min-width:220px; max-width:400px;">
+            <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:13px; pointer-events:none;"></i>
+            <input type="text" name="q" id="searchInput" value="{{ q }}" placeholder="Search account title or UACS..."
+                   autofocus
+                   style="width:100%; padding:9px 12px 9px 35px; border:1px solid var(--line); border-radius:8px; font-size:14px; box-sizing:border-box;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Search</button>
+        {% if q %}<a href="{% url 'account_titles_management' %}" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> Clear</a>{% endif %}
+    </form>
+
+    {% if search_results is not None %}
+        {# ── Search results ── #}
+        {% if search_results %}
+        <div style="margin-bottom:12px; font-size:13px; color:var(--muted);">
+            <strong>{{ total_matches }}</strong> matching title{{ total_matches|pluralize }} in <strong>{{ search_results|length }}</strong> group{{ search_results|length|pluralize }}
+        </div>
+        {% for sr in search_results %}
+        <div style="border:1px solid var(--line); border-radius:10px; margin-bottom:14px; overflow:hidden;">
+            <div style="background:#f8fafc; padding:10px 16px; font-weight:700; font-size:14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-table" style="color:var(--nav);"></i>
+                {% if sr.group %}
+                    <a href="{% url 'account_title_group_detail' sr.group.pk %}" style="color:var(--ink); text-decoration:none;">{{ sr.group.name }}</a>
+                {% else %}
+                    <span style="color:var(--muted);">(no group)</span>
+                {% endif %}
+            </div>
+            <div style="padding:0;">
+                <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                    <thead>
+                        <tr style="background:#f1f5f9; font-size:12px; text-transform:uppercase; letter-spacing:0.05em; color:#6b7280;">
+                            <th style="padding:8px 16px; text-align:left; font-weight:600;">Account Title</th>
+                            <th style="padding:8px 16px; text-align:left; font-weight:600;">UACS</th>
+                            <th style="padding:8px 16px; text-align:right; font-weight:600;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for t in sr.titles %}
+                        <tr style="border-top:1px solid var(--line);">
+                            <td style="padding:9px 16px;">{{ t.value }}</td>
+                            <td style="padding:9px 16px;">{% if t.uacs %}<span class="group-card-uacs">{{ t.uacs }}</span>{% else %}<span style="color:#d1d5db;">—</span>{% endif %}</td>
+                            <td style="padding:9px 16px; text-align:right; white-space:nowrap;">
+                                <button type="button" class="btn btn-secondary btn-sm" title="Edit"
+                                    onclick="openEditTitleModal('{{ t.pk }}', '{{ t.value|escapejs }}', '{{ t.uacs|escapejs }}', '{{ sr.group.pk }}')">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <form method="post" style="display:inline;" onsubmit="return confirm('Delete this account title?')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete_title">
+                                    <input type="hidden" name="title_id" value="{{ t.pk }}">
+                                    <input type="hidden" name="group_id" value="{{ sr.group.pk }}">
+                                    <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center; padding:60px 20px; color:var(--muted);">
+            <i class="fas fa-search" style="font-size:48px; opacity:0.25; display:block; margin-bottom:16px;"></i>
+            <div style="font-size:16px; font-weight:600; margin-bottom:6px;">No matching account titles</div>
+            <div style="font-size:13px;">Try a different search term.</div>
+        </div>
+        {% endif %}
+    {% else %}
+        {# ── Normal group grid ── #}
+        {% if groups %}
+        <div class="groups-grid">
+            {% for group in groups %}
+            <div class="group-card">
+                <div class="group-card-name">
+                    <i class="fas fa-table" style="color:var(--nav); margin-right:6px;"></i>{{ group.name }}
+                </div>
+                <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+                    <span class="group-card-count"><i class="fas fa-list"></i> {{ group.title_count }} account title{{ group.title_count|pluralize }}</span>
+                    {% if group.uacs %}<span class="group-card-uacs" title="UACS Object Code">{{ group.uacs }}</span>{% endif %}
+                </div>
+                <div class="group-card-actions">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openViewModal({{ group.pk }})"><i class="fas fa-eye"></i> View</button>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="openEditModal('{{ group.pk }}','{{ group.name|escapejs }}','{{ group.uacs|escapejs }}')"><i class="fas fa-pen"></i> Edit</button>
+                    <form method="post" onsubmit="return confirm('Delete this group and all its titles?')" style="flex:1;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete_group">
+                        <input type="hidden" name="group_id" value="{{ group.pk }}">
+                        <button type="submit" class="btn btn-danger btn-sm" style="width:100%;"><i class="fas fa-trash"></i> Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align:center; padding:60px 20px; color:var(--muted);">
+            <i class="fas fa-layer-group" style="font-size:48px; opacity:0.25; display:block; margin-bottom:16px;"></i>
+            <div style="font-size:16px; font-weight:600; margin-bottom:6px;">No tables yet</div>
+            <div style="font-size:13px;">Click <strong>Add New Table</strong> or <strong>Import</strong> to get started.</div>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+
+<!-- ══ ADD MODAL ══════════════════════════════════════════ -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target===this)closeModal('addModal')">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus-circle"></i> Add New Table</h3>
+            <button type="button" class="modal-close" onclick="closeModal('addModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+                <input type="hidden" name="action" value="add_group">
+                <div class="modal-field">
+                    <label for="mAddName">Table Name <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="mAddName" name="name" placeholder="e.g. Operating Expenses" required autofocus>
+                </div>
+                <div class="uacs-toggle-row" onclick="toggleUacs('addUacsBody','addUacsChevron')">
+                    <i id="addUacsChevron" class="fas fa-chevron-right chevron"></i>
+                    <span>+ Add UACS Object Code <em style="opacity:0.6;">(optional)</em></span>
+                </div>
+                <div class="uacs-collapsible" id="addUacsBody">
+                    <div class="modal-field" style="margin-bottom:0;">
+                        <input type="text" id="mAddUacs" name="group_uacs" placeholder="e.g. 1-01-01-010">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Create Table</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ EDIT MODAL ═════════════════════════════════════════ -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-pen"></i> Rename Table</h3>
+            <button type="button" class="modal-close" onclick="closeModal('editModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+                <input type="hidden" name="action" value="edit_group">
+                <input type="hidden" name="group_id" id="mEditId">
+                <div class="modal-field">
+                    <label for="mEditName">Table Name <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="mEditName" name="name" required>
+                </div>
+                <div class="uacs-toggle-row" onclick="toggleUacs('editUacsBody','editUacsChevron')">
+                    <i id="editUacsChevron" class="fas fa-chevron-right chevron"></i>
+                    <span>UACS Object Code <em style="opacity:0.6;">(optional)</em></span>
+                </div>
+                <div class="uacs-collapsible" id="editUacsBody">
+                    <div class="modal-field" style="margin-bottom:0;">
+                        <input type="text" id="mEditUacs" name="group_uacs" placeholder="e.g. 1-01-01-010">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background:#f59e0b;border-color:#f59e0b;"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ EDIT TITLE MODAL ═════════════════════════════════════════ -->
+<div class="modal-overlay" id="editTitleModal" onclick="if(event.target===this)closeModal('editTitleModal')">
+    <div class="modal-box">
+        <div class="modal-header" style="background:linear-gradient(135deg, #0d382b, #154c3a) !important;">
+            <h3><i class="fas fa-pen"></i> Edit Account Title</h3>
+            <button type="button" class="modal-close" onclick="closeModal('editTitleModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+                <input type="hidden" name="action" value="edit_title">
+                <input type="hidden" name="title_id" id="mEditTitleId">
+                <input type="hidden" name="group_id" id="mEditTitleGroupId">
+                <div class="modal-field">
+                    <label for="mEditTitleValue">Account Title <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="mEditTitleValue" name="title_value" required>
+                </div>
+                <div class="modal-field">
+                    <label for="mEditTitleUacs">UACS Object Code <em style="opacity:0.6;">(optional)</em></label>
+                    <input type="text" id="mEditTitleUacs" name="title_uacs" placeholder="e.g. 50201010">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editTitleModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ IMPORT MODAL ════════════════════════════════════════ -->
+<div class="modal-overlay" id="importModal" onclick="if(event.target===this)resetImport()">
+    <div class="modal-box wide">
+        <div class="modal-header">
+            <h3><i class="fas fa-file-import"></i> Import Account Titles</h3>
+            <button type="button" class="modal-close" onclick="resetImport()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <!-- Step 1: Upload -->
+            <div id="importStep1">
+                <p style="font-size:13px; color:var(--muted); margin-bottom:16px;">
+                    Upload an <strong>Excel (.xlsx)</strong> file. Rows in <strong>bold</strong> are treated as table headers; non-bold rows beneath them are account titles. The second column is read as the UACS Object Code (optional — an <code>x</code> or blank means none).
+                </p>
+                <div style="margin-bottom:14px;">
+                    <a href="{% url 'download_import_template' %}?import_type=account_titles" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-download"></i> Download Template
+                    </a>
+                </div>
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('importFile').click()">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <strong>Click to choose file</strong> or drag &amp; drop here<br>
+                    <span style="font-size:12px;">.xlsx or .csv only</span>
+                </div>
+                <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImportFile(this)">
+                <div id="importError" style="display:none; color:#dc2626; font-size:13px; margin-top:10px;"></div>
+            </div>
+
+            <!-- Step 2: Live Preview -->
+            <div id="importStep2" style="display:none;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                    <div>
+                        <strong style="font-size:14px;">Import Preview</strong>
+                        <span id="previewSummary" style="font-size:12px; color:var(--muted); margin-left:8px;"></span>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetImport()">
+                        <i class="fas fa-redo"></i> Choose Different File
+                    </button>
+                </div>
+                <div class="import-preview-wrap" id="previewContainer"></div>
+            </div>
+
+            <div class="modal-actions" style="margin-top:18px;">
+                <button type="button" class="btn btn-secondary" onclick="resetImport()">Cancel</button>
+                <form method="post" id="importConfirmForm" style="display:inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_confirm">
+                    <input type="hidden" name="import_data" id="importDataField" value="[]">
+                    <button type="submit" id="importConfirmBtn" class="btn btn-primary" style="background:#6366f1;border-color:#6366f1;" disabled>
+                        <i class="fas fa-check"></i> Confirm Import
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const IMPORT_PREVIEW_URL = "{% url 'account_titles_import_preview' %}";
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+/* ── Auto-submit search on input ─────────────── */
+(function(){
+    const input = document.getElementById('searchInput');
+    const form = document.getElementById('searchForm');
+    if (!input || !form) return;
+    let timer;
+    input.addEventListener('input', function(){
+        clearTimeout(timer);
+        timer = setTimeout(function(){ form.submit(); }, 300);
+    });
+    if (input.value) input.setSelectionRange(input.value.length, input.value.length);
+})();
+
+/* ── Modal helpers ───────────────────────────── */
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') ['addModal','editModal','importModal'].forEach(closeModal);
+});
+
+/* ── UACS toggle ─────────────────────────────── */
+function toggleUacs(bodyId, chevronId) {
+    const body = document.getElementById(bodyId);
+    const chevron = document.getElementById(chevronId);
+    const isOpen = body.classList.contains('open');
+    body.classList.toggle('open', !isOpen);
+    if (chevron) chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+function forceOpenUacs(bodyId, chevronId) {
+    document.getElementById(bodyId).classList.add('open');
+    const c = document.getElementById(chevronId);
+    if (c) c.style.transform = 'rotate(90deg)';
+}
+
+/* ── Add modal ───────────────────────────────── */
+function openAddModal() {
+    document.getElementById('mAddName').value = '';
+    document.getElementById('mAddUacs').value = '';
+    document.getElementById('addUacsBody').classList.remove('open');
+    document.getElementById('addUacsChevron').style.transform = 'rotate(0deg)';
+    openModal('addModal');
+    setTimeout(()=>document.getElementById('mAddName').focus(), 80);
+}
+
+/* ── Edit modal ──────────────────────────────── */
+function openEditModal(id, name, uacs) {
+    document.getElementById('mEditId').value   = id;
+    document.getElementById('mEditName').value = name;
+    document.getElementById('mEditUacs').value = uacs;
+    if (uacs) { forceOpenUacs('editUacsBody','editUacsChevron'); }
+    else { document.getElementById('editUacsBody').classList.remove('open'); document.getElementById('editUacsChevron').style.transform='rotate(0deg)'; }
+    openModal('editModal');
+    setTimeout(()=>document.getElementById('mEditName').focus(), 80);
+}
+
+/* ── Edit Title modal ────────────────────────── */
+function openEditTitleModal(titleId, titleValue, titleUacs, groupId) {
+    document.getElementById('mEditTitleId').value = titleId;
+    document.getElementById('mEditTitleValue').value = titleValue;
+    document.getElementById('mEditTitleUacs').value = titleUacs;
+    document.getElementById('mEditTitleGroupId').value = groupId;
+    openModal('editTitleModal');
+    setTimeout(()=>document.getElementById('mEditTitleValue').focus(), 80);
+}
+
+/* ── Import modal ────────────────────────────── */
+function openImportModal() {
+    resetImport(false);
+    openModal('importModal');
+}
+
+function resetImport(close=true) {
+    document.getElementById('importStep1').style.display = 'block';
+    document.getElementById('importStep2').style.display = 'none';
+    document.getElementById('importError').style.display = 'none';
+    document.getElementById('importError').textContent = '';
+    document.getElementById('importFile').value = '';
+    document.getElementById('importConfirmBtn').disabled = true;
+    document.getElementById('importDataField').value = '[]';
+    document.getElementById('previewContainer').innerHTML = '';
+    const dz = document.getElementById('dropZone');
+    dz.classList.remove('drag-over');
+    if (close) closeModal('importModal');
+}
+
+// Drag & drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length) processImportFile(files[0]);
+});
+
+function handleImportFile(input) {
+    if (input.files && input.files[0]) processImportFile(input.files[0]);
+}
+
+function processImportFile(file) {
+    const errEl = document.getElementById('importError');
+    errEl.style.display = 'none';
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+    // Show loading state
+    dropZone.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:28px; opacity:0.5; display:block; margin-bottom:8px;"></i>Parsing file…';
+
+    fetch(IMPORT_PREVIEW_URL, { method:'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                errEl.textContent = data.error;
+                errEl.style.display = 'block';
+                resetDropZone();
+                return;
+            }
+            renderPreview(data.groups);
+        })
+        .catch(err => {
+            errEl.textContent = 'Upload failed: ' + err.message;
+            errEl.style.display = 'block';
+            resetDropZone();
+        });
+}
+
+function resetDropZone() {
+    dropZone.innerHTML = '<i class="fas fa-cloud-upload-alt"></i><strong>Click to choose file</strong> or drag &amp; drop here<br><span style="font-size:12px;">.xlsx or .csv only</span>';
+}
+
+function renderPreview(groups) {
+    // Step transition
+    document.getElementById('importStep1').style.display = 'none';
+    document.getElementById('importStep2').style.display = 'block';
+
+    const totalTitles = groups.reduce((s, g) => s + (g.titles||[]).length, 0);
+    document.getElementById('previewSummary').textContent =
+        `${groups.length} table${groups.length!==1?'s':''} · ${totalTitles} account title${totalTitles!==1?'s':''}`;
+
+    const container = document.getElementById('previewContainer');
+    container.innerHTML = '';
+
+    groups.forEach(g => {
+        const div = document.createElement('div');
+        div.className = 'preview-group';
+
+        const header = document.createElement('div');
+        header.className = 'preview-group-name';
+        header.innerHTML = `<i class="fas fa-table" style="color:var(--nav);font-size:11px;"></i> ${escHtml(g.name)}`
+            + (g.uacs ? ` <span class="preview-group-uacs">${escHtml(g.uacs)}</span>` : '');
+        div.appendChild(header);
+
+        if (!g.titles || g.titles.length === 0) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'padding:4px 8px 4px 18px; font-size:12px; color:var(--muted);';
+            empty.textContent = '(no account titles)';
+            div.appendChild(empty);
+        } else {
+            g.titles.forEach(t => {
+                const row = document.createElement('div');
+                row.className = 'preview-title-row';
+                row.innerHTML = `<span>${escHtml(t.value)}</span>`
+                    + (t.uacs ? `<span class="preview-title-uacs">${escHtml(t.uacs)}</span>` : '<span style="color:#d1d5db;font-size:11px;">—</span>');
+                div.appendChild(row);
+            });
+        }
+        container.appendChild(div);
+    });
+
+    // Enable confirm button
+    document.getElementById('importDataField').value = JSON.stringify(groups);
+    document.getElementById('importConfirmBtn').disabled = false;
+    resetDropZone();
+}
+
+function escHtml(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+{% if error %}openAddModal();{% endif %}
+</script>
+
+<!-- ══ VIEW MODAL ══════════════════════════════════════════ -->
+<div class="modal-overlay" id="viewModal" onclick="if(event.target===this)closeModal('viewModal')">
+    <div class="modal-box" style="max-width:640px;">
+        <div class="modal-header">
+            <h3><i class="fas fa-table"></i> <span id="viewGroupName">—</span></h3>
+            <button type="button" class="modal-close" onclick="closeModal('viewModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body" style="padding:20px 24px; max-height:60vh; overflow-y:auto;">
+            <div style="margin-bottom:12px;">
+                <span id="viewGroupUacs" style="display:none; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:2px 9px; font-family:'Courier New',monospace; font-size:12px; color:#374151;"></span>
+                <span id="viewCount" style="font-size:13px; color:#6b7280; margin-left:8px;"></span>
+            </div>
+            <div class="at-table-wrap">
+                <table class="at-table">
+                    <thead>
+                        <tr>
+                            <th style="width:52px;">#</th>
+                            <th>Account Title</th>
+                            <th style="width:200px;">UACS Object Code</th>
+                        </tr>
+                    </thead>
+                    <tbody id="viewBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-actions" style="padding:14px 24px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('viewModal')">Close</button>
+            <a id="viewDetailLink" href="#" class="btn btn-primary"><i class="fas fa-external-link-alt"></i> Open Full Page</a>
+        </div>
+    </div>
+</div>
+
+<script>
+async function openViewModal(pk) {
+    const body = document.getElementById('viewBody');
+    const nameEl = document.getElementById('viewGroupName');
+    const uacsEl = document.getElementById('viewGroupUacs');
+    const countEl = document.getElementById('viewCount');
+    const linkEl = document.getElementById('viewDetailLink');
+    body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:24px; color:#6b7280;"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>';
+    nameEl.textContent = '—';
+    uacsEl.style.display = 'none';
+    countEl.textContent = '';
+    linkEl.href = `/account-titles/${pk}/`;
+    openModal('viewModal');
+    try {
+        const resp = await fetch(`/account-titles/${pk}/api/`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const data = await resp.json();
+        if (!data.ok) throw new Error(data.error || 'Failed');
+        nameEl.textContent = data.group.name;
+        if (data.group.uacs) {
+            uacsEl.textContent = data.group.uacs;
+            uacsEl.style.display = 'inline-block';
+        } else {
+            uacsEl.style.display = 'none';
+        }
+        const options = data.options || [];
+        countEl.textContent = `${options.length} account title${options.length !== 1 ? 's' : ''}`;
+        body.innerHTML = '';
+        if (options.length === 0) {
+            body.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:36px; color:#6b7280;"><i class="fas fa-inbox" style="font-size:30px; opacity:0.3; display:block; margin-bottom:10px;"></i>No account titles in this table.</td></tr>';
+            return;
+        }
+        options.forEach((opt, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="row-num">${idx + 1}</td>`
+                + `<td><strong>${escHtml(opt.value)}</strong></td>`
+                + `<td>${opt.uacs ? '<span class="uacs-badge">' + escHtml(opt.uacs) + '</span>' : '<span style="color:#6b7280; font-size:13px;">—</span>'}</td>`;
+            body.appendChild(tr);
+        });
+    } catch (e) {
+        body.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:24px; color:#dc2626;">Failed to load: ${escHtml(e.message)}</td></tr>`;
+    }
+}
+</script>
+{% endblock %}

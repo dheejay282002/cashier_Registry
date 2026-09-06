@@ -1,0 +1,482 @@
+{% extends 'base.html' %}
+{% block nav_about_cashier %}active{% endblock %}
+{% block content %}
+<style>
+    .cashier-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 10px 0 50px;
+        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Hero Banner */
+    .cashier-hero {
+        background: linear-gradient(135deg, #092e20, #17563d, #0f3d2e);
+        color: #ffffff;
+        border-radius: 20px;
+        padding: 45px 35px;
+        margin-bottom: 40px;
+        box-shadow: 0 12px 30px rgba(15, 86, 61, 0.12);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 30px;
+    }
+
+    .cashier-hero::before {
+        content: '';
+        position: absolute;
+        width: 350px;
+        height: 350px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.03);
+        bottom: -150px;
+        left: -100px;
+        pointer-events: none;
+    }
+
+    .cashier-hero-text {
+        flex: 1;
+        max-width: 800px;
+        z-index: 2;
+    }
+
+    .cashier-hero h1 {
+        font-size: 2.4rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        letter-spacing: -0.02em;
+    }
+
+    .cashier-hero p {
+        font-size: 1.08rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.88);
+        margin: 0;
+    }
+
+    .cashier-hero-icon {
+        width: 140px;
+        height: 140px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4.8rem;
+        color: #a7f3d0;
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        animation: floatAnim 4s ease-in-out infinite;
+        z-index: 2;
+    }
+
+    @keyframes floatAnim {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    /* Section Headers */
+    .section-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 25px;
+        margin-top: 40px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 10px;
+    }
+
+    .section-title i {
+        color: #15803d;
+    }
+
+    /* Operations Grid */
+    .operations-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .op-card {
+        background: #ffffff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 24px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.01);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .op-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(9, 46, 32, 0.05);
+        border-color: rgba(23, 86, 61, 0.25);
+    }
+
+    .op-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .op-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: #e8f5e9;
+        color: #15803d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .op-card h4 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #111827;
+        margin: 0;
+    }
+
+    .op-card p {
+        font-size: 0.85rem;
+        color: #6b7280;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    /* Directory Grid Layouts */
+    .directory-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 24px;
+        margin-bottom: 30px;
+    }
+
+    /* Profile Card (Glassmorphism & Interactive) */
+    .staff-card {
+        width: 270px;
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        border-radius: 20px;
+        padding: 28px 20px;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.02);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+    }
+
+    .staff-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(9, 46, 32, 0.06);
+        border-color: rgba(23, 86, 61, 0.28);
+    }
+
+    .staff-avatar-wrapper {
+        position: relative;
+        margin-bottom: 18px;
+    }
+
+    .staff-avatar {
+        width: 105px;
+        height: 105px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: #ffffff;
+        font-size: 2.6rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 15px rgba(4, 120, 87, 0.15);
+        position: relative;
+        z-index: 1;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .staff-card:hover .staff-avatar {
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(4, 120, 87, 0.25);
+    }
+
+    .staff-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .staff-name {
+        font-size: 1.22rem;
+        font-weight: 800;
+        color: #111827;
+        margin: 5px 0 2px;
+    }
+
+    .staff-position {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #15803d;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+    }
+
+    .staff-department {
+        font-size: 0.82rem;
+        color: #6b7280;
+        margin-bottom: 12px;
+    }
+
+    .staff-id {
+        font-size: 0.74rem;
+        font-weight: 600;
+        color: #9ca3af;
+        font-family: monospace;
+        letter-spacing: 0.05em;
+        background: #f3f4f6;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid #e5e7eb;
+    }
+
+
+
+
+    @media (max-width: 768px) {
+        .cashier-hero {
+            flex-direction: column;
+            text-align: center;
+            padding: 35px 20px;
+        }
+        .cashier-hero-icon {
+            width: 110px;
+            height: 110px;
+            font-size: 3.8rem;
+        }
+    }
+</style>
+
+<div class="cashier-container">
+    <!-- Hero Banner -->
+    <div class="cashier-hero">
+        <div class="cashier-hero-text">
+            <h1>School Cashier &amp; Directory Services</h1>
+            <p>
+                The central treasury operations department of the institution, responsible for student accounting, tuition collection ledger updates, supplier cheque disbursements, audit compliance, and cash management. Systems are protected via multi-factor biometrics.
+            </p>
+        </div>
+        <div class="cashier-hero-icon">
+            <i class="fas fa-university"></i>
+        </div>
+    </div>
+
+    <!-- Section 1: Core Operations -->
+    <div class="section-title">
+        <i class="fas fa-cubes"></i> Cashiering Services &amp; Core Operations
+    </div>
+    
+    <div class="operations-grid">
+        <!-- Card 1: Tuition & Fees -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-user-graduate"></i></div>
+                <h4>Tuition &amp; Fees Management</h4>
+            </div>
+            <p>Processes tuition fee payments, laboratory fees, miscellaneous fees, and manages student ledger cards, installment arrangements, and examination clearances.</p>
+        </div>
+
+        <!-- Card 2: Disbursements -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-money-check-dollar"></i></div>
+                <h4>Cheque Disbursements</h4>
+            </div>
+            <p>Prepares, records, and releases checks to suppliers, employees, contractors, and other third-party payees, cross-referencing disbursements against UACS budget clusters.</p>
+        </div>
+
+        <!-- Card 3: Tax Withholding -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-percent"></i></div>
+                <h4>Tax Withholding &amp; Divisors</h4>
+            </div>
+            <p>Automatically calculates VAT (using the 1.06 divisor format), Professional Fees withholding taxes, and EWT deductions to ensure compliance with national revenue rules.</p>
+        </div>
+
+        <!-- Card 4: Drawer & Vault Ops -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-vault"></i></div>
+                <h4>Vault &amp; Vault Custody</h4>
+            </div>
+            <p>Responsible for balancing cash drawer registers daily, storing safe cash reserves, and prepping daily bank deposits via secure armored transport.</p>
+        </div>
+
+        <!-- Card 5: Petty Cash -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-wallet"></i></div>
+                <h4>Petty Cash Custody</h4>
+            </div>
+            <p>Maintains and replenishes petty cash funds for quick administrative and departmental expense requisitions, managing vouchers and receipts audits.</p>
+        </div>
+
+        <!-- Card 6: Refunds & Adjustments -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-arrows-rotate"></i></div>
+                <h4>Refunds &amp; Credit Adjustments</h4>
+            </div>
+            <p>Issues credit memos and handles student refunds for dropped courses, overpayments, scholar grants, and formal student withdrawals.</p>
+        </div>
+
+        <!-- Card 7: Biometric MFA Compliance -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-fingerprint"></i></div>
+                <h4>Biometric MFA Enforcement</h4>
+            </div>
+            <p>Protects transaction integrity by requiring three levels of verification (RFID badge tapping, fingerprint scans, and facial verification) for administrative ledger entries.</p>
+        </div>
+
+        <!-- Card 8: Registry Reporting -->
+        <div class="op-card">
+            <div class="op-header">
+                <div class="op-icon"><i class="fas fa-file-invoice"></i></div>
+                <h4>RCI Registry Reporting</h4>
+            </div>
+            <p>Compiles and formats structured disbursements journals into Report of Checks Issued (RCI) reports, exporting printable PDF summaries for auditors.</p>
+        </div>
+    </div>
+
+    <!-- Section 2: Administrative Leadership -->
+    <div class="section-title">
+        <i class="fas fa-sitemap"></i> Administrative Leadership
+    </div>
+    
+    <div class="directory-grid">
+        {% if admins %}
+            {% for profile in admins %}
+                <div class="staff-card">
+                    <div class="staff-avatar-wrapper">
+                        <div class="staff-avatar">
+                            {% if profile.profile_picture %}
+                                <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.get_full_name }}">
+                            {% else %}
+                                {% if profile.role == 'guest' %}
+                                    <img src="/media/system_assets/guest.png" alt="{{ profile.user.get_full_name }}">
+                                {% else %}
+                                    <img src="/media/system_assets/2.png" alt="{{ profile.user.get_full_name }}">
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="staff-name">{{ profile.user.first_name }} {{ profile.user.last_name }}</div>
+                    <div class="staff-position">{{ profile.position|default:"Chief Treasury Admin" }}</div>
+                    <div class="staff-department">{{ profile.department|default:"School Finance Office" }}</div>
+                    <div class="staff-id">EMP ID: {{ profile.employee_id|default:"ADMIN-MEMBER" }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- Fallback Admin Card -->
+            <div class="staff-card">
+                <div class="staff-avatar-wrapper">
+                    <div class="staff-avatar">
+                        <img src="/media/system_assets/2.png" alt="Admin Chief Officer">
+                    </div>
+                </div>
+                <div class="staff-name">Admin Chief Officer</div>
+                <div class="staff-position">Chief Treasury Admin</div>
+                <div class="staff-department">School Finance Office</div>
+                <div class="staff-id">EMP ID: CO-001092</div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Section 3: Cashiering Operations -->
+    <div class="section-title">
+        <i class="fas fa-users-gear"></i> Cashiering Operations
+    </div>
+    
+    <div class="directory-grid">
+        {% if cashiers %}
+            {% for profile in cashiers %}
+                <div class="staff-card">
+                    <div class="staff-avatar-wrapper">
+                        <div class="staff-avatar">
+                            {% if profile.profile_picture %}
+                                <img src="{{ profile.profile_picture.url }}" alt="{{ profile.user.get_full_name }}">
+                            {% else %}
+                                {% if profile.role == 'guest' %}
+                                    <img src="/media/system_assets/guest.png" alt="{{ profile.user.get_full_name }}">
+                                {% else %}
+                                    <img src="/media/system_assets/2.png" alt="{{ profile.user.get_full_name }}">
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="staff-name">{{ profile.user.first_name }} {{ profile.user.last_name }}</div>
+                    <div class="staff-position">{{ profile.position|default:"Disbursement Cashier" }}</div>
+                    <div class="staff-department">{{ profile.department|default:"Cashiering Unit" }}</div>
+                    <div class="staff-id">EMP ID: {{ profile.employee_id|default:"CASHIER-MEMBER" }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- Fallback Cashier Staff Cards -->
+            <div class="staff-card">
+                <div class="staff-avatar-wrapper">
+                    <div class="staff-avatar">
+                        <img src="/media/system_assets/2.png" alt="Dee Jay B. Cristobal">
+                    </div>
+                </div>
+                <div class="staff-name">Dee Jay B. Cristobal</div>
+                <div class="staff-position">System Administrator</div>
+                <div class="staff-department">Finance Department</div>
+                <div class="staff-id">EMP ID: ADMIN-MEMBER</div>
+            </div>
+
+            <div class="staff-card">
+                <div class="staff-avatar-wrapper">
+                    <div class="staff-avatar">
+                        <img src="/media/system_assets/2.png" alt="Staff Cashier Officer">
+                    </div>
+                </div>
+                <div class="staff-name">Staff Cashier Officer</div>
+                <div class="staff-position">Disbursement Staff</div>
+                <div class="staff-department">Cashiering Operations</div>
+                <div class="staff-id">EMP ID: CS-004523</div>
+            </div>
+
+            <div class="staff-card">
+                <div class="staff-avatar-wrapper">
+                    <div class="staff-avatar">
+                        <img src="/media/system_assets/2.png" alt="Marie L. Santos">
+                    </div>
+                </div>
+                <div class="staff-name">Marie L. Santos</div>
+                <div class="staff-position">Collections Staff</div>
+                <div class="staff-department">Cashiering Operations</div>
+                <div class="staff-id">EMP ID: CS-004598</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

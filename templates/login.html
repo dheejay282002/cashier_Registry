@@ -1,0 +1,1108 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>{{ system_name|default:"registry" }} - Login</title>
+
+{% if system_logo %}
+<link rel="icon" type="image/png" href="{{ system_logo.url }}">
+{% endif %}
+
+    <link href="{% static 'fonts/inter-500.css' %}" rel="stylesheet">
+
+<style>
+*, *::before, *::after {
+    margin: 0; padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -ms-user-select: none !important;
+    user-drag: none !important;
+    -webkit-user-drag: none !important;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -ms-user-select: text !important;
+}
+
+html, body {
+    height: 100vh;
+    overflow: hidden;
+    background: #08090d;
+}
+
+.ico { width: 1em; height: 1em; fill: currentColor; vertical-align: -0.125em; flex-shrink: 0; }
+.ico-lg { width: 1.75em; height: 1.75em; }
+.ico-sm { width: 0.875em; height: 0.875em; }
+
+/* ── LOGIN PAGE ── */
+.login-page {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    overflow: hidden;
+}
+
+/* ── BACKGROUND: uploaded image OR gradient fallback ── */
+.login-bg {
+    position: absolute;
+    inset: 0;
+    background: url("{% if login_background %}{{ login_background.url }}{% endif %}") center / cover no-repeat,
+                linear-gradient(135deg, #08090d 0%, #050505 40%, #1a1033 70%, #08090d 100%);
+    z-index: 0;
+}
+
+.login-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 9, 13, 0.55);
+    z-index: 1;
+}
+
+/* ── AMBIENT ORBS ── */
+.login-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 0;
+    opacity: 0.5;
+    animation: orbFloat 12s ease-in-out infinite;
+}
+
+.login-orb.orb-1 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(59,130,246,0.25), transparent 70%);
+    top: -10%; left: -5%;
+    animation-duration: 14s;
+}
+
+.login-orb.orb-2 {
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(139,92,246,0.2), transparent 70%);
+    bottom: -8%; right: -5%;
+    animation-duration: 16s;
+    animation-delay: -4s;
+}
+
+.login-orb.orb-3 {
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(16,185,129,0.15), transparent 70%);
+    top: 50%; left: 60%;
+    animation-duration: 18s;
+    animation-delay: -8s;
+}
+
+@keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(30px, -20px) scale(1.05); }
+    50% { transform: translate(-20px, 15px) scale(0.95); }
+    75% { transform: translate(15px, 25px) scale(1.02); }
+}
+
+/* ── iOS 17 GLASSMORPHISM CARD ── */
+.login-card {
+    position: relative;
+    z-index: 1;
+    width: 420px;
+    padding: 48px 40px;
+    border-radius: 28px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 0.5px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(80px) saturate(200%) brightness(1.1);
+    -webkit-backdrop-filter: blur(80px) saturate(200%) brightness(1.1);
+    text-align: center;
+    color: white;
+    box-shadow:
+        0 0 0 0.5px rgba(255, 255, 255, 0.12),
+        0 2px 4px rgba(0, 0, 0, 0.15),
+        0 8px 24px rgba(0, 0, 0, 0.25),
+        0 24px 48px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.05);
+    animation: cardAppear 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+}
+
+.login-card::before {
+    content: "";
+    position: absolute;
+    inset: -0.5px;
+    border-radius: 28.5px;
+    padding: 1px;
+    background: linear-gradient(
+        160deg,
+        rgba(255, 255, 255, 0.25) 0%,
+        rgba(255, 255, 255, 0.08) 30%,
+        rgba(255, 255, 255, 0.02) 60%,
+        rgba(255, 255, 255, 0.12) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+
+.login-card::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 20%; right: 20%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    border-radius: 28px;
+    pointer-events: none;
+}
+
+@keyframes cardAppear {
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── LOGO ── */
+.login-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: default;
+    animation: fadeIn 0.5s 0.15s both;
+}
+
+.login-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none !important;
+    transition: opacity 0.2s ease;
+}
+
+.login-logo .logo-main {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+}
+
+.login-logo .logo-hover {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.login-logo:hover .logo-main { opacity: 0; }
+.login-logo:hover .logo-hover { opacity: 1; }
+
+/* ── TYPOGRAPHY ── */
+.login-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+    animation: fadeIn 0.5s 0.25s both;
+}
+
+.login-subtitle {
+    font-size: 14px;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 32px;
+    animation: fadeIn 0.5s 0.3s both;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── INPUTS ── */
+.input-group {
+    position: relative;
+    margin-bottom: 14px;
+    animation: fadeIn 0.5s 0.35s both;
+}
+
+.input-group .input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255,255,255,0.3);
+    z-index: 2;
+    pointer-events: none;
+    transition: color 0.3s;
+    display: flex;
+    align-items: center;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 14px 48px 14px 44px;
+    border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: white;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.3s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(255,255,255,0.02);
+}
+
+.input-group input::placeholder { color: rgba(255,255,255,0.35); }
+
+.input-group input:focus {
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3.5px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+.input-group input:focus ~ .input-icon,
+.input-group input:focus + .input-icon {
+    color: rgba(59, 130, 246, 0.8);
+}
+
+/* ── PASSWORD TOGGLE ── */
+.toggle-password {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.3);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    width: 30px;
+    transition: color 0.3s;
+    user-select: none;
+}
+
+.toggle-password:hover { color: rgba(255, 255, 255, 0.7); }
+
+/* ── LOGIN BUTTON ── */
+.login-btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #043107, #075618);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 50px;
+    margin-top: 6px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.5s 0.4s both;
+}
+
+.login-btn::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    transition: left 0.5s ease;
+}
+
+.login-btn:hover {
+    background: linear-gradient(135deg, #022102, #043d08);
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255,255,255,0.15);
+    transform: translateY(-0.5px);
+}
+
+.login-btn:hover::after { left: 100%; }
+
+.login-btn:active { transform: translateY(0) scale(0.99); }
+
+/* ── ERROR MSG ── */
+.error-msg {
+    font-size: 13px;
+    color: #f87171;
+    margin-top: 10px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    animation: fadeIn 0.3s both;
+}
+
+/* ── FORGOT LINK ── */
+.forgot-link {
+    display: block;
+    margin-top: 18px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    transition: color 0.3s;
+    animation: fadeIn 0.5s 0.45s both;
+}
+
+.forgot-link:hover { color: rgba(59, 130, 246, 0.9); }
+
+/* ── TWO-STEP LOGIN ── */
+.password-step {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.3s ease,
+                margin 0.3s ease;
+    margin-bottom: 0;
+}
+
+.password-step.reveal {
+    max-height: 120px;
+    opacity: 1;
+    margin-bottom: 14px;
+}
+
+.login-user-badge {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.06);
+    border: 0.5px solid rgba(255,255,255,0.12);
+    border-radius: 12px;
+    margin-bottom: 14px;
+    animation: fadeIn 0.3s both;
+}
+
+.login-user-badge.show { display: flex; }
+
+.login-user-badge .user-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.login-user-badge .user-icon .ico { color: rgba(59, 130, 246, 0.9); font-size: 14px; }
+
+.login-user-badge .user-info { flex: 1; min-width: 0; }
+.login-user-badge .user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.login-user-badge .user-email {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.login-user-badge .change-user {
+    cursor: pointer;
+    color: rgba(255,255,255,0.4);
+    transition: color 0.2s;
+    flex-shrink: 0;
+    padding: 4px;
+}
+.login-user-badge .change-user:hover { color: rgba(255,255,255,0.8); }
+
+.user-not-found {
+    font-size: 13px;
+    color: #f87171;
+    margin-top: 8px;
+    min-height: 18px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    animation: fadeIn 0.3s both;
+}
+
+.user-not-found.show { display: flex; }
+
+/* ── KICKED BANNER ── */
+.kicked-banner {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: fadeIn 0.3s both;
+}
+
+.kicked-banner .ico { color: #f87171; font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+.kicked-banner .kicked-title { font-size: 13px; font-weight: 600; color: #f87171; margin-bottom: 2px; }
+.kicked-banner .kicked-desc { font-size: 12px; opacity: 0.75; line-height: 1.5; }
+
+/* ── MFA ── */
+.mfa-hidden { display: none !important; }
+
+.mfa-pick-btn {
+    width: 100%; padding: 14px; border: 0.5px solid rgba(255,255,255,0.15); border-radius: 12px;
+    background: rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    color: white; font-size: 14px; font-weight: 500;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.3s;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.mfa-pick-btn:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.25); }
+
+#mfaStep input[type="text"] {
+    width: 100%; padding: 14px; margin-bottom: 10px; border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 12px; background: rgba(255,255,255,0.06); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    color: white; font-size: 14px; outline: none; transition: all 0.3s;
+    text-align: center; letter-spacing: 8px; font-weight: 700;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+#mfaStep input:focus { background: rgba(255,255,255,0.09); border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 0 3.5px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255,255,255,0.1); }
+#mfaStep input::placeholder { letter-spacing: normal; font-weight: 400; }
+
+#mfaVerifyBtn, .change-pw-btn, .back-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 12px; font-size: 15px;
+    font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 8px; min-height: 50px; transition: all 0.3s;
+}
+
+#mfaVerifyBtn { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3), inset 0 1px 0 rgba(255,255,255,0.15); }
+#mfaVerifyBtn:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255,255,255,0.15); }
+#mfaVerifyBtn:active { transform: scale(0.98); }
+
+.back-btn {
+    background: rgba(255,255,255,0.06); border: 0.5px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.6); margin-top: 10px; font-size: 13px; font-weight: 500; min-height: 44px;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+.back-btn:hover { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); }
+
+/* ── LOADING OVERLAY ── */
+#loginLoadingOverlay {
+    position: fixed; inset: 0; z-index: 99999; display: none;
+    align-items: center; justify-content: center; flex-direction: column;
+    background: rgba(8, 9, 13, 0.88);
+    backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
+    color: white; text-align: center;
+}
+
+.login-ring-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+}
+
+.login-ring-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
+.login-ring-line {
+    width: 160px;
+    height: 3px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    position: relative;
+}
+
+.login-ring-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+    border-radius: 3px;
+    animation: loginLineSlide 1.2s ease-in-out infinite;
+}
+
+@keyframes loginLineSlide {
+    0% { left: -40%; }
+    100% { left: 100%; }
+}
+
+.login-ring-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    animation: loginPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes loginPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+.step-label { font-size: 16px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.3px; }
+.step-desc { font-size: 13px; opacity: 0.5; margin-bottom: 20px; line-height: 1.5; }
+
+@media (max-width: 500px) {
+    .login-card { width: 92%; padding: 36px 24px; }
+}
+
+@media print {
+    html, body { background: #000000 !important; display: none !important; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-page">
+    <div class="login-bg">
+        <div class="login-orb orb-1"></div>
+        <div class="login-orb orb-2"></div>
+        <div class="login-orb orb-3"></div>
+    </div>
+    <div class="login-card">
+
+        <div class="login-logo">
+            {% if system_logo %}
+                <img class="logo-main" src="{{ system_logo.url }}" alt="logo" draggable="false">
+                {% if system_logo_hover %}
+                    <img class="logo-hover" src="{{ system_logo_hover.url }}" alt="protected" draggable="false">
+                {% endif %}
+            {% else %}
+                <svg class="ico ico-lg" viewBox="0 0 512 512" style="color:rgba(255,255,255,0.3)"><path d="M256 32C167.8 32 96 103.8 96 192v48.6L72.4 283.9c-5.4 11.3-8.4 23.8-8.4 36.5v51.6c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64v-51.6c0-12.7-3-25.2-8.4-36.5L416 240.6V192c0-88.2-71.8-160-160-160zm0 416c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>
+            {% endif %}
+        </div>
+
+        <div class="login-title">{{ system_name|default:"Registry" }}</div>
+        <div class="login-subtitle">Sign in to your account</div>
+
+        {# ── Step 1: Login form ── #}
+        <form id="loginForm" method="POST" class="{% if mfa_pick or mfa_step or change_pw %}mfa-hidden{% endif %}">
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+            {% if kicked %}
+            <div class="kicked-banner">
+                <svg class="ico" viewBox="0 0 512 512"><path d="M506.3 417l-213.1-366C276.6 33.7 261.1 32 246.6 32H265.4c-14.5 0-30 1.7-44.2 10.3L78.9 155.5c-17 11.7-25.3 32.7-18.7 52.8l64.3 196.7C118.5 445 141.5 464 170.4 464h171.2c28.9 0 51.9-19 59.3-46.4l33.7-125.2c7.4-27.8-1.6-58.2-23.5-76.7zM270 312.7l-64-217.5c-1.2-4.2-5.3-6.7-9.4-6.7H95.8c-17 0-33.3 9.4-41.6 25.2L29.3 247c-8.3 15.8 1.1 35 18.9 35h98.4c5.5 0 10.4-3.7 11.7-9.1l20.4-84.8 41.7 140.5c1.5 4.9 6.2 8.1 11.4 8.1h22c4.1 0 8.2-2.6 9.4-6.7z"/></svg>
+                <div>
+                    <div class="kicked-title">Session Terminated</div>
+                    <div class="kicked-desc">Your account was signed in on another device. This session has been ended for your security.</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div id="userBadge" class="login-user-badge">
+                <div class="user-icon">
+                    <svg class="ico" viewBox="0 0 448 512"><path d="M224 256a128 128 0 1 0 0-256 128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3 0 498.7 13.3 512 29.7 512h388.6c16.4 0 29.7-13.3 29.7-29.7 0-98.5-79.8-178.3-178.3-178.3h-91.4z"/></svg>
+                </div>
+                <div class="user-info">
+                    <div class="user-name" id="badgeName"></div>
+                    <div class="user-email" id="badgeUsername"></div>
+                </div>
+                <div class="change-user" id="changeUserBtn" title="Use a different account">
+                    <svg class="ico" viewBox="0 0 512 512" style="width:16px;height:16px;"><path d="M403.8 34.8c-22.4-22.4-58.6-22.4-81 0l-46 46-46-46c-22.4-22.4-58.6-22.4-81 0s-22.4 58.6 0 81l46 46-46 46c-22.4 22.4-22.4 58.6 0 81s58.6 22.4 81 0l46-46 46 46c22.4 22.4 58.6 22.4 81 0s22.4-58.6 0-81l-46-46 46-46c22.4-22.4 22.4-58.6 0-81zM169.6 224l46-46c22.4-22.4 22.4-58.6 0-81s-58.6-22.4-81 0l-46 46c-22.4 22.4-22.4 58.6 0 81s58.6 22.4 81 0zm201.6-46l46 46c22.4 22.4 22.4 58.6 0 81s-58.6 22.4-81 0l-46-46c-22.4-22.4-22.4-58.6 0-81s58.6-22.4 81 0z"/></svg>
+                </div>
+            </div>
+
+            <div class="input-group" id="usernameGroup">
+                <span class="input-icon"><svg class="ico" viewBox="0 0 448 512"><path d="M224 256a128 128 0 1 0 0-256 128 128 0 1 0 0 256zm-45.7 48C79.8 304 0 383.8 0 482.3 0 498.7 13.3 512 29.7 512h388.6c16.4 0 29.7-13.3 29.7-29.7 0-98.5-79.8-178.3-178.3-178.3h-91.4z"/></span></span>
+                <input type="text" id="loginUsername" name="" placeholder="Username or email" required autocomplete="username" value="{{ last_username }}" {% if mfa_pick or mfa_step or change_pw %}disabled{% endif %}>
+                <input type="hidden" id="loginUsernameHidden" name="username" value="{{ last_username }}">
+            </div>
+
+            <div id="userNotFound" class="user-not-found">
+                <svg class="ico ico-sm" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm0-384c13.3 0 24 10.7 24 24V296c0 13.3-10.7 24-24 24s-24-10.7-24-24V152c0-13.3 10.7-24 24-24zm-32 112a32 32 0 1 1 64 0 32 32 0 1 1-64 0z"/></svg>
+                <span>No account found with that username or email.</span>
+            </div>
+
+            <div id="passwordStep" class="password-step {% if mfa_pick or mfa_step or change_pw %}mfa-hidden{% endif %}">
+                <div class="input-group" style="margin-bottom:0;">
+                    <span class="input-icon"><svg class="ico" viewBox="0 0 448 512"><path d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64h16zm272 96H96V256H64V448H448V256H384v128z"/></span></span>
+                    <input type="password" id="loginPassword" name="password" placeholder="Password" required autocomplete="current-password" disabled>
+                    <span class="toggle-password" id="togglePasswordBtn">
+                        <svg class="ico" id="eyeOpen" viewBox="0 0 576 512"><path d="M288 256a96 96 0 1 0 0-192 96 96 0 1 0 0 192zm-18.3 64.5l-47-28.2c-7.7-4.6-16.5-7.3-25.7-7.3-30.9 0-56 25.1-56 56v16c0 8.8 7.2 16 16 16h112.7c8.8 0 16-7.2 16-16v-8.8c0-11.3-4-21.9-11.2-30.2l-23.5-26.5zM577.5 241.7C527.7 162.3 433.8 96 288 96S48.3 162.3-1.5 241.7c-6.3 10.2-6.3 23.2 0 33.4C48.3 354.7 142.2 416 288 416s239.7-61.3 289.5-140.9c6.3-10.2 6.3-23.2 0-33.4zM288 384c-70.6 0-128-57.4-128-128s57.4-128 128-128 128 57.4 128 128-57.4 128-128 128z"/></svg>
+                        <svg class="ico" id="eyeClosed" style="display:none" viewBox="0 0 640 512"><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 7.4S-3.1 27.7 5.1 38.1l592 512c8.3 9.4 23.4 11.2 32.7 3 9.4-8.3 11.2-23.4 3-32.7L513.3 312.7c43.3-34.5 95.8-54.7 149.7-54.7l-20.4 20.4C635 284.1 640 300.2 640 317.4V416c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-17.1 5-33.2 14.3-47.1L38.8 5.1zM288 256a96 96 0 1 0 0-192 96 96 0 1 0 0 192zm-18.3 64.5l-47-28.2c-7.7-4.6-16.5-7.3-25.7-7.3-30.9 0-56 25.1-56 56v16c0 8.8 7.2 16 16 16h112.7c8.8 0 16-7.2 16-16v-8.8c0-11.3-4-21.9-11.2-30.2l-23.5-26.5z"/></svg>
+                    </span>
+                </div>
+            </div>
+
+            {% if not mfa_pick and not mfa_step and not change_pw and error %}
+            <div class="error-msg"><svg class="ico ico-sm" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm0-384c13.3 0 24 10.7 24 24V296c0 13.3-10.7 24-24 24s-24-10.7-24-24V152c0-13.3 10.7-24 24-24zm-32 112a32 32 0 1 1 64 0 32 32 0 1 1-64 0z"/></svg> {{ error }}</div>
+            {% endif %}
+
+            <button type="button" class="login-btn" id="nextBtn" {% if mfa_pick or mfa_step or change_pw %}disabled{% endif %}>
+                <svg class="ico" viewBox="0 0 512 512"><path d="M502.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-256-256c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L402.7 256 46.6 256c-17.7 0-32 14.3-32 32s14.3 32 32 32h356.7L201.4 434.6c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l256-256z"/></svg> Continue
+            </button>
+
+            <button type="submit" class="login-btn" id="loginBtn" style="display:none;" {% if mfa_pick or mfa_step or change_pw %}disabled{% endif %}>
+                <svg class="ico" viewBox="0 0 512 512"><path d="M352 96V224H224V96c0-17.7-14.3-32-32-32H96C78.3 64 64 78.3 64 96V416c0 17.7 14.3 32 32 32h96c17.7 0 32-14.3 32-32V288H352V416c0 17.7 14.3 32 32 32h96c17.7 0 32-14.3 32-32V96c0-17.7-14.3-32-32-32H384c-17.7 0-32 14.3-32 32zM448 208l-64-48v32H256v64h128v32l64-48-64-48z"/></svg> Sign In
+            </button>
+        </form>
+
+        <a href="{% url 'forgot_password' %}" class="forgot-link">Forgot password?</a>
+
+        {# ── Step: Change password (must_change_password) ── #}
+        <div id="changePwStep" class="{% if not change_pw %}mfa-hidden{% endif %}">
+            <form method="POST" id="changePwForm">
+                {% csrf_token %}
+                <div class="step-label">Set a new password</div>
+                <div class="step-desc">You must change your temporary password before continuing.</div>
+
+                {% if change_pw and error %}
+                <div class="error-msg" style="margin-bottom:8px;"><svg class="ico ico-sm" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm0-384c13.3 0 24 10.7 24 24V296c0 13.3-10.7 24-24 24s-24-10.7-24-24V152c0-13.3 10.7-24 24-24zm-32 112a32 32 0 1 1 64 0 32 32 0 1 1-64 0z"/></svg> {{ error }}</div>
+                {% endif %}
+
+                <input type="hidden" name="change_pw" value="1">
+                <div class="input-group">
+                    <span class="input-icon"><svg class="ico" viewBox="0 0 512 512"><path d="M239.1 6.7c-9.4-5.3-21.2-4.3-29.6 2.1s-13.8 17.6-9.6 27.4l40.6 93.8-73.8-59.3c-9.4-7.6-22.9-8.6-33.5-2.3L67.3 51.8C53.5 60.3 48 76.8 54.2 91.3l43.3 100.4-36.1-24.1c-9.4-6.3-22-6.5-31.7-.5L11.7 190c-13.3 8.2-17.9 25.7-10 39.7l62.6 110.2-51.8 30.7c-13.3 7.9-18.1 25.1-10.7 38.7l21.8 39.8c7.4 13.6 24.4 18.8 38.2 11.6l59.1-30.8c10.6-5.5 15.5-18 11.4-28.9l-23.5-62.7 46.2 37.8c9.4 7.6 22.9 8.6 33.5 2.3l29.4-17.7c13.8-8.5 19.3-25 13.1-39.5L265.3 156l36.1 24.1c9.4 6.3 22 6.5 31.7.5l26.2-15.8c13.3-8.2 17.9-25.7 10-39.7l-38.5-90.8 38.9-23.1c13.3-7.9 18.1-25.1 10.7-38.7L382 0c-7.4-13.6-24.4-18.8-38.2-11.6l-59.1 30.8c-10.6 5.5-15.5 18-11.4 28.9l13.6 32.8z"/><path d="M239.1 6.7c-9.4-5.3-21.2-4.3-29.6 2.1L179.3 30 96 130.3l-26.2 15.8c-9.4 5.7-13.5 17.2-9.2 27.4l23.5 54.3L44.5 252.1c-8.4 10.2-6.7 25.3 3.5 33.7l48 40.3-16.5 38.7c-3.3 7.7 1.1 16.6 8.7 20l54.1 24.4c7.5 3.4 16.3 1 21.4-5.7l30.4-39.7 30.4 39.7c5.1 6.7 13.9 9.1 21.4 5.7l54.1-24.4c7.6-3.4 12-12.3 8.7-20L273 326.1l48-40.3c10.2-8.4 11.9-23.5 3.5-33.7l-39.8-84.5 23.5-54.3c4.3-10.2.2-21.7-9.2-27.4L263.6 30l-29.8-21.2c-8.4-6.4-20.2-7.4-29.6-2.1z" opacity="0"/><path d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64h16zm272 96H96V256H64V448H448V256H384v128z"/></span></span>
+                    <input type="password" name="new_password" placeholder="New password (min 8 characters)" required minlength="8" autocomplete="new-password">
+                </div>
+                <div class="input-group">
+                    <span class="input-icon"><svg class="ico" viewBox="0 0 448 512"><path d="M338.4 434.6L300.4 398.6C311.5 380.3 318 359.1 318 336.8C318 283.6 274.8 240.4 221.6 240.4C168.4 240.4 125.2 283.6 125.2 336.8C125.2 390 168.4 433.2 221.6 433.2C242.8 433.2 262.6 426.4 279 415L315.4 451C301.8 460.6 285.6 466.4 268.4 467.6L261.2 468C204 471.6 149.2 450.8 109.6 411.2C67.6 369.2 46.8 310.8 47.6 251.6L48 222.4C50.4 150 108.8 88.8 180.8 81.6L187.2 80.8C202 79.6 217.2 81.2 231.6 85.6L235.6 86.8C251.2 92 260.8 108.4 255.6 124L243.2 160C238 175.6 221.6 185.2 206 180L202 178.8C191.6 176 180.8 176 170.4 178.4L163.6 179.6C131.2 186 108.4 214.4 106.8 247.2L104 301.6C102 343.6 126.4 381.6 163.2 400L200 417.2C207.2 420.8 214.4 424 221.6 426.8L228.4 429.2C179.2 413.2 144.4 366 143.2 312L143.6 299.2C144.8 257.6 176.4 222 217.6 218.4L226 217.6C266.8 220.8 301.2 253.6 305.6 294.4L307.6 312.8C310.4 343.2 298.4 373.2 276.4 394L251.6 417.2C259.2 419.6 266.8 421.6 274.4 423.2L280.8 424.4C318 420.4 344 434.6 338.4 434.6zM400 208a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></span></span>
+                    <input type="password" name="confirm_password" placeholder="Confirm new password" required minlength="8" autocomplete="new-password">
+                </div>
+
+                <button type="submit" class="login-btn change-pw-btn">
+                    <svg class="ico" viewBox="0 0 512 512"><path d="M239.1 6.7c-9.4-5.3-21.2-4.3-29.6 2.1s-13.8 17.6-9.6 27.4l40.6 93.8-73.8-59.3c-9.4-7.6-22.9-8.6-33.5-2.3L67.3 51.8C53.5 60.3 48 76.8 54.2 91.3l43.3 100.4-36.1-24.1c-9.4-6.3-22-6.5-31.7-.5L11.7 190c-13.3 8.2-17.9 25.7-10 39.7l62.6 110.2-51.8 30.7c-13.3 7.9-18.1 25.1-10.7 38.7l21.8 39.8c7.4 13.6 24.4 18.8 38.2 11.6l59.1-30.8c10.6-5.5 15.5-18 11.4-28.9l-23.5-62.7 46.2 37.8c9.4 7.6 22.9 8.6 33.5 2.3l29.4-17.7c13.8-8.5 19.3-25 13.1-39.5L265.3 156l36.1 24.1c9.4 6.3 22 6.5 31.7.5l26.2-15.8c13.3-8.2 17.9-25.7 10-39.7l-38.5-90.8 38.9-23.1c13.3-7.9 18.1-25.1 10.7-38.7L382 0c-7.4-13.6-24.4-18.8-38.2-11.6l-59.1 30.8c-10.6 5.5-15.5 18-11.4 28.9l13.6 32.8z"/></svg> Change Password
+                </button>
+            </form>
+        </div>
+
+        {# ── Step 2: Pick MFA method ── #}
+        <div id="mfaPick" class="{% if not mfa_pick %}mfa-hidden{% endif %}">
+            <form method="POST" id="mfaPickForm">
+                {% csrf_token %}
+                <div class="step-label">Two-Factor Authentication</div>
+                <div class="step-desc">Choose how you'd like to verify your identity.</div>
+
+                {% if mfa_pick and error %}
+                <div class="error-msg" style="margin-bottom:8px;"><svg class="ico ico-sm" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm0-384c13.3 0 24 10.7 24 24V296c0 13.3-10.7 24-24 24s-24-10.7-24-24V152c0-13.3 10.7-24 24-24zm-32 112a32 32 0 1 1 64 0 32 32 0 1 1-64 0z"/></svg> {{ error }}</div>
+                {% endif %}
+
+                {% if mfa_has_totp %}
+                <button type="submit" name="pick_mfa" value="totp" class="mfa-pick-btn" style="margin-bottom:10px;">
+                    <svg class="ico" viewBox="0 0 384 512"><path d="M320 64H304V32C304 14.3 289.7 0 272 0H112C94.3 0 80 14.3 80 32V64H64C28.7 64 0 92.7 0 128v320c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64V128c0-35.3-28.7-64-64-64zM192 432c-35.3 0-64-28.7-64-64s28.7-64 64-64 64 28.7 64 64-28.7 64-64 64zm128-224H64V160h256v48z"/></svg> Authenticator App
+                </button>
+                {% endif %}
+
+                {% if mfa_has_email %}
+                <button type="submit" name="pick_mfa" value="email" class="mfa-pick-btn">
+                    <svg class="ico" viewBox="0 0 512 512"><path d="M48 80c0-8.8 7.2-16 16-16H448c8.8 0 16 7.2 16 16V432c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V80zM64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zM112 240c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v48H112V240zm128-16c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v16H240V224zm0 64H240v48h32c8.8 0 16-7.2 16-16V288H240zm-96-48c0-8.8 7.2-16 16-16h32c8.8 0 16 7.2 16 16v16H144V240zm0 64H144v32h32c8.8 0 16-7.2 16-16V304H144zm-32-64v48H80V240h32zm0 64H80v32h32V304z"/></svg> Email OTP
+                </button>
+                {% endif %}
+
+                <button type="button" onclick="backToLogin()" class="back-btn">
+                    <svg class="ico ico-sm" viewBox="0 0 448 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z"/></svg> Back to login
+                </button>
+            </form>
+        </div>
+
+        {# ── Step 3: MFA code entry ── #}
+        <div id="mfaStep" class="{% if not mfa_step %}mfa-hidden{% endif %}">
+            <form method="POST" id="mfaForm">
+                {% csrf_token %}
+
+                {% if mfa_method == 'totp' %}
+                <div id="mfaTotp">
+                    <div class="step-label">Enter verification code</div>
+                    <div class="step-desc">Enter the 6-digit code from your authenticator app.</div>
+                    <input type="text" name="mfa_code" id="mfaCodeInput" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" required autocomplete="off" autofocus>
+                </div>
+                {% elif mfa_method == 'email' %}
+                <div id="mfaEmail">
+                    <div class="step-label">Check your email</div>
+                    {% if email_otp_sent %}
+                    <div class="step-desc">A code was sent to <strong style="color:rgba(255,255,255,0.8);">{{ user_email|default:"your email" }}</strong></div>
+                    {% endif %}
+                    <input type="text" name="mfa_code" id="mfaCodeInput" placeholder="Enter OTP code" maxlength="6" inputmode="numeric" pattern="[0-9]*" required autocomplete="off" autofocus>
+                    <div style="margin-top:8px; font-size:12px; text-align:center;">
+                        <span style="opacity:0.4;">Didn't receive it?</span>
+                        <a href="#" id="resendOtpLink" onclick="resendOtp(); return false;" style="color:rgba(59,130,246,0.9); text-decoration:none;">Resend code</a>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if mfa_step and error %}
+                <div class="error-msg"><svg class="ico ico-sm" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zm0-384c13.3 0 24 10.7 24 24V296c0 13.3-10.7 24-24 24s-24-10.7-24-24V152c0-13.3 10.7-24 24-24zm-32 112a32 32 0 1 1 64 0 32 32 0 1 1-64 0z"/></svg> {{ error }}</div>
+                {% endif %}
+
+                <button type="submit" id="mfaVerifyBtn" style="margin-top:12px;">
+                    <svg class="ico" viewBox="0 0 512 512"><path d="M256 32C167.8 32 96 103.8 96 192v48.6L72.4 283.9c-5.4 11.3-8.4 23.8-8.4 36.5v51.6c0 35.3 28.7 64 64 64h256c35.3 0 64-28.7 64-64v-51.6c0-12.7-3-25.2-8.4-36.5L416 240.6V192c0-88.2-71.8-160-160-160zm0 416c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg> Verify
+                </button>
+
+                <div style="margin-top:16px; text-align:center;">
+                    <a href="#" onclick="showRecoveryInput(); return false;" style="font-size:12px; color:rgba(255,255,255,0.5); text-decoration:none; transition:color 0.2s;" onmouseover="this.style.color='rgba(255,255,255,0.8)'" onmouseout="this.style.color='rgba(255,255,255,0.5)'">
+                        <svg class="ico" viewBox="0 0 512 512" style="width:12px;height:12px;vertical-align:-1px;margin-right:4px;"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM169.8 200.8c-7.8-7.8-20.5-7.8-28.3 0l-47 47L86.7 213c-7.8-7.8-20.5-7.8-28.3 0s-7.8 20.5 0 28.3l51 51c7.8 7.8 20.5 7.8 28.3 0l83-83c7.8-7.8 7.8-20.5 0-28.3zM425.8 192.2c-7.8-7.8-20.5-7.8-28.3 0l-83 83c-7.8 7.8-7.8 20.5 0 28.3l51 51c7.8 7.8 20.5 7.8 28.3 0l47-47 14.1-14.1c7.8-7.8 7.8-20.5 0-28.3l-30-30z"/></svg>
+                        Lost your authenticator? Use a recovery code
+                    </a>
+                </div>
+
+                <div id="recoveryInputSection" style="display:none; margin-top:16px; padding:16px; background:rgba(255,255,255,0.08); border-radius:12px; border:1px dashed rgba(255,255,255,0.2);">
+                    <div style="font-size:13px; font-weight:600; color:rgba(255,255,255,0.8); margin-bottom:8px;">Enter recovery code</div>
+                    <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:10px;">Format: XXXX-XXXX-XXXX</div>
+                    <input type="text" name="recovery_code" id="recoveryCodeInput" placeholder="XXXX-XXXX-XXXX" maxlength="14" autocomplete="off" style="text-transform:uppercase; letter-spacing:0.1em;">
+                    <input type="hidden" name="use_recovery" value="1">
+                    <div style="margin-top:10px; text-align:center;">
+                        <a href="#" onclick="hideRecoveryInput(); return false;" style="font-size:11px; color:rgba(255,255,255,0.4); text-decoration:none;">← Back to authenticator</a>
+                    </div>
+                </div>
+
+                <button type="button" onclick="backToPick()" class="back-btn">
+                    <svg class="ico ico-sm" viewBox="0 0 448 512"><path d="M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l192 192c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L77.3 256 246.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-192 192z"/></svg> Choose another method
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+
+<div id="loginLoadingOverlay">
+    <div class="login-ring-loader">
+        {% if system_logo %}<img src="{{ system_logo.url }}" alt="Logo" class="login-ring-logo">{% endif %}
+        <div class="login-ring-line"></div>
+        <p class="login-ring-text" id="loadingText">Signing in...</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('dragstart', e => e.preventDefault());
+document.addEventListener('drop', e => e.preventDefault());
+document.addEventListener('copy', e => e.preventDefault());
+document.addEventListener('cut', e => e.preventDefault());
+document.addEventListener('paste', e => e.preventDefault());
+
+document.addEventListener('keydown', function(e) {
+    var key = e.key;
+    var lowerKey = key.toLowerCase();
+    if (/^F[1-9]$|^F1[0-2]$/.test(key)) { e.preventDefault(); return false; }
+    if (e.ctrlKey || e.metaKey) {
+        if (['s', 'p', 'u', 'a', 'c', 'x', 'v'].includes(lowerKey)) { e.preventDefault(); return false; }
+        if (e.shiftKey && ['I', 'J', 'C'].includes(key.toUpperCase())) { e.preventDefault(); return false; }
+    }
+    if (e.target.tagName.toLowerCase() !== 'input') {
+        if (['ArrowUp', 'ArrowDown', 'Space', 'Tab'].includes(key)) { e.preventDefault(); return false; }
+    }
+}, true);
+
+function showLoading(text) {
+    var overlay = document.getElementById('loginLoadingOverlay');
+    var loadingText = document.getElementById('loadingText');
+    if (loadingText) loadingText.textContent = text || 'Signing in...';
+    overlay.style.display = 'flex';
+}
+
+document.getElementById('changePwForm')?.addEventListener('submit', function () {
+    showLoading('Signing in...');
+});
+
+document.getElementById('mfaPickForm')?.addEventListener('submit', function () {
+    showLoading('Verifying...');
+});
+
+/* ── TWO-STEP LOGIN LOGIC ── */
+(function() {
+    var nextBtn = document.getElementById('nextBtn');
+    var loginBtn = document.getElementById('loginBtn');
+    var changeUserBtn = document.getElementById('changeUserBtn');
+    var usernameInput = document.getElementById('loginUsername');
+    var usernameHidden = document.getElementById('loginUsernameHidden');
+    var passwordInput = document.getElementById('loginPassword');
+    var passwordStep = document.getElementById('passwordStep');
+    var userBadge = document.getElementById('userBadge');
+    var badgeName = document.getElementById('badgeName');
+    var badgeUsername = document.getElementById('badgeUsername');
+    var userNotFound = document.getElementById('userNotFound');
+    var usernameGroup = document.getElementById('usernameGroup');
+
+    function getCsrfToken() {
+        return document.cookie.split('; ').find(function(r){return r.startsWith('csrftoken=');})?.split('=')[1] || '';
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function() {
+            var username = usernameInput.value.trim();
+            if (!username) { usernameInput.focus(); return; }
+
+            userNotFound.classList.remove('show');
+            nextBtn.disabled = true;
+
+            fetch('/check-user-exists/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: 'username=' + encodeURIComponent(username)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                nextBtn.disabled = false;
+                if (data.exists) {
+                    badgeName.textContent = data.display_name || data.username;
+                    badgeUsername.textContent = data.username;
+                    userBadge.classList.add('show');
+
+                    usernameHidden.value = username;
+                    usernameInput.disabled = true;
+                    usernameGroup.style.display = 'none';
+                    userNotFound.classList.remove('show');
+
+                    passwordStep.classList.add('reveal');
+                    passwordInput.disabled = false;
+                    passwordInput.focus();
+
+                    nextBtn.style.display = 'none';
+                    loginBtn.style.display = 'flex';
+                } else {
+                    userNotFound.classList.add('show');
+                    usernameInput.focus();
+                    usernameInput.select();
+                }
+            })
+            .catch(function() {
+                nextBtn.disabled = false;
+                userNotFound.classList.add('show');
+            });
+        });
+    }
+
+    if (changeUserBtn) {
+        changeUserBtn.addEventListener('click', function() {
+            usernameInput.disabled = false;
+            usernameInput.value = '';
+            usernameHidden.value = '';
+            usernameGroup.style.display = '';
+            userBadge.classList.remove('show');
+
+            passwordStep.classList.remove('reveal');
+            passwordInput.disabled = true;
+            passwordInput.value = '';
+
+            nextBtn.style.display = 'flex';
+            loginBtn.style.display = 'none';
+            userNotFound.classList.remove('show');
+
+            usernameInput.focus();
+        });
+    }
+
+    if (usernameInput) {
+        usernameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                nextBtn.click();
+            }
+        });
+    }
+
+    /* Restore two-step state on server error */
+    var errorEl = document.querySelector('.error-msg');
+    if (usernameInput && errorEl && usernameHidden.value.trim()) {
+        badgeName.textContent = usernameHidden.value.trim();
+        badgeUsername.textContent = usernameHidden.value.trim();
+        userBadge.classList.add('show');
+
+        usernameInput.disabled = true;
+        usernameGroup.style.display = 'none';
+
+        passwordStep.classList.add('reveal');
+        passwordInput.disabled = false;
+
+        nextBtn.style.display = 'none';
+        loginBtn.style.display = 'flex';
+    }
+})();
+
+var resendCooldownTimer = null;
+
+function resendOtp() {
+    var link = document.getElementById('resendOtpLink');
+    if (!link || link.classList.contains('disabled')) return;
+    link.classList.add('disabled');
+    link.style.opacity = '0.4';
+    link.textContent = 'Sending...';
+    var csrfToken = document.cookie.split('; ').find(function(r){return r.startsWith('csrftoken=');})?.split('=')[1] || '';
+    fetch('/mfa/resend-email-otp/', { method: 'POST', headers: {'X-CSRFToken': csrfToken} })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                startResendCountdown(link, 30);
+            } else {
+                link.textContent = 'Failed to send';
+                setTimeout(function() { link.textContent = 'Resend code'; link.style.opacity = ''; link.classList.remove('disabled'); }, 3000);
+            }
+        })
+        .catch(function() {
+            link.textContent = 'Error sending';
+            setTimeout(function() { link.textContent = 'Resend code'; link.style.opacity = ''; link.classList.remove('disabled'); }, 3000);
+        });
+}
+
+function startResendCountdown(link, seconds) {
+    var remaining = seconds;
+    link.style.opacity = '1';
+    link.textContent = 'Resend in ' + remaining + 's';
+    resendCooldownTimer = setInterval(function() {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(resendCooldownTimer);
+            resendCooldownTimer = null;
+            link.textContent = 'Resend code';
+            link.style.opacity = '';
+            link.classList.remove('disabled');
+        } else {
+            link.textContent = 'Resend in ' + remaining + 's';
+        }
+    }, 1000);
+}
+
+function showRecoveryInput() {
+    var totpSection = document.getElementById('mfaTotp');
+    var emailSection = document.getElementById('mfaEmail');
+    var recoverySection = document.getElementById('recoveryInputSection');
+    var verifyBtn = document.getElementById('mfaVerifyBtn');
+    if (totpSection) totpSection.style.display = 'none';
+    if (emailSection) emailSection.style.display = 'none';
+    if (recoverySection) recoverySection.style.display = 'block';
+    if (verifyBtn) verifyBtn.style.display = 'none';
+    var recoveryInput = document.getElementById('recoveryCodeInput');
+    if (recoveryInput) recoveryInput.focus();
+}
+
+function hideRecoveryInput() {
+    var totpSection = document.getElementById('mfaTotp');
+    var emailSection = document.getElementById('mfaEmail');
+    var recoverySection = document.getElementById('recoveryInputSection');
+    var verifyBtn = document.getElementById('mfaVerifyBtn');
+    if (recoverySection) recoverySection.style.display = 'none';
+    if (totpSection) totpSection.style.display = 'block';
+    if (verifyBtn) verifyBtn.style.display = 'block';
+    var mfaInput = document.getElementById('mfaCodeInput');
+    if (mfaInput) mfaInput.focus();
+}
+
+var recoveryInput = document.getElementById('recoveryCodeInput');
+if (recoveryInput) {
+    recoveryInput.addEventListener('input', function(){
+        var val = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        var formatted = '';
+        for (var i = 0; i < val.length && i < 12; i++) {
+            if (i > 0 && i % 4 === 0) formatted += '-';
+            formatted += val[i];
+        }
+        this.value = formatted;
+        if (val.length === 12) {
+            document.getElementById('loginLoadingOverlay').style.display = 'flex';
+            document.getElementById('mfaForm').submit();
+        }
+    });
+}
+
+var mfaInput = document.getElementById('mfaCodeInput');
+if (mfaInput) {
+    mfaInput.addEventListener('input', function(){
+        this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        if (this.value.length === 6) {
+            document.getElementById('loginLoadingOverlay').style.display = 'flex';
+            document.getElementById('mfaForm').submit();
+        }
+    });
+}
+
+function backToLogin() { window.location.href = '/'; }
+function backToPick() { window.location.href = '/'; }
+
+{% if form.non_field_errors or error or mfa_pick or mfa_step or change_pw or kicked %}
+document.addEventListener('DOMContentLoaded', function() {
+    var card = document.querySelector('.login-card');
+    if (card) { card.style.opacity = '1'; card.style.transform = 'translateY(0) scale(1)'; }
+});
+{% endif %}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var passwordField = document.getElementById('loginPassword');
+    var toggleButton = document.getElementById('togglePasswordBtn');
+    if (toggleButton && passwordField) {
+        toggleButton.addEventListener('click', function() {
+            var eyeOpen = document.getElementById('eyeOpen');
+            var eyeClosed = document.getElementById('eyeClosed');
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                eyeOpen.style.display = 'none';
+                eyeClosed.style.display = '';
+            } else {
+                passwordField.type = 'password';
+                eyeOpen.style.display = '';
+                eyeClosed.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
+
+<script>
+(function() {
+    var form = document.getElementById('changePwForm');
+    if (!form) return;
+    var pwInput = form.querySelector('input[name="new_password"]');
+    var cpwInput = form.querySelector('input[name="confirm_password"]');
+    if (pwInput) {
+        pwInput.addEventListener('focus', function() { showPasswordReqs(pwInput); });
+        pwInput.addEventListener('input', function() { updatePasswordReqs(pwInput.value); });
+    }
+    form.addEventListener('submit', function(e) {
+        var pw = pwInput ? pwInput.value : '';
+        var cpw = cpwInput ? cpwInput.value : '';
+        var err = validatePassword(pw);
+        if (err) { e.preventDefault(); alert(err); return; }
+        if (pw !== cpw) { e.preventDefault(); alert('Passwords do not match.'); return; }
+    });
+})();
+</script>
+
+</body>
+</html>

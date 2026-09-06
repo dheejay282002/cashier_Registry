@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% block title %}Suppliers{% endblock %}
+{% block nav_suppliers %}active{% endblock %}
+{% block content %}
+
+{% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+{% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+<div style="display:grid; grid-template-columns:1fr auto; gap:14px; align-items:center; margin-bottom:16px; background:linear-gradient(180deg, #fff7ed, #fff); border:1px solid #e2c89d; border-radius:14px; padding:14px 16px; box-shadow:0 8px 24px rgba(15, 23, 42, 0.05);">
+    <div>
+        <div style="font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#a16207;">Registry Sheet</div>
+        <div style="font-size:20px; font-weight:800; margin-top:4px; color:#78350f;">{% if is_admin and selected_cashier %}Cashier: {{ selected_cashier }}{% elif is_admin %}Centralized Data{% else %}My Supplier Sheet{% endif %}</div>
+        <div style="font-size:13px; color:#92400e; margin-top:4px;">{% if is_admin and selected_cashier %}Showing only the selected cashier's compiled records.{% elif is_admin %}Showing all cashier-compiled supplier records.{% else %}Showing only your submitted supplier records.{% endif %}</div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+        <span class="badge badge-info">Rows: {{ supplier_rows|length }}</span>
+        <span class="badge badge-success">Columns: {{ sheet_columns|length }}</span>
+        {% if is_admin %}
+        <a href="{% url 'export_suppliers' %}?format=excel" class="btn btn-secondary btn-sm"><i class="fas fa-file-excel"></i> Export Excel</a>
+        <a href="{% url 'export_suppliers' %}?format=csv" class="btn btn-secondary btn-sm"><i class="fas fa-file-csv"></i> Export CSV</a>
+        {% endif %}
+        <button class="btn btn-primary" onclick="document.getElementById('addModal').style.display='flex'"><i class="fas fa-plus"></i> Add Supplier</button>
+    </div>
+</div>
+
+{% if is_admin %}
+<form method="get" style="margin-bottom:16px; display:flex; gap:10px; align-items:end; flex-wrap:wrap;">
+    <div>
+        <label style="display:block; font-size:13px; font-weight:700; margin-bottom:6px;">Centralized sheet by cashier</label>
+        <select name="cashier" style="padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; min-width:260px;">
+            <option value="">All Cashiers</option>
+            {% for profile in cashier_options %}
+                <option value="{{ profile.user.username }}" {% if selected_cashier == profile.user.username %}selected{% endif %}>{{ profile.user.get_full_name|default:profile.user.username }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-secondary"><i class="fas fa-filter"></i> Filter</button>
+    {% if selected_cashier %}
+        <a href="{% url 'suppliers' %}" class="btn btn-secondary">Clear</a>
+    {% endif %}
+</form>
+{% endif %}
+
+<div class="table-wrap" style="overflow:auto; max-height:calc(100vh - 240px); border-radius:12px; border:1px solid #c8a46a; background:#fffdf7; box-shadow:0 12px 30px rgba(15, 23, 42, 0.08); position:relative;">
+    <div style="min-width:1600px; background:#fffdf7; padding:10px;">
+    <table style="width:100%; border-collapse:collapse; min-width:1600px; background:white; table-layout:fixed;">
+        <thead>
+            <tr style="background:#f8cc8b;">
+                <th style="position:sticky; top:0; z-index:2; text-align:center; padding:8px 10px; border:1px solid #c89a55; background:#f8cc8b; width:48px;">#</th>
+                <th style="position:sticky; top:0; z-index:2; text-align:left; padding:8px 10px; border:1px solid #c89a55; background:#f8cc8b; width:180px;">Cashier</th>
+                {% for column in sheet_columns %}
+                <th style="position:sticky; top:0; z-index:2; text-align:left; padding:8px 10px; border:1px solid #c89a55; background:#f8cc8b; white-space:nowrap; min-width:160px;">{{ column }}</th>
+                {% endfor %}
+                <th style="position:sticky; top:0; z-index:2; text-align:left; padding:8px 10px; border:1px solid #c89a55; background:#f8cc8b; width:160px;">Created</th>
+                <th style="position:sticky; top:0; z-index:2; text-align:left; padding:8px 10px; border:1px solid #c89a55; background:#f8cc8b; width:110px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in supplier_rows %}
+            {% with sup=row.supplier %}
+            <tr style="border-bottom:1px solid #d8b98a; min-height:42px;">
+                <td style="padding:10px 8px; color:#78350f; white-space:nowrap; border:1px solid #cfae7b; background:#fff3e0; font-weight:800; text-align:center; font-size:13px;">{{ row.row_number|default:forloop.counter }}</td>
+                <td style="padding:10px 8px; white-space:nowrap; border:1px solid #cfae7b; background:#fff; font-size:13px;">
+                    {% if sup.created_by %}
+                        <span class="badge badge-info">{{ sup.created_by.get_full_name|default:sup.created_by.username }}</span>
+                    {% else %}
+                        <span style="color:var(--muted);">—</span>
+                    {% endif %}
+                </td>
+                {% for cell in row.cells %}
+                <td style="padding:10px 10px; white-space:normal; word-break:break-word; border:1px solid #cfae7b; background:#fff; max-width:260px; line-height:1.35; font-size:13px; vertical-align:top;" title="{{ cell|default:'—' }}">
+                    {{ cell|default:"—" }}
+                </td>
+                {% endfor %}
+                <td style="padding:10px 8px; white-space:nowrap; color:var(--muted); border:1px solid #cfae7b; background:#fff; font-size:12px; vertical-align:top;">{{ sup.created_at|date:"Y-m-d H:i" }}</td>
+                <td style="padding:10px 8px; white-space:nowrap; border:1px solid #cfae7b; background:#fff; vertical-align:top;">
+                    {% if is_admin or sup.created_by == request.user %}
+                    <button class="btn btn-sm btn-secondary" onclick="editSup('{{ sup.pk }}','{{ sup.account_number|escapejs }}','{{ sup.account_name|escapejs }}','{{ sup.address|escapejs }}','{{ sup.tin|escapejs }}','{{ sup.status }}')"><i class="fas fa-pen"></i></button>
+                    {% endif %}
+                    {% if is_admin %}
+                    <form method="post" style="display:inline;" onsubmit="return confirm('Delete this supplier?')">
+                        {% csrf_token %}<input type="hidden" name="action" value="delete"><input type="hidden" name="sup_id" value="{{ sup.pk }}">
+                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endwith %}
+        {% empty %}
+            <tr><td colspan="{{ sheet_columns|length|add:4 }}" style="text-align:center; padding:30px; color:var(--muted); border:1px solid #cfae7b; background:#fff;">No suppliers yet.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- ADD MODAL -->
+<div id="addModal" style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(15,23,42,0.58); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:white; border-radius:16px; padding:24px; width:760px; max-width:98vw; max-height:92vh; overflow:auto; box-shadow:0 24px 60px rgba(15,23,42,0.28);">
+        <h3 style="margin-bottom:18px; font-size:16px;"><i class="fas fa-plus"></i> Add Supplier</h3>
+        <form method="post">
+            {% csrf_token %}<input type="hidden" name="action" value="create">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div>
+                    <label style="font-size:13px;font-weight:600;">Account Name *</label>
+                    <input type="text" name="account_name" required style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:600;">Account Number</label>
+                    <input type="text" name="account_number" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div>
+                    <label style="font-size:13px;font-weight:600;">TIN</label>
+                    <input type="text" name="tin" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:600;">Status</label>
+                    <select name="status" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="blacklisted">Blacklisted</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom:18px;">
+                <label style="font-size:13px;font-weight:600;">Address</label>
+                <textarea name="address" rows="3" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('addModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Add Supplier</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div id="editModal" style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(15,23,42,0.58); align-items:center; justify-content:center; padding:16px;">
+    <div style="background:white; border-radius:16px; padding:24px; width:760px; max-width:98vw; max-height:92vh; overflow:auto; box-shadow:0 24px 60px rgba(15,23,42,0.28);">
+        <h3 style="margin-bottom:18px; font-size:16px;"><i class="fas fa-pen"></i> Edit Supplier</h3>
+        <form method="post">
+            {% csrf_token %}<input type="hidden" name="action" value="edit"><input type="hidden" name="sup_id" id="editSupId">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div>
+                    <label style="font-size:13px;font-weight:600;">Account Name *</label>
+                    <input type="text" name="account_name" id="editName" required style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:600;">Account Number</label>
+                    <input type="text" name="account_number" id="editAccNum" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                </div>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+                <div>
+                    <label style="font-size:13px;font-weight:600;">TIN</label>
+                    <input type="text" name="tin" id="editTin" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                </div>
+                <div>
+                    <label style="font-size:13px;font-weight:600;">Status</label>
+                    <select name="status" id="editStatus" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="blacklisted">Blacklisted</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-bottom:18px;">
+                <label style="font-size:13px;font-weight:600;">Address</label>
+                <textarea name="address" id="editAddr" rows="3" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('editModal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-check"></i> Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function editSup(id, accNum, name, addr, tin, status) {
+    document.getElementById('editSupId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editAccNum').value = accNum;
+    document.getElementById('editAddr').value = addr;
+    document.getElementById('editTin').value = tin;
+    document.getElementById('editStatus').value = status;
+    document.getElementById('editModal').style.display = 'flex';
+}
+</script>
+{% endblock %}

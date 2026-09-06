@@ -1,0 +1,1094 @@
+<style>
+    .supplier-modal-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 5000;
+        background: rgba(15, 23, 42, 0.58);
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+    }
+
+    .supplier-modal {
+        width: min(1120px, 100%);
+        max-height: 92vh;
+        overflow: auto;
+        background: #fff;
+        border-radius: 18px;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .supplier-modal-head {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        background: linear-gradient(135deg, #0f3d2e, #17563d);
+        color: #fff;
+    }
+
+    .supplier-modal-head h3 {
+        margin: 0;
+        font-size: 18px;
+    }
+
+    .supplier-modal-body {
+        padding: 22px;
+    }
+
+    .supplier-section {
+        margin-bottom: 18px;
+        padding: 16px;
+        border: 1px solid #e5eaf0;
+        border-radius: 14px;
+        background: #fbfdff;
+    }
+
+    [data-theme="dark"] .supplier-modal {
+        background: #111827 !important;
+        border-color: #1f2937 !important;
+        color: #f8fafc !important;
+    }
+
+    [data-theme="dark"] .supplier-section {
+        background: #111827 !important;
+        border-color: #1f2937 !important;
+    }
+
+    [data-theme="dark"] .supplier-section h4,
+    [data-theme="dark"] .supplier-field label {
+        color: #f8fafc !important;
+    }
+
+    .supplier-section h4 {
+        margin: 0 0 14px;
+        font-size: 14px;
+        color: #163c2a;
+    }
+
+    .supplier-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 18px;
+    }
+
+    .supplier-actions .btn,
+    #supplierSubmitBtn {
+        padding: 9px 20px !important;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        transition: all 0.2s ease !important;
+        cursor: pointer !important;
+    }
+
+    .supplier-actions .btn-primary,
+    #supplierSubmitBtn {
+        background: linear-gradient(135deg, #15803d, #166534) !important;
+        color: #ffffff !important;
+        border: 1px solid #14532d !important;
+        box-shadow: 0 3px 10px rgba(22, 101, 52, 0.3) !important;
+    }
+
+    .supplier-actions .btn-primary:hover,
+    #supplierSubmitBtn:hover {
+        background: linear-gradient(135deg, #166534, #14532d) !important;
+        box-shadow: 0 5px 14px rgba(22, 101, 52, 0.45) !important;
+        transform: translateY(-1px);
+    }
+
+    .supplier-actions .btn-secondary {
+        background: #6b7280 !important;
+        color: #ffffff !important;
+        border: 1px solid #4b5563 !important;
+    }
+
+    .supplier-actions .btn-secondary:hover {
+        background: #4b5563 !important;
+        transform: translateY(-1px);
+    }
+
+    html[data-theme="dark"] .supplier-actions .btn-primary,
+    html[data-theme="dark"] #supplierSubmitBtn,
+    html.dark-mode .supplier-actions .btn-primary,
+    html.dark-mode #supplierSubmitBtn,
+    [data-theme="dark"] .supplier-actions .btn-primary,
+    [data-theme="dark"] #supplierSubmitBtn {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: #ffffff !important;
+        border: 1px solid #34d399 !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    html[data-theme="dark"] .supplier-actions .btn-primary:hover,
+    html[data-theme="dark"] #supplierSubmitBtn:hover,
+    html.dark-mode .supplier-actions .btn-primary:hover,
+    html.dark-mode #supplierSubmitBtn:hover,
+    [data-theme="dark"] .supplier-actions .btn-primary:hover,
+    [data-theme="dark"] #supplierSubmitBtn:hover {
+        background: linear-gradient(135deg, #059669, #047857) !important;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.6) !important;
+    }
+
+    html[data-theme="dark"] .supplier-actions .btn-secondary,
+    html.dark-mode .supplier-actions .btn-secondary,
+    [data-theme="dark"] .supplier-actions .btn-secondary {
+        background: #4b5563 !important;
+        color: #ffffff !important;
+        border: 1px solid #6b7280 !important;
+    }
+
+    html[data-theme="dark"] .supplier-actions .btn-secondary:hover,
+    html.dark-mode .supplier-actions .btn-secondary:hover,
+    [data-theme="dark"] .supplier-actions .btn-secondary:hover {
+        background: #374151 !important;
+    }
+
+    .supplier-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .supplier-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .supplier-grid-4 {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .supplier-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .supplier-field label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink);
+    }
+
+    .supplier-field input,
+    .supplier-field select,
+    .supplier-field textarea {
+        width: 100%;
+        padding: 9px 12px;
+        border: 1px solid #d6dde7;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .supplier-field input.auto-readonly,
+    .supplier-field input.auto-readonly:focus,
+    .supplier-field input.auto-readonly:active,
+    .supplier-field input:disabled,
+    .supplier-field select:disabled {
+        pointer-events: none;
+        user-select: none;
+        background: #f8fafc;
+        cursor: default;
+    }
+
+    .code-noc-inline-preview {
+        min-height: 42px;
+        padding: 10px 12px;
+        border: 1px dashed #c9d3e1;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #163c2a;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+    }
+
+    #toggleOtherDetailsBtn {
+        width: auto;
+        min-width: 70px;
+        padding: 6px 14px;
+        white-space: nowrap;
+    }
+
+    .supplier-field textarea {
+        resize: vertical;
+        min-height: 90px;
+    }
+
+    .supplier-control-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .supplier-control-row input,
+    .supplier-control-row select {
+        flex: 1;
+    }
+
+    .supplier-control-row select {
+        max-width: 220px;
+    }
+
+    @media (max-width: 900px) {
+
+        .supplier-grid,
+        .supplier-grid-3,
+        .supplier-grid-4 {
+            grid-template-columns: 1fr;
+        }
+
+        .supplier-control-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .supplier-control-row select {
+            max-width: none;
+        }
+    }
+    .supplier-grid-4{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:12px;
+}
+
+@media (max-width:900px){
+    .supplier-grid-4{
+        grid-template-columns:1fr;
+    }
+}
+.gross-center {
+    grid-column: 2 / span 2;
+}
+
+.gross-normal {
+    grid-column: 3 / span 2;
+}
+</style>
+
+<div id="supplierModal" class="supplier-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="supplier-modal">
+        <div class="supplier-modal-head">
+            <h3 id="supplierModalTitle"><i class="fas fa-plus"></i> Add Supplier</h3>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="closeSupplierModal()"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <div class="supplier-modal-body">
+            <form method="post" id="supplierForm" data-tax1-rate="{{ tax_1_rate|default:'5%/3%' }}"
+                data-tax2-rate="{{ tax_2_rate|default:'2%/1%' }}">
+                {% csrf_token %}
+                <input type="hidden" name="action" id="supplierAction" value="create">
+                <input type="hidden" name="sup_id" id="supplierId" value="">
+
+<div class="supplier-section">
+    <h4>Registry Details</h4>
+
+    <!-- TOP ROW -->
+    <div class="supplier-grid-4">
+
+        <div class="supplier-field" style="grid-column: span 2;">
+            <label>Check Serial</label>
+            <input type="text"
+                   name="check_serial"
+                   id="fieldCheckSerial"
+                   placeholder="Auto-generated, editable"
+                   autocomplete="off">
+        </div>
+
+        <div class="supplier-field" style="grid-column: span 2;">
+            <label>Date</label>
+            <input type="date"
+                   name="date"
+                   id="fieldDate"
+                   class="auto-readonly"
+                   readonly
+                   aria-readonly="true"
+                   tabindex="-1">
+        </div>
+
+    </div>
+
+    <!-- SECOND ROW -->
+    <div class="supplier-grid-4" style="margin-top:12px;">
+
+        <div class="supplier-field">
+            <label>Payee *</label>
+
+            <input type="text"
+                   name="payee"
+                   id="fieldPayee"
+                   list="payeeChoices"
+                   required
+                   placeholder="Type or select payee...">
+
+            <datalist id="payeeChoices">
+                {% for payee_name in payee_choices %}
+                <option value="{{ payee_name|escape }}"></option>
+                {% endfor %}
+            </datalist>
+        </div>
+
+        <div class="supplier-field">
+            <label>Account Title</label>
+
+            <input type="text"
+                   name="account_title"
+                   id="fieldAccountTitle"
+                   list="accountTitleChoices"
+                   required
+                   onchange="autoFillUacsFromTitle(this)"
+                   placeholder="Type or select account title..."
+                   autocomplete="off">
+
+            <datalist id="accountTitleChoices">
+                {% for group in account_title_groups %}
+                    <option value="{{ group.name|escape }}"
+                            data-uacs="{{ group.uacs|default:'' }}">
+                    </option>
+                    {% for title in group.titles %}
+                        <option value="{{ title.value|escape }}"
+                                data-uacs="{{ title.uacs|default:'' }}">
+                        </option>
+                    {% endfor %}
+                {% endfor %}
+            </datalist>
+        </div>
+                <div class="supplier-field">
+            <label>UACS Object Code</label>
+            <input type="text"
+                   name="uacs"
+                   id="fieldUacsObjectCode"
+                   autocomplete="off">
+        </div>
+
+        <div class="supplier-field">
+            <label>Fund Cluster</label>
+
+            <select name="fund_cluster"
+                    id="fieldFundCluster"
+                    onchange="syncFundClusterId(this)">
+
+                <option value="" data-pk="">Select Fund Cluster</option>
+
+                {% for fc in fund_clusters %}
+                <option value="{{ fc.code|escape }}"
+                        data-pk="{{ fc.pk }}">
+                    {{ fc }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <input type="hidden"
+                   name="fund_cluster_id"
+                   id="fieldFundClusterId"
+                   value="">
+        </div>
+
+    </div>
+</div>
+
+<div class="supplier-section">
+    <h4>Payment Details</h4>
+
+    <div class="supplier-grid-4" style="margin-top:12px;">
+        <div class="supplier-field" style="grid-column: span 1;">
+            <label>DV/Payroll No.</label>
+            <input type="text" name="dv_payroll" id="fieldDvPayroll" autocomplete="off">
+        </div>
+        <div class="supplier-field" style="grid-column: span 1;">
+            <label>ORS/BURS No.</label>
+            <input type="text" name="ors_burs" id="fieldOrsBurs" autocomplete="off">
+        </div>
+        <div class="supplier-field" style="grid-column: span 2;">
+            <label>Responsibility Center Code</label>
+            <input type="text" name="responsibility_center" id="fieldResponsibilityCenter" autocomplete="off">
+        </div>
+    </div>
+
+    <div class="supplier-grid-4" style="margin-top:12px;">
+        <div class="supplier-field" style="grid-column: span 2;">
+            <label>Nature of Payments</label>
+            <input type="text" name="nature_of_payments" id="fieldNature">
+        </div>
+        <div class="supplier-field">
+            <label>Amount</label>
+            <input type="text" name="amount" id="fieldAmount" placeholder="₱0.00" autocomplete="off">
+        </div>
+        <div class="supplier-field" style="align-items:flex-start;">
+            <label>Tax Type</label>
+            <div style="display:flex; gap:12px; align-items:center;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:14px;">
+                    <input type="checkbox" name="is_vat" id="fieldIsVat"> VAT
+                </label>
+                <span style="font-size:13px; color:var(--muted);">Unchecked = Non VAT</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="supplier-grid-4" id="rowTaxesAndPro" style="margin-top:12px;">
+        <div class="supplier-field" id="containerTax5">
+            <label id="labelTax5">{{ tax_1_label|default:"Tax (5%/3%)" }}</label>
+            <input type="text" name="tax_5" id="fieldTax5" >
+
+        <!--<input type="text" name="tax_5" id="fieldTax5" class="auto-readonly" readonly>-->
+
+            <span style="font-size:11px; color:var(--muted);"> </span>
+        </div>
+        <div class="supplier-field" id="containerTax2">
+            <label id="labelTax2">{{ tax_2_label|default:"Tax (2%/1%)" }}</label>
+            <input type="text" name="tax_2" id="fieldTax2">
+
+<!--        <input type="text" name="tax_2" id="fieldTax2" class="auto-readonly" readonly>-->
+        
+            <span style="font-size:11px; color:var(--muted);"> </span>
+        </div>
+        <div class="supplier-field" id="containerProRate">
+            <label>Professional Tax</label>
+            <input type="number" name="professional_tax_rate" id="fieldProfessionalTaxRate" step="0.01" min="0" placeholder="0.00">
+        </div>
+        <div class="supplier-field" id="containerProAmount">
+            <label>Professional Tax Amount</label>
+            <input type="text" id="fieldProfessionalTaxAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00">
+            <input type="hidden" name="professional_tax" id="fieldProfessionalTax" value="0.00">
+        </div>
+    </div>
+
+    <div class="supplier-grid-4" id="rowGrossWrapper" style="margin-top:12px;">
+        <div class="supplier-field gross-center" id="grossWrapper" style="grid-column: 2 / span 2; text-align: center;">
+            <label style="text-align: center; display: block; width: 100%;">Gross Amount</label>
+            <input type="text" name="gross_amount" id="fieldGrossAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00" style="font-weight:700; text-align:center; font-size:15px;">
+            <input type="hidden" id="fieldCalculatedGross" name="calculated_gross" value="0.00">
+        </div>
+    </div>
+</div>
+
+
+                <div class="supplier-section">
+                    <h4>Other Details</h4>
+                    <div class="other-toggle" style="display:flex;align-items:center;gap:8px;margin:8px 0 12px;">
+                        <span class="other-line" style="flex:1;height:1px;background:#e5eaf0;"></span>
+                        <button type="button" id="toggleOtherDetailsBtn" aria-expanded="true"
+                            onclick="toggleOtherDetails()"
+                            style="background:#fff;border:1px solid #d6dde7;border-radius:14px;padding:4px 8px;width:36px;height:28px;">v</button>
+                        <span class="other-line" style="flex:1;height:1px;background:#e5eaf0;"></span>
+                    </div>
+                    <div id="otherDetailsBody">
+                        <div class="supplier-grid-4">
+                            <div class="supplier-field" style="grid-column: span 2;">
+                                <label>Approval</label>
+                                <input type="text" name="approval" id="fieldApproval" list="approvalChoices"
+                                    placeholder="Type or select approval...">
+                                <datalist id="approvalChoices">
+                                    {% for option in approval_options %}
+                                    <option value="{{ option|escape }}"></option>
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                            <div class="supplier-field">
+                                <label>Other Deductions</label>
+                                <input type="text" name="other_deductions" id="fieldOtherDeductions" placeholder="₱0.00" autocomplete="off">
+                            </div>
+                            <div class="supplier-field">
+                                <label>Status</label>
+                                <select name="status" id="fieldStatus">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="blacklisted">Blacklisted</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="supplier-grid-4" style="margin-top:12px;">
+                            <div class="supplier-field" style="grid-column: span 4;">
+                                <label>Remarks</label>
+                                <input type="text" name="remarks_text" id="fieldRemarksText" list="remarksChoices"
+                                    placeholder="Type or select remarks...">
+                                <datalist id="remarksChoices">
+                                    {% for option in remark_options %}
+                                    <option value="{{ option|escape }}"></option>
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+                        </div>
+                                <div class="supplier-field">
+            <label>Cashier</label>
+
+            <input type="text"
+                   id="fieldCashier"
+                   value="{{ cashier_full_name|default:request.user.get_full_name|default:request.user.username }}"
+                   readonly
+                   aria-readonly="true"
+                   tabindex="-1"
+                   class="auto-readonly">
+
+            <input type="hidden"
+                   name="cashier_name"
+                   id="fieldCashierHidden"
+                   value="{{ cashier_full_name|default:request.user.get_full_name|default:request.user.username }}">
+        </div>
+
+                    </div>
+                </div>
+
+                <div class="supplier-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="supplierSubmitBtn"><i class="fas fa-check"></i>
+                        Add Supplier</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const DEFAULT_SUPPLIER_VALUES = {
+        check_serial: '{{ auto_supplier_defaults.mr_or|default:""|escapejs }}',
+        or_number: '{{ auto_supplier_defaults.or_number|default:""|escapejs }}',
+        date: '{{ today_supplier_date|escapejs }}',
+        dv_payroll: '',
+        ors_burs: '',
+        responsibility_center: '',
+    };
+
+    function getCookie(n){var v=null;if(document.cookie){document.cookie.split(';').forEach(function(c){c=c.trim();if(c.startsWith(n+'='))v=decodeURIComponent(c.slice(n.length+1));});}return v;}
+
+    function computeDefaultSequences() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '{% url "next_supplier_sequences" %}', false);
+        xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.send();
+        if (xhr.status === 200) {
+            var data = JSON.parse(xhr.responseText);
+            DEFAULT_SUPPLIER_VALUES.check_serial = data.check_serial || DEFAULT_SUPPLIER_VALUES.check_serial;
+            DEFAULT_SUPPLIER_VALUES.dv_payroll = data.dv_payroll || '';
+            DEFAULT_SUPPLIER_VALUES.ors_burs = data.ors_burs || '';
+            DEFAULT_SUPPLIER_VALUES.responsibility_center = data.responsibility_center || DEFAULT_SUPPLIER_VALUES.responsibility_center;
+        }
+    }
+
+    function getLastTableValue(columnIndex) {
+        let lastValue = '';
+        const rows = document.querySelectorAll('#supplierTableBody tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length > columnIndex) {
+                const text = (cells[columnIndex]?.textContent || '').trim();
+                if (text && text !== '—' && text !== ' ') {
+                    lastValue = text;
+                }
+            }
+        });
+        return lastValue;
+    }
+
+    // Fallbacks: compute sensible defaults client-side when backend context is absent
+    (function () {
+        function pad2(n) { return (n < 10 ? '0' + n : String(n)); }
+        try {
+            const now = new Date();
+            const isoDate = now.toISOString().slice(0, 10);
+            if (!DEFAULT_SUPPLIER_VALUES.date) DEFAULT_SUPPLIER_VALUES.date = isoDate;
+
+            // fallback check serial when backend default is missing
+            if (!DEFAULT_SUPPLIER_VALUES.check_serial) {
+                const y = now.getFullYear();
+                const m = pad2(now.getMonth() + 1);
+                const d = pad2(now.getDate());
+                DEFAULT_SUPPLIER_VALUES.check_serial = `${y}${m}${d}`;
+            }
+
+            computeDefaultSequences();
+        } catch (e) {
+            // noop
+        }
+    })();
+
+    function setFieldValue(id, value) {
+        const field = document.getElementById(id);
+        if (field) field.value = value || '';
+    }
+
+    function escapeHtml(value) {
+        return String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    // Obsolete select-to-input binding and synchronization functions removed.
+
+    function parseNumber(value) {
+        const normalized = String(value || '').trim()
+            .replace(/,/g, '')
+            .replace(/₱/g, '')
+            .replace(/\u20B1/g, '')
+            .replace(/%/g, '');
+        const parsed = Number(normalized);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function formatAmount(value) {
+        const num = parseNumber(value).toFixed(2);
+        const parts = num.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return '₱' + parts.join('.');
+    }
+
+    function formatAmountHidden(value) {
+        return parseNumber(value).toFixed(2);
+    }
+
+    function roundHalfUp(value) {
+        return Math.round((Number(value) || 0) * 100 + 1e-9) / 100;
+    }
+
+
+    // --- 1. THE AUTO-CALCULATION LOGIC ---
+// Triggered when Amount or Pro Rate changes
+function updateAllTaxesAndGross() {
+    const isWithholdingChecked = document.getElementById('fieldIsVat')?.checked;
+    const amount = parseNumber(document.getElementById('fieldAmount')?.value);
+    const proRateVal = document.getElementById('fieldProfessionalTaxRate')?.value || '';
+
+    // A. Calculate Professional Tax (Always Independent)
+    let proRate = proRateVal.trim() !== '' ? parseNumber(proRateVal) / 100 : 0;
+    let proTax = roundHalfUp(amount * proRate);
+    
+    document.getElementById('fieldProfessionalTaxAmount').value = formatAmount(proTax);
+    document.getElementById('fieldProfessionalTax').value = formatAmountHidden(proTax);
+
+    // B. Calculate Withholding Taxes (Based on 1.06 Divisor)
+    if (isWithholdingChecked) {
+        let base = roundHalfUp(amount / 1.06);
+        let t1 = roundHalfUp(base * 0.05);
+        let t2 = roundHalfUp(base * 0.01);
+        
+        document.getElementById('fieldTax5').value = formatAmount(t1);
+        document.getElementById('fieldTax2').value = formatAmount(t2);
+    } else {
+        document.getElementById('fieldTax5').value = formatAmount(0);
+        document.getElementById('fieldTax2').value = formatAmount(0);
+    }
+
+    // C. Refresh the Gross
+    updateGrossOnly();
+}
+
+// --- 2. THE OVERRIDE LOGIC ---
+// Triggered when manually typing in Tax boxes, Other Deductions, or after Auto-Calc
+function updateGrossOnly() {
+    const amount = parseNumber(document.getElementById('fieldAmount')?.value);
+    const t1 = parseNumber(document.getElementById('fieldTax5')?.value);
+    const t2 = parseNumber(document.getElementById('fieldTax2')?.value);
+    const pro = parseNumber(document.getElementById('fieldProfessionalTaxAmount')?.value);
+    const other = parseNumber(document.getElementById('fieldOtherDeductions')?.value);
+
+    const finalGross = roundHalfUp(amount + t1 + t2 + pro + other);
+
+    document.getElementById('fieldGrossAmount').value = formatAmount(finalGross);
+    document.getElementById('fieldCalculatedGross').value = formatAmountHidden(finalGross);
+}
+
+// --- 3. EVENT LISTENER BINDING ---
+document.addEventListener('DOMContentLoaded', () => {
+    // These trigger full recalculation of taxes
+    document.getElementById('fieldAmount')?.addEventListener('input', updateAllTaxesAndGross);
+    document.getElementById('fieldProfessionalTaxRate')?.addEventListener('input', updateAllTaxesAndGross);
+    document.getElementById('fieldIsVat')?.addEventListener('change', toggleTaxFields);
+
+    // These ONLY update the Gross (Preserves your manual edits in the tax boxes)
+    ['fieldTax5', 'fieldTax2', 'fieldOtherDeductions'].forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem) {
+            elem.addEventListener('input', updateGrossOnly);
+            // Apply currency masking (₱ and commas) on blur
+            setupAmountFieldFocusBlur(id);
+        }
+    });
+    
+    // Apply masking to Amount field too
+    setupAmountFieldFocusBlur('fieldAmount');
+});
+
+
+
+
+
+function toggleTaxFields() {
+    const isWithholdingChecked = document.getElementById('fieldIsVat')?.checked;
+    const c1 = document.getElementById('containerTax5');
+    const c2 = document.getElementById('containerTax2');
+    
+    // Only hide the Withholding Tax containers. 
+    // DO NOT hide the Professional Tax containers.
+    if (c1) c1.style.display = isWithholdingChecked ? '' : 'none';
+    if (c2) c2.style.display = isWithholdingChecked ? '' : 'none';
+    
+    updateAllTaxesAndGross();
+}
+
+
+    function updateProfessionalTaxAmount() {
+        updateAllTaxesAndGross();
+    }
+
+    function toggleTaxFields() {
+        const isVat = document.getElementById('fieldIsVat')?.checked;
+        const c1 = document.getElementById('containerTax5');
+        const c2 = document.getElementById('containerTax2');
+        if (c1) c1.style.display = isVat ? '' : 'none';
+        if (c2) c2.style.display = isVat ? '' : 'none';
+        updateAllTaxesAndGross();
+    }
+
+    function updateTaxAmountsFromAmount() {
+        updateAllTaxesAndGross();
+    }
+
+    function updateGrossAmount() {
+        updateAllTaxesAndGross();
+    }
+
+    function syncAllTaxAndGross() {
+        toggleTaxFields();
+        updateAllTaxesAndGross();
+    }
+
+    // Obsolete attachPayeeSyncHandlers function removed.
+
+    function openSupplierModal(mode, trigger) {
+        const modal = document.getElementById('supplierModal');
+        const title = document.getElementById('supplierModalTitle');
+        const action = document.getElementById('supplierAction');
+        const submitBtn = document.getElementById('supplierSubmitBtn');
+
+        // Close any open Actions dropdown
+        document.querySelectorAll('.dropdown-menu, .actions-dropdown').forEach(el => {
+            el.style.display = 'none';
+            el.classList.remove('show');
+        });
+
+        if (mode === 'edit' && trigger) {
+            title.innerHTML = '<i class="fas fa-pen"></i> Edit Supplier';
+            action.value = 'edit';
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Save Changes';
+
+            setFieldValue('supplierId', trigger.dataset.id);
+            setFieldValue('fieldCheckSerial', trigger.dataset.mrOr);
+            setFieldValue('fieldOrNumber', trigger.dataset.orNumber);
+            setFieldValue('fieldDate', trigger.dataset.date);
+            setFieldValue('fieldPayee', trigger.dataset.payee);
+            setFieldValue('fieldNature', trigger.dataset.natureOfCollections);
+            setFieldValue('fieldAmount', formatAmount(trigger.dataset.amount));
+            setFieldValue('fieldDvPayroll', trigger.dataset.dvPayroll);
+            setFieldValue('fieldOrsBurs', trigger.dataset.orsBurs);
+            setFieldValue('fieldResponsibilityCenter', trigger.dataset.responsibilityCenter);
+            setFieldValue('fieldProfessionalTaxRate', trigger.dataset.professionalTaxRate);
+            setFieldValue('fieldProfessionalTax', formatAmountHidden(trigger.dataset.professionalTax));
+            setFieldValue('fieldProfessionalTaxAmount', formatAmount(trigger.dataset.professionalTax));
+            setFieldValue('fieldTax5', formatAmount(trigger.dataset.tax5));
+            setFieldValue('fieldTax2', formatAmount(trigger.dataset.tax2));
+            setFieldValue('fieldGrossAmount', formatAmount(trigger.dataset.grossAmount));
+            setFieldValue('fieldAccountTitle', trigger.dataset.accountTitle);
+            setFieldValue('fieldFundCluster', trigger.dataset.fundCluster);
+            setFieldValue('fieldFundClusterId', trigger.dataset.fundClusterId || '');
+            setFieldValue('fieldCashier', trigger.dataset.cashierName || '{{ cashier_full_name|escapejs }}');
+            setFieldValue('fieldCashierHidden', trigger.dataset.cashierName || '{{ cashier_full_name|escapejs }}');
+            setFieldValue('fieldApproval', trigger.dataset.approval || '');
+            setFieldValue('fieldOtherDeductions', formatAmount(trigger.dataset.otherDeductions));
+            setFieldValue('fieldUacsObjectCode', trigger.dataset.uacs);
+            const vatCheckbox = document.getElementById('fieldIsVat');
+            if (vatCheckbox) {
+                vatCheckbox.checked = String(trigger.dataset.isVat).toLowerCase() === 'true';
+            }
+            setFieldValue('fieldRemarksText', trigger.dataset.remarksText || trigger.dataset.remarks);
+            setFieldValue('fieldStatus', trigger.dataset.status || 'active');
+        } else {
+            title.innerHTML = '<i class="fas fa-plus"></i> Add Supplier';
+            action.value = 'create';
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Supplier';
+
+            // Compute fresh sequences from current table data
+            computeDefaultSequences();
+            setFieldValue('fieldCheckSerial', DEFAULT_SUPPLIER_VALUES.check_serial);
+            setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
+            setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
+            setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
+
+            setFieldValue('supplierId', '');
+            setFieldValue('fieldCheckSerial', DEFAULT_SUPPLIER_VALUES.check_serial);
+            setFieldValue('fieldOrNumber', DEFAULT_SUPPLIER_VALUES.or_number);
+            setFieldValue('fieldDate', DEFAULT_SUPPLIER_VALUES.date);
+            setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
+            setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
+            setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
+            setFieldValue('fieldNature', '');
+            setFieldValue('fieldPayee', '');
+            setFieldValue('fieldAmount', '');
+            setFieldValue('fieldUacsObjectCode', '');
+            setFieldValue('fieldProfessionalTaxRate', '');
+            setFieldValue('fieldProfessionalTax', '0.00');
+            setFieldValue('fieldProfessionalTaxAmount', formatAmount(0));
+            setFieldValue('fieldTax5', formatAmount(0));
+            setFieldValue('fieldTax2', formatAmount(0));
+            setFieldValue('fieldGrossAmount', formatAmount(0));
+            setFieldValue('fieldAccountTitle', '');
+            setFieldValue('fieldFundCluster', '');
+            setFieldValue('fieldFundClusterId', '');
+            setFieldValue('fieldCashier', '{{ cashier_full_name|escapejs }}');
+            setFieldValue('fieldCashierHidden', '{{ cashier_full_name|escapejs }}');
+            setFieldValue('fieldApproval', '');
+            setFieldValue('fieldOtherDeductions', formatAmount(0));
+            const vatCheckbox = document.getElementById('fieldIsVat');
+            if (vatCheckbox) {
+                vatCheckbox.checked = false;
+            }
+            setFieldValue('fieldRemarksText', '');
+            setFieldValue('fieldStatus', 'active');
+        }
+
+        syncAllTaxAndGross();
+
+        try { toggleOtherDetails(mode !== 'create'); } catch (e) { }
+
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeSupplierModal() {
+        const modal = document.getElementById('supplierModal');
+        if (!modal) return;
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    document.getElementById('supplierModal')?.addEventListener('click', function (event) {
+        if (event.target === this) closeSupplierModal();
+    });
+
+    function syncFundClusterId(sel) {
+        const hidden = document.getElementById('fieldFundClusterId');
+        if (!hidden) return;
+        if (sel.selectedIndex > 0) {
+            hidden.value = sel.options[sel.selectedIndex].getAttribute('data-pk') || '';
+        } else {
+            hidden.value = '';
+        }
+    }
+
+    function autoFillUacsFromTitle(inputElem) {
+        const uacsField = document.getElementById('fieldUacsObjectCode');
+        if (!uacsField) return;
+
+        const dataList = document.getElementById(inputElem.getAttribute('list'));
+        if (!dataList) return;
+
+        // Find the matching option in the datalist based on what the user typed/selected
+        const selectedOption = Array.from(dataList.options).find(opt => opt.value === inputElem.value);
+
+        if (selectedOption) {
+            const uacs = selectedOption.getAttribute('data-uacs') || '';
+            uacsField.value = uacs; // Auto-fill the matched UACS code
+        } else {
+            uacsField.value = ''; // Clear if the input doesn't match an existing option
+        }
+    }
+
+    ['fieldAmount', 'fieldProfessionalTaxRate', 'fieldOtherDeductions'].forEach(function (id) {
+        const field = document.getElementById(id);
+        if (!field) return;
+        const triggerUpdate = function () {
+            if (id === 'fieldAmount') {
+                updateTaxAmountsFromAmount();
+                updateProfessionalTaxAmount();
+            }
+            if (id === 'fieldProfessionalTaxRate') updateProfessionalTaxAmount();
+            updateGrossAmount();
+        };
+        field.addEventListener('input', triggerUpdate);
+        if (field.tagName === 'SELECT') {
+            field.addEventListener('change', triggerUpdate);
+        }
+    });
+
+    const vatCheckbox = document.getElementById('fieldIsVat');
+    if (vatCheckbox) {
+        vatCheckbox.addEventListener('change', function () {
+            toggleTaxFields();
+            updateTaxAmountsFromAmount();
+            updateGrossAmount();
+        });
+    }
+
+    function toggleOtherDetails(force) {
+        const body = document.getElementById('otherDetailsBody');
+        const btn = document.getElementById('toggleOtherDetailsBtn');
+        if (!body || !btn) return;
+        const isHidden = window.getComputedStyle(body).display === 'none';
+        const show = typeof force !== 'undefined' ? force : isHidden;
+        body.style.display = show ? '' : 'none';
+        // caret: 'v' when expanded, '^' when collapsed
+        btn.textContent = show ? 'HIDE' : 'SHOW';
+        btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+    }
+
+    function setupAmountFieldFocusBlur(id) {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        input.addEventListener('focus', function () {
+            let raw = this.value.replace(/,/g, '').replace(/₱/g, '').replace(/\u20B1/g, '').trim();
+            if (raw === '0.00' || raw === '0') {
+                this.value = '';
+            } else {
+                this.value = raw;
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            const num = parseNumber(this.value);
+            this.value = formatAmount(num);
+        });
+    }
+
+    ['fieldAmount', 'fieldOtherDeductions'].forEach(setupAmountFieldFocusBlur);
+
+    // Enhance datalist inputs to show all options on focus, restoring on blur/submit if not modified
+    const datalistInputs = ['fieldPayee', 'fieldApproval', 'fieldRemarksText', 'fieldAccountTitle'];
+    datalistInputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+
+        input.addEventListener('focus', function () {
+            if (!this.hasAttribute('data-orig-placeholder')) {
+                this.setAttribute('data-orig-placeholder', this.placeholder || '');
+            }
+            this.setAttribute('data-user-cleared', 'false');
+            if (this.value) {
+                this.setAttribute('data-last-val', this.value);
+                this.placeholder = this.value;
+                this.value = '';
+            }
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                this.setAttribute('data-user-cleared', 'true');
+            }
+        });
+
+        input.addEventListener('input', function () {
+            if (this.value === '') {
+                this.setAttribute('data-user-cleared', 'true');
+            }
+        });
+
+        input.addEventListener('blur', function () {
+            setTimeout(() => {
+                if (!this.value.trim() && this.getAttribute('data-user-cleared') !== 'true') {
+                    this.value = this.getAttribute('data-last-val') || '';
+                }
+                this.placeholder = this.getAttribute('data-orig-placeholder') || '';
+            }, 150);
+        });
+    });
+
+    document.getElementById('supplierForm')?.addEventListener('submit', function (e) {
+        datalistInputs.forEach(id => {
+            const input = document.getElementById(id);
+            if (input && !input.value.trim()) {
+                input.value = input.getAttribute('data-last-val') || '';
+            }
+        });
+
+        // Duplicate validation for create action
+        const action = document.getElementById('supplierAction')?.value;
+        if (action === 'create') {
+            const serial = document.getElementById('fieldCheckSerial')?.value.trim();
+            const dvPayroll = document.getElementById('fieldDvPayroll')?.value.trim();
+            const orsBurs = document.getElementById('fieldOrsBurs')?.value.trim();
+
+            const rows = document.querySelectorAll('#supplierTableBody tr');
+            for (const row of rows) {
+                const cells = row.querySelectorAll('td');
+                if (cells.length > 1) {
+                    const existingSerial = cells[1]?.textContent.trim();
+                    const existingDv = cells[3]?.textContent.trim();
+                    const existingOrs = cells[4]?.textContent.trim();
+
+                    if (serial && existingSerial && existingSerial === serial) {
+                        e.preventDefault();
+                        showDuplicateModal('Serial Number', serial);
+                        return false;
+                    }
+                    if (dvPayroll && existingDv && existingDv === dvPayroll) {
+                        e.preventDefault();
+                        showDuplicateModal('DV/Payroll No.', dvPayroll);
+                        return false;
+                    }
+                    if (orsBurs && existingOrs && existingOrs === orsBurs) {
+                        e.preventDefault();
+                        showDuplicateModal('ORS/BURS No.', orsBurs);
+                        return false;
+                    }
+                }
+            }
+        }
+    });
+
+    function showDuplicateModal(fieldName, value) {
+        let modal = document.getElementById('duplicateSerialModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'duplicateSerialModal';
+            modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;';
+            modal.innerHTML = `
+                <div style="background:#fff;border-radius:16px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
+                    <div style="padding:28px 32px;text-align:center;">
+                        <div style="width:64px;height:64px;border-radius:50%;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size:28px;color:#dc2626;"></i>
+                        </div>
+                        <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111827;">Duplicate Entry Found</h3>
+                        <p style="margin:0 0 6px;font-size:14px;color:#6b7280;">The <strong style="color:#111827;" id="dupFieldName"></strong> <strong style="color:#111827;" id="dupFieldValue"></strong> already exists in the system.</p>
+                        <p style="margin:0;font-size:13px;color:#9ca3af;">Please use a different value before saving.</p>
+                    </div>
+                    <div style="padding:0 32px 24px;text-align:center;">
+                        <button onclick="document.getElementById('duplicateSerialModal').style.display='none'" style="background:var(--nav);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;">OK, Got it</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        document.getElementById('dupFieldName').textContent = fieldName;
+        document.getElementById('dupFieldValue').textContent = value;
+        modal.style.display = 'flex';
+    }
+    function updateGrossLayout() {
+        const gross = document.getElementById('grossWrapper');
+        if (!gross) return;
+        gross.classList.add('gross-center');
+        gross.classList.remove('gross-normal');
+        gross.style.gridColumn = '2 / span 2';
+        gross.style.textAlign = 'center';
+    }
+</script>

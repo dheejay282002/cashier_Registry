@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAP System — Full System Flowchart</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f2f5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+  }
+  h1 { font-size: 24px; color: #1a1a2e; margin-bottom: 6px; }
+  h2 { font-size: 14px; color: #666; font-weight: 400; margin-bottom: 20px; }
+  .fc {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    padding: 30px;
+    overflow-x: auto;
+  }
+  svg text { font-family: 'Segoe UI', sans-serif; user-select: none; }
+  .legend { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #555; }
+  .ls { width: 28px; height: 18px; border: 2px solid #333; border-radius: 4px; }
+  .ls.o { border-radius: 50px; background: #e8f5e9; border-color: #2e7d32; }
+  .ls.d { transform: rotate(45deg); width: 16px; height: 16px; border-color: #e65100; background: #fff3e0; }
+  .ls.r { background: #e3f2fd; border-color: #1565c0; }
+  .ls.c { border-radius: 0 0 50% 50% / 0 0 30% 30%; background: #f3e5f5; border-color: #6a1b9a; }
+</style>
+</head>
+<body>
+<h1>Cashier and Payment (CAP) System — Registry</h1>
+<h2>Full System Flowchart — Login to Logout with All Modules</h2>
+
+<div class="fc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 3400" width="1100" height="3400">
+<defs>
+  <marker id="a" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#333"/></marker>
+  <marker id="ar" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#c62828"/></marker>
+  <marker id="ag" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2e7d32"/></marker>
+  <linearGradient id="dg" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" style="stop-color:#e1bee7"/><stop offset="100%" style="stop-color:#ce93d8"/>
+  </linearGradient>
+</defs>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 1: LOGIN                                                -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<ellipse cx="550" cy="40" rx="120" ry="30" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="550" y="45" text-anchor="middle" font-size="14" font-weight="bold" fill="#1b5e20">START</text>
+
+<line x1="550" y1="70" x2="550" y2="100" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<rect x="400" y="100" width="300" height="42" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="126" text-anchor="middle" font-size="13" fill="#0d47a1">Open Login Page</text>
+
+<line x1="550" y1="142" x2="550" y2="172" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<rect x="400" y="172" width="300" height="42" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="198" text-anchor="middle" font-size="12" fill="#0d47a1">Input Credentials (Username/Email + Password)</text>
+
+<line x1="550" y1="214" x2="550" y2="250" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<rect x="400" y="250" width="300" height="42" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="270" text-anchor="middle" font-size="12" fill="#0d47a1">Validate Credentials</text>
+<text x="550" y="284" text-anchor="middle" font-size="10" fill="#1976d2">auth_user + cashier_profile lookup</text>
+
+<line x1="550" y1="292" x2="550" y2="325" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- DECISION: Valid? -->
+<polygon points="550,325 630,370 550,415 470,370" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="367" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Valid</text>
+<text x="550" y="381" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Credentials?</text>
+
+<!-- NO → Show Error → Loop back -->
+<line x1="470" y1="370" x2="300" y2="370" stroke="#c62828" stroke-width="2"/>
+<line x1="300" y1="370" x2="300" y2="193" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"/>
+<line x1="300" y1="193" x2="398" y2="193" stroke="#c62828" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="380" y="363" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">No</text>
+<rect x="300" y="350" width="120" height="40" rx="6" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="360" y="374" text-anchor="middle" font-size="10" fill="#b71c1c">Show Error</text>
+
+<!-- YES -->
+<line x1="550" y1="415" x2="550" y2="450" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="562" y="438" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 2: DEVICE & SESSION CHECKS                              -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<rect x="400" y="450" width="300" height="42" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="470" text-anchor="middle" font-size="12" fill="#0d47a1">Check Device Block</text>
+<text x="550" y="484" text-anchor="middle" font-size="10" fill="#1976d2">cashier_userdevice.is_blocked</text>
+
+<line x1="550" y1="492" x2="550" y2="525" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<polygon points="550,525 630,570 550,615 470,570" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="567" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Device</text>
+<text x="550" y="581" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Blocked?</text>
+
+<!-- YES → Block login -->
+<line x1="630" y1="570" x2="750" y2="570" stroke="#c62828" stroke-width="2"/>
+<line x1="750" y1="570" x2="750" y2="60" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"/>
+<line x1="750" y1="60" x2="672" y2="60" stroke="#c62828" stroke-width="1.5"/>
+<line x1="672" y1="60" x2="672" y2="121" stroke="#c62828" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="685" y="563" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">Yes</text>
+<rect x="750" y="548" width="190" height="44" rx="6" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="845" y="567" text-anchor="middle" font-size="11" fill="#b71c1c">Device Blocked</text>
+<text x="845" y="582" text-anchor="middle" font-size="10" fill="#c62828">Cannot log in from this device</text>
+
+<!-- NO -->
+<line x1="550" y1="615" x2="550" y2="650" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="562" y="638" font-size="11" font-weight="bold" fill="#2e7d32">No</text>
+
+<rect x="400" y="650" width="300" height="42" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="670" text-anchor="middle" font-size="12" fill="#0d47a1">Check Active Session</text>
+<text x="550" y="684" text-anchor="middle" font-size="10" fill="#1976d2">cashier_profile.active_session_key</text>
+
+<line x1="550" y1="692" x2="550" y2="725" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<polygon points="550,725 640,770 550,815 460,770" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="767" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Session</text>
+<text x="550" y="781" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Active?</text>
+
+<!-- YES → Already logged in -->
+<line x1="640" y1="770" x2="750" y2="770" stroke="#c62828" stroke-width="2"/>
+<text x="685" y="763" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">Yes</text>
+<rect x="750" y="748" width="200" height="44" rx="6" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="850" y="767" text-anchor="middle" font-size="11" fill="#b71c1c">Block Login Attempt</text>
+<text x="850" y="782" text-anchor="middle" font-size="10" fill="#c62828">"Already logged in elsewhere"</text>
+
+<!-- NO -->
+<line x1="550" y1="815" x2="550" y2="850" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="562" y="838" font-size="11" font-weight="bold" fill="#2e7d32">No</text>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 3: FLAGS & MFA                                          -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<rect x="400" y="850" width="300" height="42" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="870" text-anchor="middle" font-size="12" fill="#0d47a1">Check Profile Flags</text>
+<text x="550" y="884" text-anchor="middle" font-size="10" fill="#1976d2">must_change_password, MFA, role</text>
+
+<line x1="550" y1="892" x2="550" y2="925" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<polygon points="550,925 640,970 550,1015 460,970" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="965" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">Must Change</text>
+<text x="550" y="979" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">Password?</text>
+
+<!-- YES → Change password -->
+<line x1="460" y1="970" x2="300" y2="970" stroke="#c62828" stroke-width="2"/>
+<line x1="300" y1="970" x2="300" y2="1010" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"/>
+<line x1="300" y1="1010" x2="398" y2="1010" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#ar)"/>
+<text x="375" y="963" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">Yes</text>
+<rect x="110" y="948" width="190" height="44" rx="6" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="205" y="967" text-anchor="middle" font-size="11" fill="#b71c1c">Change Password Form</text>
+<text x="205" y="982" text-anchor="middle" font-size="10" fill="#c62828">UPDATE auth_user.password</text>
+
+<!-- NO -->
+<line x1="550" y1="1015" x2="550" y2="1055" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="562" y="1040" font-size="11" font-weight="bold" fill="#2e7d32">No</text>
+
+<polygon points="550,1055 640,1100 550,1145 460,1100" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="1097" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">MFA</text>
+<text x="550" y="1111" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Enabled?</text>
+
+<!-- YES → Verify MFA -->
+<line x1="640" y1="1100" x2="750" y2="1100" stroke="#c62828" stroke-width="2"/>
+<text x="685" y="1093" text-anchor="middle" font-size="11" font-weight="bold" fill="#c62828">Yes</text>
+
+<rect x="750" y="1078" width="190" height="44" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="845" y="1097" text-anchor="middle" font-size="11" fill="#0d47a1">Verify MFA Code</text>
+<text x="845" y="1112" text-anchor="middle" font-size="10" fill="#1976d2">TOTP / Email OTP / Recovery</text>
+
+<line x1="845" y1="1122" x2="845" y2="1155" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<polygon points="845,1155 925,1200 845,1245 765,1200" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="845" y="1197" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">MFA</text>
+<text x="845" y="1211" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Valid?</text>
+
+<!-- NO → Retry -->
+<line x1="925" y1="1200" x2="945" y2="1200" stroke="#c62828" stroke-width="1.5"/>
+<line x1="945" y1="1200" x2="945" y2="1100" stroke="#c62828" stroke-width="1.5" stroke-dasharray="5,3"/>
+<line x1="945" y1="1100" x2="942" y2="1100" stroke="#c62828" stroke-width="1.5" marker-end="url(#ar)"/>
+
+<!-- YES → Continue -->
+<line x1="845" y1="1245" x2="845" y2="1280" stroke="#2e7d32" stroke-width="2"/>
+<line x1="845" y1="1280" x2="550" y2="1280" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="695" y="1273" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<!-- NO (MFA not enabled) → Continue -->
+<line x1="550" y1="1145" x2="550" y2="1280" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="562" y="1215" font-size="11" font-weight="bold" fill="#2e7d32">No</text>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 4: SESSION & ROLE ROUTING                               -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<rect x="400" y="1280" width="300" height="50" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="1300" text-anchor="middle" font-size="12" fill="#0d47a1">Create Session &amp; Track Device</text>
+<text x="550" y="1314" text-anchor="middle" font-size="10" fill="#1976d2">INSERT cashier_userdevice</text>
+<text x="550" y="1326" text-anchor="middle" font-size="10" fill="#1976d2">UPDATE cashier_profile.active_session_key</text>
+
+<line x1="550" y1="1330" x2="550" y2="1370" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<polygon points="550,1370 640,1415 550,1460 460,1415" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="1412" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Is Admin?</text>
+
+<!-- YES → Admin Dashboard -->
+<line x1="460" y1="1415" x2="300" y2="1415" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="375" y="1408" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+<rect x="110" y="1393" width="190" height="44" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="205" y="1412" text-anchor="middle" font-size="12" fill="#1b5e20">Admin Dashboard</text>
+<text x="205" y="1427" text-anchor="middle" font-size="10" fill="#2e7d32">Full access — all modules</text>
+
+<!-- NO → Is Cashier? -->
+<line x1="550" y1="1460" x2="550" y2="1495" stroke="#c62828" stroke-width="2" marker-end="url(#ar)"/>
+<text x="562" y="1483" font-size="11" font-weight="bold" fill="#c62828">No</text>
+
+<polygon points="550,1495 645,1545 550,1595 455,1545" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="1542" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Is Cashier?</text>
+
+<!-- YES → Cashier Dashboard -->
+<line x1="455" y1="1545" x2="300" y2="1545" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="370" y="1538" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+<rect x="110" y="1523" width="190" height="44" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="205" y="1542" text-anchor="middle" font-size="12" fill="#1b5e20">Cashier Dashboard</text>
+<text x="205" y="1557" text-anchor="middle" font-size="10" fill="#2e7d32">Cheques, Suppliers, RADAI</text>
+
+<!-- NO → Guest Dashboard -->
+<line x1="550" y1="1595" x2="550" y2="1630" stroke="#c62828" stroke-width="2" marker-end="url(#ar)"/>
+<text x="562" y="1618" font-size="11" font-weight="bold" fill="#c62828">No</text>
+<rect x="460" y="1630" width="180" height="44" rx="6" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="550" y="1649" text-anchor="middle" font-size="12" fill="#b71c1c">Guest Dashboard</text>
+<text x="550" y="1664" text-anchor="middle" font-size="10" fill="#c62828">Reports view only</text>
+
+<!-- Converge all dashboards to center -->
+<line x1="205" y1="1437" x2="205" y2="1710" stroke="#2e7d32" stroke-width="1.5"/>
+<line x1="205" y1="1567" x2="205" y2="1710" stroke="#2e7d32" stroke-width="1.5"/>
+<line x1="550" y1="1674" x2="550" y2="1710" stroke="#c62828" stroke-width="1.5"/>
+<line x1="205" y1="1710" x2="550" y2="1710" stroke="#333" stroke-width="1.5"/>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 5: DASHBOARD                                            -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<rect x="400" y="1710" width="300" height="50" rx="6" fill="#e8eaf6" stroke="#283593" stroke-width="2.5"/>
+<text x="550" y="1731" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a237e">System Dashboard</text>
+<text x="550" y="1748" text-anchor="middle" font-size="10" fill="#283593">Cheque stats, charts, alerts, fund balances</text>
+
+<line x1="550" y1="1760" x2="550" y2="1800" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 6: OPERATION SELECTION                                  -->
+<!-- Each YES branches left; each NO goes down to next decision.   -->
+<!-- All YES branches converge into a single vertical rail x=900   -->
+<!-- that flows down to the database.                              -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<!-- ── Cheques? ── -->
+<polygon points="550,1800 640,1850 550,1900 460,1850" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="1847" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Operation</text>
+<text x="550" y="1861" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">= Cheques?</text>
+
+<!-- YES → Cheques -->
+<line x1="460" y1="1850" x2="300" y2="1850" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="375" y="1843" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<rect x="50" y="1820" width="250" height="60" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="175" y="1842" text-anchor="middle" font-size="11" fill="#0d47a1">Cheque Operations</text>
+<text x="175" y="1857" text-anchor="middle" font-size="10" fill="#1976d2">Create / Edit / Print / Void</text>
+<text x="175" y="1870" text-anchor="middle" font-size="10" fill="#1976d2">Advance Status (Draft → Pending → Released)</text>
+
+<line x1="175" y1="1880" x2="175" y2="1920" stroke="#333" stroke-width="1.5" marker-end="url(#a)"/>
+
+<polygon points="175,1920 245,1960 175,2000 105,1960" fill="#fff3e0" stroke="#e65100" stroke-width="1.5"/>
+<text x="175" y="1956" text-anchor="middle" font-size="9" font-weight="bold" fill="#bf360c">Valid &amp;</text>
+<text x="175" y="1968" text-anchor="middle" font-size="9" font-weight="bold" fill="#bf360c">Non-Dup?</text>
+
+<!-- NO → Show Error → loop back to input -->
+<line x1="105" y1="1960" x2="30" y2="1960" stroke="#c62828" stroke-width="1.5"/>
+<line x1="30" y1="1960" x2="30" y2="1850" stroke="#c62828" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#ar)"/>
+<text x="68" y="1953" text-anchor="middle" font-size="9" font-weight="bold" fill="#c62828">No</text>
+
+<!-- YES → Save to DB -->
+<line x1="175" y1="2000" x2="175" y2="2070" stroke="#2e7d32" stroke-width="1.5" marker-end="url(#ag)"/>
+<text x="187" y="2035" font-size="9" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<!-- Cheques → converge rail x=900 -->
+<line x1="175" y1="2070" x2="900" y2="2070" stroke="#2e7d32" stroke-width="1.5"/>
+
+<!-- NO: Cheques? → Suppliers? -->
+<line x1="550" y1="1900" x2="550" y2="1940" stroke="#c62828" stroke-width="2" marker-end="url(#ar)"/>
+<text x="562" y="1925" font-size="11" font-weight="bold" fill="#c62828">No</text>
+
+<!-- ── Suppliers? ── -->
+<polygon points="550,1940 650,1990 550,2040 450,1990" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="1987" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Operation</text>
+<text x="550" y="2001" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">= Suppliers?</text>
+
+<!-- YES → Suppliers -->
+<line x1="450" y1="1990" x2="300" y2="1990" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="370" y="1983" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<rect x="50" y="1960" width="250" height="60" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="175" y="1982" text-anchor="middle" font-size="11" fill="#0d47a1">Supplier Operations</text>
+<text x="175" y="1997" text-anchor="middle" font-size="10" fill="#1976d2">Add / Edit / Delete / Import CSV</text>
+<text x="175" y="2010" text-anchor="middle" font-size="10" fill="#1976d2">Track TIN, Account #, Remarks</text>
+
+<!-- Suppliers → converge rail x=900 -->
+<line x1="175" y1="2020" x2="900" y2="2020" stroke="#2e7d32" stroke-width="1.5"/>
+
+<!-- NO: Suppliers? → RADAI? -->
+<line x1="550" y1="2040" x2="550" y2="2080" stroke="#c62828" stroke-width="2" marker-end="url(#ar)"/>
+<text x="562" y="2065" font-size="11" font-weight="bold" fill="#c62828">No</text>
+
+<!-- ── RADAI? ── -->
+<polygon points="550,2080 650,2130 550,2180 450,2130" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="2127" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Operation</text>
+<text x="550" y="2141" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">= RADAI?</text>
+
+<!-- YES → RADAI -->
+<line x1="450" y1="2130" x2="300" y2="2130" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="370" y="2123" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<rect x="50" y="2100" width="250" height="60" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="175" y="2122" text-anchor="middle" font-size="11" fill="#0d47a1">RADAI Operations</text>
+<text x="175" y="2137" text-anchor="middle" font-size="10" fill="#1976d2">Add / Edit / Delete / Import CSV</text>
+<text x="175" y="2150" text-anchor="middle" font-size="10" fill="#1976d2">ORS/BURS #, Responsibility Center</text>
+
+<!-- RADAI → converge rail x=900 -->
+<line x1="175" y1="2160" x2="900" y2="2160" stroke="#2e7d32" stroke-width="1.5"/>
+
+<!-- NO: RADAI? → Fund Clusters? -->
+<line x1="550" y1="2180" x2="550" y2="2220" stroke="#c62828" stroke-width="2" marker-end="url(#ar)"/>
+<text x="562" y="2205" font-size="11" font-weight="bold" fill="#c62828">No</text>
+
+<!-- ── Fund Clusters? ── -->
+<polygon points="550,2220 650,2270 550,2320 450,2270" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="2267" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">Operation =</text>
+<text x="550" y="2281" text-anchor="middle" font-size="10" font-weight="bold" fill="#bf360c">Fund Clusters?</text>
+
+<!-- YES → Fund Clusters -->
+<line x1="450" y1="2270" x2="300" y2="2270" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="370" y="2263" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<rect x="50" y="2245" width="250" height="50" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="175" y="2267" text-anchor="middle" font-size="11" fill="#0d47a1">Fund Cluster Operations</text>
+<text x="175" y="2282" text-anchor="middle" font-size="10" fill="#1976d2">View Balance / Add / Edit / Bank Info</text>
+
+<!-- Fund Clusters → converge rail x=900 -->
+<line x1="175" y1="2295" x2="900" y2="2295" stroke="#2e7d32" stroke-width="1.5"/>
+
+<!-- NO: Fund Clusters? → Reports? -->
+<line x1="550" y1="2320" x2="550" y2="2360" stroke="#c62828" stroke-width="2" marker-end="url(#ar)"/>
+<text x="562" y="2345" font-size="11" font-weight="bold" fill="#c62828">No</text>
+
+<!-- ── Reports? ── -->
+<polygon points="550,2360 640,2410 550,2460 460,2410" fill="#fff3e0" stroke="#e65100" stroke-width="2"/>
+<text x="550" y="2407" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">Operation</text>
+<text x="550" y="2421" text-anchor="middle" font-size="11" font-weight="bold" fill="#bf360c">= Reports?</text>
+
+<!-- YES → Reports -->
+<line x1="460" y1="2410" x2="300" y2="2410" stroke="#2e7d32" stroke-width="2" marker-end="url(#ag)"/>
+<text x="375" y="2403" text-anchor="middle" font-size="11" font-weight="bold" fill="#2e7d32">Yes</text>
+
+<rect x="50" y="2385" width="250" height="50" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="175" y="2407" text-anchor="middle" font-size="11" fill="#0d47a1">Generate Reports</text>
+<text x="175" y="2422" text-anchor="middle" font-size="10" fill="#1976d2">Cheque Summary / RADAI / Weekly / Monthly</text>
+
+<!-- Reports → converge rail x=900 -->
+<line x1="175" y1="2435" x2="900" y2="2435" stroke="#2e7d32" stroke-width="1.5"/>
+
+<!-- NO: Reports? → Admin Settings (default) -->
+<line x1="550" y1="2460" x2="550" y2="2510" stroke="#c62828" stroke-width="2" marker-end="url(#ar)"/>
+<text x="562" y="2490" font-size="11" font-weight="bold" fill="#c62828">No</text>
+
+<rect x="460" y="2510" width="180" height="50" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="550" y="2532" text-anchor="middle" font-size="11" fill="#0d47a1">Admin Settings</text>
+<text x="550" y="2547" text-anchor="middle" font-size="10" fill="#1976d2">Users / System / Backup / Audit</text>
+
+<!-- Admin Settings → converge rail x=900 -->
+<line x1="550" y1="2560" x2="900" y2="2560" stroke="#2e7d32" stroke-width="1.5"/>
+
+<!-- Converge rail: all YES branches flow down at x=900 -->
+<line x1="900" y1="2070" x2="900" y2="2020" stroke="#2e7d32" stroke-width="1.5"/>
+<line x1="900" y1="2020" x2="900" y2="2160" stroke="#2e7d32" stroke-width="1.5"/>
+<line x1="900" y1="2160" x2="900" y2="2295" stroke="#2e7d32" stroke-width="1.5"/>
+<line x1="900" y1="2295" x2="900" y2="2435" stroke="#2e7d32" stroke-width="1.5"/>
+<line x1="900" y1="2435" x2="900" y2="2560" stroke="#2e7d32" stroke-width="1.5"/>
+
+<!-- Rail → database -->
+<line x1="900" y1="2560" x2="900" y2="2650" stroke="#2e7d32" stroke-width="2"/>
+<line x1="900" y1="2650" x2="525" y2="2650" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 7: DATABASE                                             -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<g transform="translate(400, 2600)">
+  <path d="M0,25 Q0,0 50,0 L150,0 Q200,0 200,25 L200,55 Q200,80 150,80 L50,80 Q0,80 0,55 Z" fill="url(#dg)" stroke="#6a1b9a" stroke-width="2"/>
+  <ellipse cx="100" cy="25" rx="100" ry="25" fill="#e1bee7" stroke="#6a1b9a" stroke-width="2"/>
+  <text x="100" y="65" text-anchor="middle" font-size="12" font-weight="bold" fill="#4a148c">MySQL DATABASE</text>
+</g>
+
+<!-- Database tables -->
+<text x="525" y="2720" text-anchor="middle" font-size="10" fill="#6a1b9a">auth_user | cashier_profile | cashier_cheque | cashier_supplier</text>
+<text x="525" y="2735" text-anchor="middle" font-size="10" fill="#6a1b9a">cashier_radai | cashier_fundcluster | cashier_report | cashier_userdevice</text>
+<text x="525" y="2750" text-anchor="middle" font-size="10" fill="#6a1b9a">admin_panel_auditlog | admin_panel_systemsetting | django_session</text>
+
+<line x1="525" y1="2760" x2="525" y2="2800" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- PHASE 8: AUDIT & LOGOUT                                       -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+
+<rect x="375" y="2800" width="300" height="50" rx="6" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+<text x="525" y="2821" text-anchor="middle" font-size="12" fill="#1b5e20">Log Action — Audit Trail</text>
+<text x="525" y="2836" text-anchor="middle" font-size="10" fill="#2e7d32">INSERT INTO admin_panel_auditlog</text>
+
+<line x1="525" y1="2850" x2="525" y2="2890" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<rect x="375" y="2890" width="300" height="60" rx="6" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+<text x="525" y="2911" text-anchor="middle" font-size="12" fill="#0d47a1">End Session / Logout</text>
+<text x="525" y="2926" text-anchor="middle" font-size="10" fill="#1976d2">UPDATE profile SET status='resting'</text>
+<text x="525" y="2938" text-anchor="middle" font-size="10" fill="#1976d2">UPDATE userdevice SET is_terminated=True</text>
+<text x="525" y="2950" text-anchor="middle" font-size="10" fill="#1976d2">DELETE FROM django_session</text>
+
+<line x1="525" y1="2950" x2="525" y2="2990" stroke="#333" stroke-width="2" marker-end="url(#a)"/>
+
+<ellipse cx="525" cy="3020" rx="120" ry="30" fill="#ffebee" stroke="#c62828" stroke-width="2"/>
+<text x="525" y="3025" text-anchor="middle" font-size="14" font-weight="bold" fill="#b71c1c">END</text>
+
+</svg>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="ls o"></div> Start / End</div>
+  <div class="legend-item"><div class="ls r"></div> Process</div>
+  <div class="legend-item"><div class="ls d"></div> Decision (2 outputs: Yes / No)</div>
+  <div class="legend-item"><div class="ls c"></div> Database (MySQL)</div>
+  <div class="legend-item"><span style="color:#2e7d32;font-weight:bold;">--&gt;</span> Yes / Success</div>
+  <div class="legend-item"><span style="color:#c62828;font-weight:bold;">--&gt;</span> No / Error</div>
+</div>
+
+</body>
+</html>

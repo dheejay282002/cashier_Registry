@@ -1,0 +1,1014 @@
+{% extends 'base.html' %}
+{% block title %}{{ report.title }}{% endblock %}
+{% block nav_reports %}active{% endblock %}
+{% block content %}
+<style>
+    @media print {
+        .navbar,
+        .mini-sidebar,
+        .sidebar,
+        .overlay,
+        #rfidModal,
+        #rfidTestInput,
+        .no-print {
+            display: none !important;
+        }
+
+        .content {
+            margin: 0 !important;
+            padding: 10px !important;
+        }
+
+        body * {
+            visibility: hidden;
+        }
+
+        .print-only,
+        .print-only * {
+            visibility: visible;
+        }
+
+        .print-only {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            display: block !important;
+        }
+
+        .report-page-footer.print-only {
+            position: fixed !important;
+            bottom: 8mm !important;
+            top: auto !important;
+            left: 0 !important;
+            width: 100% !important;
+            text-align: center;
+            font-size: 11px;
+            color: #333;
+        }
+        .report-page-footer.print-only::after {
+            content: "Page " counter(page) " of " counter(pages);
+        }
+
+        .report-preview-modal.active {
+            display: block !important;
+            position: static !important;
+            background: transparent !important;
+            inset: auto !important;
+            z-index: auto !important;
+            padding: 0 !important;
+        }
+
+        .report-preview-card {
+            box-shadow: none !important;
+            border: none !important;
+            max-height: none !important;
+            width: 100% !important;
+        }
+
+        .report-preview-head {
+            display: none !important;
+        }
+
+        .report-preview-body {
+            padding: 0 !important;
+            overflow: visible !important;
+        }
+
+        .report-table-wrap {
+            overflow-x: visible !important;
+            width: auto !important;
+        }
+
+        @page {
+            margin: 8mm 8mm;
+        }
+    }
+
+    .report-page-footer.print-only {
+        display: none !important;
+    }
+
+    .report-preview-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.58);
+        z-index: 7000;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+    }
+
+    .report-preview-modal.active {
+        display: flex;
+    }
+
+    .report-preview-card {
+        background: #fff;
+        width: min(1200px, calc(100% - 32px));
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 14px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+    }
+
+    .report-preview-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 18px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .report-preview-body {
+        padding: 18px;
+        overflow: auto;
+        background: #fff;
+        flex: 1;
+    }
+
+    /* Screen Dark Mode Overrides */
+    @media screen {
+        [data-theme="dark"] .report-preview-card {
+            background: #111827 !important;
+            border-color: #1a1a1a !important;
+        }
+        [data-theme="dark"] .report-preview-body {
+            background: #050505 !important;
+            padding: 24px !important;
+        }
+        [data-theme="dark"] .report-preview-head {
+            border-bottom-color: #1a1a1a !important;
+            background: #111111 !important;
+        }
+        [data-theme="dark"] .report-preview-head h3,
+        [data-theme="dark"] .report-preview-head span {
+            color: #f8fafc !important;
+        }
+        [data-theme="dark"] .report-sheet {
+            background: #111827 !important;
+            color: #ffffff !important;
+            border-color: #1a1a1a !important;
+        }
+        [data-theme="dark"] .report-sheet *,
+        [data-theme="dark"] .report-sheet-title,
+        [data-theme="dark"] .report-sheet-period,
+        [data-theme="dark"] .report-sheet-appendix,
+        [data-theme="dark"] .report-meta-left,
+        [data-theme="dark"] .report-meta-right,
+        [data-theme="dark"] .report-meta-left *,
+        [data-theme="dark"] .report-meta-right *,
+        [data-theme="dark"] .report-meta-left .label,
+        [data-theme="dark"] .report-meta-right .label,
+        [data-theme="dark"] .report-meta-left .value,
+        [data-theme="dark"] .report-meta-right .value,
+        [data-theme="dark"] .report-cert-body,
+        [data-theme="dark"] .report-cert-body *,
+        [data-theme="dark"] .report-cert-title {
+            color: #ffffff !important;
+        }
+        [data-theme="dark"] .report-meta-left .value,
+        [data-theme="dark"] .report-meta-right .value {
+            border-bottom-color: #64748b !important;
+        }
+        [data-theme="dark"] .report-sheet th,
+        [data-theme="dark"] .report-sheet thead th {
+            background: #111111 !important;
+            color: #ffffff !important;
+            border-color: #222222 !important;
+        }
+        [data-theme="dark"] .report-sheet td {
+            background: #050505 !important;
+            color: #ffffff !important;
+            border-color: #1a1a1a !important;
+        }
+    }
+
+    .report-sheet {
+        background: #fff;
+        color: #000000;
+        width: 100%;
+        min-height: 100%;
+        padding: 6px 0 8px;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 12px;
+    }
+
+    .report-sheet-header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        margin-bottom: 8px;
+        color: #000000;
+    }
+
+    .report-sheet-titlewrap {
+        flex: 1;
+        text-align: center;
+        color: #000000;
+    }
+
+    .report-sheet-appendix {
+        font-style: italic;
+        font-size: 11px;
+        font-weight: 600;
+        text-align: right;
+        white-space: nowrap;
+        color: #000000;
+    }
+
+    .report-sheet-title {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        color: #000000;
+    }
+
+    .report-sheet-period {
+        font-size: 11px;
+        margin-top: 2px;
+        color: #000000;
+    }
+
+    .report-meta-grid {
+        display: grid;
+        grid-template-columns: 1.2fr 1.7fr;
+        gap: 1px;
+        align-items: start;
+        margin-top: 16px;
+        margin-bottom: 12px;
+    }
+
+    .report-meta-left,
+    .report-meta-right {
+        font-size: 12px;
+    }
+
+    .report-meta-left .row,
+    .report-meta-right .row {
+        display: flex;
+        gap: 1px;
+        align-items: baseline;
+        line-height: 1.1;
+        margin-bottom: 2px;
+    }
+
+    .report-meta-left .label,
+    .report-meta-right .label {
+        font-weight: 700;
+        white-space: nowrap;
+        flex: 0 0 100px;
+    }
+
+    .report-meta-left .value,
+    .report-meta-right .value {
+        display: inline-block;
+        flex: 0 0 auto;
+        min-height: 14px;
+        border-bottom: 1px solid #444;
+        padding-left: 2px;
+        padding-right: 2px;
+        min-width: 40px;
+        max-width: 520px;
+    }
+
+    .report-meta-right {
+        justify-self: end;
+        text-align: left;
+        width: 400px;
+    }
+
+    .report-table-wrap {
+        margin-top: 8px;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+        white-space: nowrap;
+    }
+
+    .report-table th,
+    .report-table td {
+        border: 1px solid #222;
+        padding: 4px 6px;
+        font-size: 10px;
+        line-height: 1.1;
+        vertical-align: middle;
+        text-align: center;
+    }
+
+    td.wrap-text {
+        white-space: normal !important;
+        word-break: break-word;
+        min-width: 150px;
+        max-width: 300px;
+    }
+
+    .report-table thead tr:first-child th {
+        background: #e5e7eb;
+        color: #000;
+        text-align: center;
+        font-weight: 700;
+    }
+
+    .report-table thead tr:nth-child(2) th {
+        background: #f3f4f6;
+        color: #000;
+        text-align: center;
+        font-weight: 700;
+    }
+
+    .table-wrap {
+        width: 100%;
+        overflow-x: auto;
+        box-sizing: border-box;
+        max-width: calc(100% - 96px);
+        margin-left: 72px;
+    }
+
+    .table-wrap table {
+        min-width: max-content;
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table-wrap td,
+    .table-wrap th {
+        border: 1px solid var(--line);
+        padding: 8px 12px;
+        font-size: 13px;
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .table-wrap thead tr:first-child th {
+        background: linear-gradient(135deg, #0f3d2e, #17563d);
+        color: #ffffff;
+        border-bottom: 2px solid #0b2f23;
+        text-align: center;
+    }
+
+    .table-wrap thead tr:nth-child(2) th {
+        background: #004629;
+        color: #fff;
+        font-size: 12px;
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .report-cert {
+        border: 1px solid #222;
+        margin-top: 18px;
+        padding: 18px 20px 12px;
+        min-height: 188px;
+        text-align: center;
+    }
+
+    .report-cert-title {
+        text-align: center;
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .report-cert-body {
+        text-align: center;
+        font-size: 12px;
+        line-height: 1.3;
+        max-width: 860px;
+        margin: 0 auto;
+    }
+
+    .report-cert-sign {
+        margin-top: 34px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .report-cert-sign .name {
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: underline;
+        line-height: 1.1;
+    }
+
+    .report-cert-sign .role {
+        font-size: 11px;
+        line-height: 1.2;
+    }
+
+    .report-cert-sign>div {
+        text-align: center;
+    }
+
+    body.desktop-nav-expanded .table-wrap {
+        margin-left: 232px;
+        max-width: calc(100% - 232px);
+    }
+
+    {% if current_profile.role == 'guest' %}
+    @media print {
+        body {
+            display: none !important;
+        }
+    }
+    {% endif %}
+</style>
+
+<div class="no-print page-header">
+    <h2><i class="fas fa-file-alt"></i> {{ report.title }}</h2>
+    <div style="display:flex; gap:8px;">
+        {% if can_print %}
+        <button type="button" onclick="openReportPreviewModal()" class="btn btn-secondary btn-sm">
+            <i class="fas fa-print"></i> Print
+        </button>
+        {% endif %}
+        <a href="{% url 'reports' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+    </div>
+</div>
+
+
+{% if report.notes %}
+<div style="background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:12px 16px; margin-bottom:20px;">
+    <div style="font-size:12px; font-weight:700; color:var(--muted); margin-bottom:4px;">NOTES</div>
+    <div style="font-size:14px;">{{ report.notes }}</div>
+</div>
+{% endif %}
+
+{% if table_rows %}
+<template id="report-template">
+    {% if report.report_type == 'cheque_summary' %}
+    <div class="report-sheet">
+        <div class="report-sheet-header-container">
+            <div style="width: 80px;" aria-hidden="true"></div>
+            <div class="report-sheet-titlewrap">
+                <div class="report-sheet-title">REPORTS OF CHECK ISSUED</div>
+                <div class="report-sheet-period">
+                    Period Covered: {{ period_covered }}
+                </div>
+            </div>
+            <div class="report-sheet-appendix">Appendix 35</div>
+        </div>
+
+        <div class="report-meta-grid">
+            <div class="report-meta-left">
+                <div class="row">
+                    <div class="label">Entity Name</div>
+                    <div class="value">{{ entity_name|default:'' }}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Fund Cluster</div>
+                    <div class="value">{{ data.fund_cluster_display|default:'' }}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Bank Account/No.</div>
+                    <div class="value" id="meta-account-number-cheque">{{ data.account_number|default:'' }}</div>
+                </div>
+            </div>
+            <div class="report-meta-right">
+                <div class="row">
+                    <div class="label">Report No.</div>
+                    <div class="value">{{ report.data_snapshot.report_no|default:report.pk }}</div>
+                </div>
+                <div class="row">
+                    <div class="label">No. Of Sheets</div>
+                    <div class="value"><span class="no-of-sheets-val">{{ sheet_count }}</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th colspan="2">Check</th>
+                        <th rowspan="2">DV/Payroll No.</th>
+                        <th rowspan="2">ORS/BURS No.</th>
+                        <th rowspan="2">Responsibility Center</th>
+                        <th rowspan="2">Payee</th>
+                        <th rowspan="2">UACS Object Code</th>
+                        <th rowspan="2">Nature of Payments</th>
+                        <th rowspan="2">Gross Amount</th>
+                        <th rowspan="2">Professional Tax</th>
+                        <th colspan="2">Tax</th>
+                        <th rowspan="2">Amount</th>
+                    </tr>
+                    <tr>
+                        <th>Check Date</th>
+                        <th>Serial No.</th>
+                        <th>5% / 3%</th>
+                        <th>2% / 1%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_rows %}
+                    <tr>
+                        {% for value in row %}
+                        <td class="{% if forloop.counter == 6 or forloop.counter == 8 %}wrap-text{% endif %}">
+                            {% if value == "" %} {% else %}{{ value }}{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    <tr class="nothing-follows-row">
+                        <td colspan="13" style="text-align:center; font-style:italic; font-weight:600; letter-spacing:0.1em; color:#4b5563; padding: 6px;">*** Nothing Follows ***</td>
+                    </tr>
+                    <tr style="background:#000; height:6px;">
+                        <td colspan="13" style="padding:0; border:none;"></td>
+                    </tr>
+                    <tr style="font-weight:700;">
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td style="text-align:right; font-weight:700;">Total:</td>
+                        <td id="calc-cheque-gross">0.00</td>
+                        <td id="calc-cheque-prof">0.00</td>
+                        <td id="calc-cheque-tax53">0.00</td>
+                        <td id="calc-cheque-tax21">0.00</td>
+                        <td id="calc-cheque-net">0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-cert">
+            <div class="report-cert-title">CERTIFICATION</div>
+            <div class="report-cert-body">
+                I hereby certify on my official oath that this Report of Checks issued in
+                <span id="cert-sheets-count">
+                    <span class="cert-sheet-val">
+                        {% if sheet_count == 1 %}one (1) sheet{% else %}{{ sheet_count }} sheets{% endif %}
+                    </span>
+                </span>
+                is a full, true and correct statement of all checks issued by me during the period stated above for
+                which Check No.
+                <strong><span class="cert-serial-display">___________</span></strong>
+                are inclusive were actually issued by me in payment of obligations shown in the attached disbursement
+                vouchers/payroll.
+            </div>
+            <div class="report-cert-sign">
+                <div>
+                    <div class="name">{{ certification_name }}</div>
+                    <div class="role">Name and Signature of Disbursing Officer/Cashier</div>
+                </div>
+        </div>
+        <div class="report-page-footer print-only"></div>
+    </div>
+    {% elif report.report_type == 'supplier_summary' %}
+    <div class="report-sheet">
+        <div class="report-sheet-titlewrap">
+            <div class="report-sheet-title">{{ report.get_report_type_display }}</div>
+            <div class="report-sheet-period">
+                Period Covered: {{ period_covered }}
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th colspan="2">Check</th>
+                        <th rowspan="2">DV/Payroll No.</th>
+                        <th rowspan="2">ORS/BURS No.</th>
+                        <th rowspan="2">Responsibility Center</th>
+                        <th rowspan="2">Payee</th>
+                        <th rowspan="2">UACS Object Code</th>
+                        <th rowspan="2">Nature of Payments</th>
+                        <th rowspan="2">Gross Amount</th>
+                        <th rowspan="2">Professional Tax</th>
+                        <th colspan="2">Tax</th>
+                        <th rowspan="2">Amount</th>
+                    </tr>
+                    <tr>
+                        <th>Check Date</th>
+                        <th>Serial No.</th>
+                        <th>5% / 3%</th>
+                        <th>2% / 1%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_rows %}
+                    <tr>
+                        {% for value in row %}
+                        <td class="{% if forloop.counter == 9 or forloop.counter == 13 or forloop.counter == 15 %}wrap-text{% endif %}">
+                            {% if value == "" %} {% else %}{{ value }}{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    <tr class="nothing-follows-row">
+                        <td colspan="13" style="text-align:center; font-style:italic; font-weight:600; padding:6px;">*** Nothing Follows ***</td>
+                    </tr>
+                    <tr style="font-weight:700; background:#f8fafc;">
+                        <td colspan="8" style="text-align:right; font-weight:700; padding:6px;">Total:</td>
+                        <td id="calc-supplier-gross">0.00</td>
+                        <td id="calc-supplier-prof">0.00</td>
+                        <td id="calc-supplier-tax53">0.00</td>
+                        <td id="calc-supplier-tax21">0.00</td>
+                        <td id="calc-supplier-net">0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% elif report.report_type == 'radai_summary' %}
+    {% with data=data %}
+    <div class="report-sheet">
+        <div class="report-sheet-header-container">
+            <div style="width: 80px;" aria-hidden="true"></div>
+            <div class="report-sheet-titlewrap">
+                <div class="report-sheet-title">REPORT OF ADVICE TO DEBIT ACCOUNT ISSUED{% if data.payee %} - {{ data.payee }}{% endif %}</div>
+                <div class="report-sheet-period">
+                    Period Covered: {{ period_covered }}
+                </div>
+            </div>
+            <div class="report-sheet-appendix">Appendix 13</div>
+        </div>
+
+        <div class="report-meta-grid">
+            <div class="report-meta-left">
+                <div class="row">
+                    <div class="label">Entity Name</div>
+                    <div class="value">{{ entity_name|default:'' }}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Fund Cluster</div>
+                    <div class="value">{{ data.fund_cluster_display|default:'' }}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Bank Account/No.</div>
+                    <div class="value" id="meta-account-number-radai">{{ data.bank_account|default:'' }}</div>
+                </div>
+            </div>
+            <div class="report-meta-right">
+                <div class="row">
+                    <div class="label">Report No.</div>
+                    <div class="value">{{ report.generated_at|date:"Y-m" }}</div>
+                </div>
+                <div class="row">
+                    <div class="label">Sheet No.</div>
+                    <div class="value">1 of {{ data.sheet_count|default:1 }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th colspan="2">ADA</th>
+                        <th rowspan="2">DV/Payroll No.</th>
+                        <th rowspan="2">ORS/BURS No. | Responsibility Center Code</th>
+                        <th rowspan="2">Payee</th>
+                        <th rowspan="2">UACS Object Code</th>
+                        <th rowspan="2">Nature of Payment</th>
+                        <th rowspan="2">Amount</th>
+                    </tr>
+                    <tr>
+                        <th>Date</th>
+                        <th>Serial No.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_rows %}
+                    <tr>
+                        {% for value in row %}
+                        <td class="{% if forloop.counter == 5 %}wrap-text{% endif %}">
+                            {% if value == "" %} {% else %}{{ value }}{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    <tr class="nothing-follows-row">
+                        <td colspan="8" style="text-align:center; font-style:italic; font-weight:600; letter-spacing:0.1em; color:#4b5563; padding: 6px;">*** Nothing Follows ***</td>
+                    </tr>
+                    <!--TOTAL-->
+                    <tr style="font-weight:700; background:#f8fafc;">
+                        <td colspan="7" style="text-align:right; font-weight:700; padding:6px;">Total:</td>
+                        <td id="calc-radai-total">0.00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-cert">
+            <div class="report-cert-title">CERTIFICATION</div>
+            <div class="report-cert-body">
+                I hereby certify on my official oath that the above is a true statement of all ADAs issued by me
+                during the period stated above for which ADA Nos.
+                <strong><span class="cert-serial-display">___________</span></strong>
+                inclusive, were actually issued by me in the amounts shown thereon.
+            </div>
+            <div class="report-cert-sign">
+                <div>
+                    <div class="name">{{ certification_name }}</div>
+                    <div class="role">Name and Signature of Disbursing Officer / Cashier</div>
+                </div>
+        </div>
+        <div class="report-page-footer print-only"></div>
+    </div>
+    {% endwith %}
+    {% endif %}
+</template>
+
+<div id="reportModal" class="report-preview-modal" aria-hidden="true">
+    <div class="report-preview-card">
+        <div class="report-preview-head no-print">
+            <div style="font-weight:700; color:#050505;">{{ report.get_report_type_display }} Preview</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" onclick="printReportFromModal()" class="btn btn-primary btn-sm">
+                    <i class="fas fa-print"></i> Print
+                </button>
+                <button type="button" onclick="closeReportModal()" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-times"></i> Close
+                </button>
+            </div>
+        </div>
+        <div id="reportModalBody" class="report-preview-body print-only"></div>
+    </div>
+</div>
+
+<div class="table-wrap no-print" style="margin-top:16px;">
+    <table>
+        <thead>
+            <tr>
+                {% if report.report_type == 'radai_summary' %}
+                <th colspan="2">ADA</th>
+                <th rowspan="2">DV/Payroll No.</th>
+                <th rowspan="2">ORS/BURS No.</th>
+                <th rowspan="2">Payee</th>
+                <th rowspan="2">UACS Object Code</th>
+                <th rowspan="2">Nature of Payment</th>
+                <th rowspan="2">Amount</th>
+                {% else %}
+                <th colspan="2">Check</th>
+                <th rowspan="2">DV/Payroll No.</th>
+                <th rowspan="2">ORS/BURS No.</th>
+                <th rowspan="2">Responsibility Center</th>
+                <th rowspan="2">Payee</th>
+                <th rowspan="2">UACS Object Code</th>
+                <th rowspan="2">Nature of Payments</th>
+                <th rowspan="2">Gross Amount</th>
+                <th rowspan="2">Professional Tax</th>
+                <th colspan="2">Tax</th>
+                <th rowspan="2">Amount</th>
+                {% endif %}
+            </tr>
+            <tr>
+                {% if report.report_type == 'radai_summary' %}
+                <th>Date</th>
+                <th>Serial No.</th>
+                {% else %}
+                <th>Check Date</th>
+                <th>Serial No.</th>
+                <th>5% / 3%</th>
+                <th>2% / 1%</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in table_rows %}
+            <tr>
+                {% for value in row %}
+                <td class="{% if report.report_type == 'cheque_summary' %}{% if forloop.counter == 6 or forloop.counter == 8 %}wrap-text{% endif %}{% elif report.report_type == 'supplier_summary' %}{% if forloop.counter == 9 or forloop.counter == 13 or forloop.counter == 15 %}wrap-text{% endif %}{% elif report.report_type == 'radai_summary' %}{% if forloop.counter == 5 %}wrap-text{% endif %}{% endif %}">
+                    {% if value == "" %} {% else %}{{ value }}{% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            {% if report.report_type == 'cheque_summary' %}
+            <tr style="background:#000; height:6px;">
+                <td colspan="13" style="padding:0; border:none;"></td>
+            </tr>
+            <tr style="font-weight:700;">
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td style="text-align:right; font-weight:700; padding:8px 12px;">Total:</td>
+                <td id="screen-cheque-gross">0.00</td>
+                <td id="screen-cheque-prof">0.00</td>
+                <td id="screen-cheque-tax53">0.00</td>
+                <td id="screen-cheque-tax21">0.00</td>
+                <td id="screen-cheque-net">0.00</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div style="text-align:center; padding:40px; color:var(--muted);">
+    <i class="fas fa-chart-bar" style="font-size:48px; margin-bottom:12px; opacity:0.3;"></i>
+    <p>No data available for this report period.</p>
+</div>
+{% endif %}
+
+<script>
+    function parseCurrencyValue(val) {
+        if (!val) return 0;
+        let clean = val.toString().replace(/[^0-9.-]/g, '');
+        let num = parseFloat(clean);
+        return isNaN(num) ? 0 : num;
+    }
+
+    function formatCurrencyValue(num) {
+        return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calculateModalTotals() {
+        const body = document.getElementById('reportModalBody');
+        if (!body) return;
+
+        // Clean up combined string variables to capture the raw Bank Account/Account No. sequence
+        const chequeAccField = body.querySelector('#meta-account-number-cheque');
+        if (chequeAccField && chequeAccField.textContent.includes('/')) {
+            chequeAccField.textContent = chequeAccField.textContent.split('/').pop().trim();
+        }
+
+        const radaiAccField = body.querySelector('#meta-account-number-radai');
+        if (radaiAccField && radaiAccField.textContent.includes('/')) {
+            radaiAccField.textContent = radaiAccField.textContent.split('/').pop().trim();
+        }
+
+        let chequeGross = 0, chequeProf = 0, chequeTax53 = 0, chequeTax21 = 0, chequeNet = 0;
+        let supGross = 0, supProf = 0, supTax53 = 0, supTax21 = 0, supNet = 0;
+        let radaiTotal = 0;
+
+        let activeSerials = [];
+
+        const rows = body.querySelectorAll('.report-table tbody tr');
+        rows.forEach(row => {
+            if (row.classList.contains('nothing-follows-row') || !row.querySelector('td')) return;
+            const cells = row.querySelectorAll('td');
+            
+            if (cells.length === 13) {
+                let serialText = cells[1].textContent.trim();
+                if (serialText) activeSerials.push(serialText);
+
+                if (document.getElementById('calc-cheque-gross')) {
+                    chequeGross += parseCurrencyValue(cells[8].textContent);
+                    chequeProf  += parseCurrencyValue(cells[9].textContent);
+                    chequeTax53 += parseCurrencyValue(cells[10].textContent);
+                    chequeTax21 += parseCurrencyValue(cells[11].textContent);
+                    chequeNet   += parseCurrencyValue(cells[12].textContent);
+                } 
+                else if (document.getElementById('calc-supplier-gross')) {
+                    supGross += parseCurrencyValue(cells[8].textContent);
+                    supProf  += parseCurrencyValue(cells[9].textContent);
+                    supTax53 += parseCurrencyValue(cells[10].textContent);
+                    supTax21 += parseCurrencyValue(cells[11].textContent);
+                    supNet   += parseCurrencyValue(cells[12].textContent);
+                }
+            } else if (cells.length === 8) {
+                let serialText = cells[1].textContent.trim();
+                if (serialText) activeSerials.push(serialText);
+
+                radaiTotal += parseCurrencyValue(cells[7].textContent);
+            }
+        });
+
+        const displaySpan = body.querySelector('.cert-serial-display');
+        if (displaySpan && activeSerials.length > 0) {
+            if (activeSerials.length === 1) {
+                displaySpan.textContent = activeSerials[0];
+            } else {
+                displaySpan.textContent = activeSerials[0] + ' to ' + activeSerials[activeSerials.length - 1];
+            }
+        }
+
+        if (document.getElementById('calc-cheque-gross')) {
+            document.getElementById('calc-cheque-gross').textContent = formatCurrencyValue(chequeGross);
+            document.getElementById('calc-cheque-prof').textContent  = formatCurrencyValue(chequeProf);
+            document.getElementById('calc-cheque-tax53').textContent = formatCurrencyValue(chequeTax53);
+            document.getElementById('calc-cheque-tax21').textContent = formatCurrencyValue(chequeTax21);
+            document.getElementById('calc-cheque-net').textContent   = formatCurrencyValue(chequeNet);
+        }
+        if (document.getElementById('calc-supplier-gross')) {
+            document.getElementById('calc-supplier-gross').textContent = formatCurrencyValue(supGross);
+            document.getElementById('calc-supplier-prof').textContent  = formatCurrencyValue(supProf);
+            document.getElementById('calc-supplier-tax53').textContent = formatCurrencyValue(supTax53);
+            document.getElementById('calc-supplier-tax21').textContent = formatCurrencyValue(supTax21);
+            document.getElementById('calc-supplier-net').textContent   = formatCurrencyValue(supNet);
+        }
+        if (document.getElementById('calc-radai-total')) {
+            document.getElementById('calc-radai-total').textContent = formatCurrencyValue(radaiTotal);
+        }
+    }
+
+    /* Populate the screen-view totals row for cheque_summary */
+    function calculateScreenTotals() {
+        var grossEl  = document.getElementById('screen-cheque-gross');
+        if (!grossEl) return; // not a cheque_summary page
+
+        var gross = 0, prof = 0, tax53 = 0, tax21 = 0, net = 0;
+        var screenTable = document.querySelector('.table-wrap table');
+        if (!screenTable) return;
+
+        screenTable.querySelectorAll('tbody tr').forEach(function(row) {
+            var cells = row.querySelectorAll('td');
+            if (cells.length !== 13) return; // skip totals row itself
+            gross += parseCurrencyValue(cells[8].textContent);
+            prof  += parseCurrencyValue(cells[9].textContent);
+            tax53 += parseCurrencyValue(cells[10].textContent);
+            tax21 += parseCurrencyValue(cells[11].textContent);
+            net   += parseCurrencyValue(cells[12].textContent);
+        });
+
+        document.getElementById('screen-cheque-gross').textContent = formatCurrencyValue(gross);
+        document.getElementById('screen-cheque-prof').textContent  = formatCurrencyValue(prof);
+        document.getElementById('screen-cheque-tax53').textContent = formatCurrencyValue(tax53);
+        document.getElementById('screen-cheque-tax21').textContent = formatCurrencyValue(tax21);
+        document.getElementById('screen-cheque-net').textContent   = formatCurrencyValue(net);
+    }
+
+    document.addEventListener('DOMContentLoaded', calculateScreenTotals);
+
+    /**
+     * Counts the actual print pages by cloning the modal content into a
+     * hidden container at print width (A4 landscape minus 8mm side margins = 281mm)
+     * and measuring the rendered height vs print page height.
+     * This correctly accounts for text-wrapping that occurs at narrower print widths.
+     */
+    function countPrintPages(contentEl) {
+        if (!contentEl) return 1;
+        var measurer = document.createElement('div');
+        measurer.style.cssText = [
+            'position:fixed',
+            'top:-99999px',
+            'left:-99999px',
+            'width:281mm',       /* A4 landscape 297mm - 8mm×2 side margins */
+            'height:auto',
+            'overflow:visible',
+            'visibility:hidden',
+            'pointer-events:none',
+            'background:white'
+        ].join(';');
+        var clone = contentEl.cloneNode(true);
+        clone.style.overflow = 'visible';
+        clone.style.maxHeight = 'none';
+        clone.style.padding = '0';
+        measurer.appendChild(clone);
+        document.body.appendChild(measurer);
+        var totalHeightPx = measurer.scrollHeight;
+        document.body.removeChild(measurer);
+        /* A4 landscape printable height: 210mm total − 8mm top − 8mm bottom = 194mm */
+        var printPageHeightPx = 194 * (96 / 25.4);
+        return Math.max(1, Math.ceil(totalHeightPx / printPageHeightPx));
+    }
+
+    function openReportPreviewModal() {
+        var modal = document.getElementById('reportModal');
+        var body = document.getElementById('reportModalBody');
+        var template = document.getElementById('report-template');
+        if (!modal || !body || !template) {
+            showToast('error', 'Unavailable', 'Preview modal is unavailable.');
+            return;
+        }
+        body.innerHTML = '';
+        body.appendChild(template.content.cloneNode(true));
+
+        /* Measure the real page count at print width and update the display */
+        var pageCount = countPrintPages(body);
+        var sheetsEl = body.querySelector('.no-of-sheets-val');
+        if (sheetsEl) sheetsEl.textContent = pageCount;
+        var certEl = body.querySelector('.cert-sheet-val');
+        if (certEl) certEl.textContent = pageCount === 1 ? 'one (1) sheet' : pageCount + ' sheets';
+
+        calculateModalTotals();
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeReportModal() {
+        var modal = document.getElementById('reportModal');
+        var body = document.getElementById('reportModalBody');
+        if (body) body.innerHTML = '';
+        if (modal) {
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    function printReportFromModal() {
+        window.print();
+    }
+</script>
+{% endblock %}

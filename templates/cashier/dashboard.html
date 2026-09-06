@@ -1,0 +1,538 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{% if is_guest %}Welcome{% else %}Cashier Dashboard{% endif %}{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block content %}
+
+{% if request.GET.welcome == '1' %}
+<div id="welcomeModal" style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:fadeIn 0.3s both;">
+    <div style="background:#fff;border-radius:24px;padding:48px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,0.25);animation:slideUp 0.4s cubic-bezier(0.16,1,0.3,1) both;">
+        <div style="position:relative;width:88px;height:88px;margin:0 auto 24px;">
+            <div style="width:88px;height:88px;border-radius:50%;{% if user.profile.totp_enabled and user.profile.email_otp_enabled %}border:2.5px solid #10b981;{% elif user.profile.totp_enabled or user.profile.email_otp_enabled %}border:2.5px solid #3b82f6;{% else %}border:2.5px solid #ef4444;{% endif %}overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.12);">
+                {% if user.profile.profile_picture %}
+                    <img src="{{ user.profile.profile_picture.url }}" alt="{{ user.username }}" style="width:100%;height:100%;object-fit:cover;">
+                {% else %}
+                    <span style="font-size:28px;font-weight:600;color:#fff;">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
+                {% endif %}
+            </div>
+            {% if user.profile.totp_enabled or user.profile.email_otp_enabled %}
+            <span style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:22px;height:22px;z-index:2;">
+                <img src="/media/system_assets/badge.png" alt="MFA" style="width:100%;height:100%;object-fit:contain;">
+            </span>
+            {% endif %}
+        </div>
+        <h2 style="font-size:24px;font-weight:800;color:#102218;margin:0 0 8px;">Welcome back, {{ user.get_full_name|default:user.username }}!</h2>
+        <p style="font-size:14px;color:#667085;margin:0 0 28px;line-height:1.6;">You're now signed in to your cashier dashboard. Ready to process transactions.</p>
+        <button onclick="document.getElementById('welcomeModal').remove();" style="padding:14px 40px;border:none;border-radius:12px;background:linear-gradient(135deg,#043107,#075618);color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(14,45,10,0.3);transition:all 0.2s;">Get Started</button>
+    </div>
+</div>
+<style>
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+</style>
+<script>
+(function() {
+    var url = new URL(window.location);
+    url.searchParams.delete('welcome');
+    window.history.replaceState({}, '', url);
+})();
+</script>
+{% endif %}
+<style>
+.dashboard-wrap { background:#fff; border-radius:18px; border:1px solid #e5eaf0; box-shadow:0 6px 18px rgba(15,23,42,0.04); padding:22px; }
+.dashboard-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; flex-wrap:wrap; gap:12px; }
+.dashboard-top h2 { font-size:1.125rem; font-weight:800; color:#102033; margin:0; }
+.dashboard-top p { font-size:0.8125rem; color:#64748b; margin:2px 0 0; }
+.stat-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:12px; margin-bottom:18px; }
+.stat-card { background:#fff; border:1px solid #e5eaf0; border-radius:14px; padding:18px 12px; box-shadow:0 6px 18px rgba(15,23,42,0.04); min-height:110px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; overflow:hidden; }
+.stat-card .stat-value { font-size:1.75rem; font-weight:800; line-height:1.1; color:#102033; }
+.stat-card .stat-label { margin:0; margin-top:6px; font-size:0.75rem; color:var(--muted); font-weight:700; line-height:1.3; text-transform:uppercase; }
+.stat-card .stat-meta { margin:0; margin-top:4px; font-size:0.6875rem; color:#667085; }
+.section-card { background:#fff; border:1px solid #e5eaf0; border-radius:16px; box-shadow:0 6px 18px rgba(15,23,42,0.04); overflow:hidden; }
+.section-card-head { padding:14px 18px; border-bottom:1px solid #eef2f6; display:flex; justify-content:space-between; align-items:center; }
+.section-card-head h3 { font-size:0.875rem; font-weight:800; color:#102033; margin:0; display:flex; align-items:center; }
+.section-card-body { padding:18px; }
+.alert-card { background:#fff; border-radius:12px; border:1px solid #e5eaf0; padding:14px 18px; margin-bottom:10px; display:flex; align-items:center; gap:12px; border-left:4px solid; }
+.alert-card:last-child { margin-bottom:0; }
+.alert-card i { font-size:18px; }
+.alert-card .alert-msg { font-size:0.8125rem; font-weight:600; flex:1; }
+.charts-row { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px; }
+.chart-card { background:#fff; border:1px solid #e5eaf0; border-radius:16px; box-shadow:0 6px 18px rgba(15,23,42,0.04); position:relative; z-index:1; min-width:0; overflow:hidden; }
+.chart-card-head { padding:14px 18px; border-bottom:1px solid #eef2f6; display:flex; justify-content:space-between; align-items:center; position:relative; z-index:2; }
+.chart-card-head h3 { font-size:0.875rem; font-weight:800; color:#102033; }
+.chart-card-body { padding:18px; display:flex; align-items:center; justify-content:center; position:relative; }
+.chart-empty { display:none; flex-direction:column; align-items:center; justify-content:center; padding:40px 20px; color:#94a3b8; text-align:center; width:100%; }
+.chart-empty i { font-size:2.25rem; margin-bottom:12px; opacity:0.5; }
+.chart-empty p { font-size:0.8125rem; font-weight:600; margin:0; }
+.period-btn { padding:5px 12px; border:none; border-radius:6px; background:transparent; color:#64748b; font-size:0.6875rem; font-weight:600; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.period-btn:hover { color:#222222; background:#e2e8f0; }
+.period-btn.active { background:#fff; color:#102033; box-shadow:0 1px 3px rgba(0,0,0,0.08); }
+.stale-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid #f1f5f9; }
+.stale-item:last-child { border-bottom:none; }
+.action-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+.action-card { background:#fff; border-radius:12px; border:1px solid #e5eaf0; padding:18px; text-align:center; text-decoration:none; color:var(--ink); transition:all 0.2s; }
+.action-card:hover { border-color:var(--nav); box-shadow:0 4px 12px rgba(25,66,20,0.12); transform:translateY(-2px); }
+.action-card i { font-size:22px; color:var(--nav); margin-bottom:8px; }
+.action-card span { font-size:0.8125rem; font-weight:600; }
+.guest-welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:72px 32px 80px; background:#fff; border-radius:20px; border:1px solid #e5eaf0; box-shadow:0 10px 40px rgba(15,23,42,0.07); }
+.guest-avatar { width:96px; height:96px; border-radius:50%; background:linear-gradient(135deg,#0e2d0a,#1a6630); display:flex; align-items:center; justify-content:center; font-size:42px; color:#fff; margin-bottom:28px; box-shadow:0 8px 24px rgba(14,45,10,0.22); }
+.guest-welcome h1 { font-size:28px; font-weight:800; color:#0f2218; margin-bottom:10px; }
+.guest-welcome p { font-size:15px; color:#667085; max-width:420px; line-height:1.7; margin-bottom:32px; }
+.guest-shortcut { display:inline-flex; align-items:center; gap:10px; padding:13px 28px; background:linear-gradient(135deg,#0e2d0a,#1a6630); color:#fff; border-radius:12px; font-size:14px; font-weight:700; text-decoration:none; }
+.guest-access-note { margin-top:24px; font-size:12px; color:#aab4be; }
+@media (max-width:1280px) { .stat-grid { grid-template-columns:repeat(4,1fr); } }
+@media (max-width:768px) { .stat-grid, .charts-row, .action-grid { grid-template-columns:1fr; } }
+
+/* Dark Mode Master Overrides for Cashier Dashboard */
+html[data-theme="dark"] .dashboard-wrap {
+    background: #090d16 !important;
+    border-color: #1a1a1a !important;
+}
+
+html[data-theme="dark"] .dashboard-top h2 {
+    color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .dashboard-top p {
+    color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .stat-card {
+    background: #111827 !important;
+    border-color: #1a1a1a !important;
+}
+
+html[data-theme="dark"] .stat-card .stat-value {
+    color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .stat-card .stat-label {
+    color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .section-card,
+html[data-theme="dark"] .chart-card,
+html[data-theme="dark"] .alert-card {
+    background: #111827 !important;
+    border-color: #1a1a1a !important;
+}
+
+html[data-theme="dark"] .section-card-head,
+html[data-theme="dark"] .chart-card-head {
+    border-bottom-color: #1a1a1a !important;
+}
+
+html[data-theme="dark"] .section-card-head h3,
+html[data-theme="dark"] .chart-card-head h3 {
+    color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .action-card {
+    background: #111111 !important;
+    border-color: #222222 !important;
+    color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .action-card i {
+    color: #10b981 !important;
+}
+
+html[data-theme="dark"] .action-card span {
+    color: #f8fafc !important;
+}
+
+html[data-theme="dark"] .action-card:hover {
+    border-color: #10b981 !important;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.25) !important;
+    background: #050505 !important;
+}
+
+html[data-theme="dark"] .period-btn {
+    color: #94a3b8 !important;
+}
+
+html[data-theme="dark"] .period-btn:hover {
+    color: #ffffff !important;
+    background: #111111 !important;
+}
+
+html[data-theme="dark"] .period-btn.active {
+    background: #111111 !important;
+    color: #38bdf8 !important;
+    border: 1px solid #222222 !important;
+}
+
+html[data-theme="dark"] .stale-item {
+    border-bottom-color: #1a1a1a !important;
+}
+
+html[data-theme="dark"] .guest-welcome {
+    background: #111827 !important;
+    border-color: #1a1a1a !important;
+}
+
+html[data-theme="dark"] .guest-welcome h1 {
+    color: #f8fafc !important;
+}
+</style>
+
+{% if is_guest %}
+<div class="guest-welcome">
+    <div class="guest-avatar">
+        {% if current_profile.profile_picture %}<img src="{{ current_profile.profile_picture.url }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">{% else %}<i class="fas fa-user"></i>{% endif %}
+    </div>
+    <h1>Welcome, {{ request.user.first_name|default:request.user.username }}!</h1>
+    <p>You are logged in as a <strong>Guest Viewer</strong>.<br>You have access to view and generate reports from the system.</p>
+    <a href="{% url 'reports' %}" class="guest-shortcut"><i class="fas fa-chart-bar"></i> Go to Reports</a>
+    <div class="guest-access-note">Need more access? Contact your system administrator.</div>
+</div>
+
+{% else %}
+<div class="dashboard-wrap">
+    <div class="dashboard-top">
+        <div>
+            <h2>Welcome back, {{ request.user.first_name|default:request.user.username }}!</h2>
+            <p>Here's a summary of your cheque activity.</p>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ my_total }}</div>
+            <div class="stat-label">My Cheques</div>
+            <div class="stat-meta">All created by you</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ my_pending }}</div>
+            <div class="stat-label">Pending</div>
+            <div class="stat-meta">Waiting for release</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ my_released }}</div>
+            <div class="stat-label">Released</div>
+            <div class="stat-meta">Already disbursed</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ my_unreleased }}</div>
+            <div class="stat-label">Not Released</div>
+            <div class="stat-meta">Draft &amp; Pending only</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" style="font-size:1.25rem;">&#8369;{{ my_amount|floatformat:2|intcomma }}</div>
+            <div class="stat-label">Total Released</div>
+            <div class="stat-meta">Current payout total</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ my_suppliers }}</div>
+            <div class="stat-label">Active Suppliers</div>
+            <div class="stat-meta">Ready for transactions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ my_radai }}</div>
+            <div class="stat-label">RADAI Entries</div>
+            <div class="stat-meta">&#8369;{{ my_radai_amount|floatformat:2|intcomma }} total</div>
+        </div>
+    </div>
+
+    {% if alerts %}
+    <div style="margin-bottom:18px;">
+        {% for alert in alerts %}
+        <div class="alert-card" style="border-left-color:{{ alert.color }};">
+            <i class="{{ alert.icon }}" style="color:{{ alert.color }};"></i>
+            <span class="alert-msg" style="color:{{ alert.color }};">{{ alert.message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="charts-row" style="margin-bottom:18px;">
+        <div class="section-card" style="margin:0;">
+            <div class="section-card-head">
+                <h3><i class="fas fa-calendar-day" style="margin-right:6px;"></i> Today's Activity</h3>
+            </div>
+            <div class="section-card-body" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;">
+                <div>
+                    <div style="font-size:0.6875rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Created</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#102033;">{{ today_created }}</div>
+                    <div style="font-size:0.6875rem; color:#94a3b8; margin-top:2px;">cheques today</div>
+                </div>
+                <div>
+                    <div style="font-size:0.6875rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Released</div>
+                    <div style="font-size:1.5rem; font-weight:800; color:#16a34a;">{{ today_released }}</div>
+                    <div style="font-size:0.6875rem; color:#94a3b8; margin-top:2px;">cheques released</div>
+                </div>
+                <div>
+                    <div style="font-size:0.6875rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Amount</div>
+                    <div style="font-size:1.125rem; font-weight:800; color:#2563eb;">&#8369;{{ today_amount|floatformat:2|intcomma }}</div>
+                    <div style="font-size:0.6875rem; color:#94a3b8; margin-top:2px;">disbursed today</div>
+                </div>
+            </div>
+        </div>
+        <div class="section-card" style="margin:0;">
+            <div class="section-card-head">
+                <h3><i class="fas fa-gauge-high" style="margin-right:6px;"></i> Processing Speed</h3>
+            </div>
+            <div class="section-card-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;">
+                <div style="font-size:2rem; font-weight:800; color:#0f766e;">{{ avg_processing_days }}</div>
+                <div style="font-size:0.6875rem; color:#94a3b8; margin-top:4px;">avg. days to release</div>
+                <div style="margin-top:10px; font-size:0.6875rem; color:#94a3b8;">Based on your released cheques</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-chart-pie" style="margin-right:6px;"></i> My Cheque Status</h3>
+            </div>
+            <div class="chart-card-body" style="height:280px;">
+                <div class="chart-empty" id="statusChartEmpty"><i class="fas fa-chart-pie"></i><p>No cheque data available</p></div>
+                <canvas id="myChequeStatusChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-chart-bar" style="margin-right:6px;"></i> Monthly Activity</h3>
+                <div class="chart-period-toggle" id="monthlyPeriodToggle">
+                    <button class="period-btn" data-period="daily">Daily</button>
+                    <button class="period-btn" data-period="weekly">Weekly</button>
+                    <button class="period-btn active" data-period="monthly">Monthly</button>
+                    <button class="period-btn" data-period="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="chart-card-body" style="height:280px;">
+                <div class="chart-empty" id="monthlyChartEmpty"><i class="fas fa-chart-bar"></i><p>No monthly data available</p></div>
+                <canvas id="myMonthlyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row" style="margin-bottom:18px;">
+        <div class="chart-card" style="grid-column: 1 / -1;">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-truck-arrow-right" style="margin-right:6px;"></i> New Suppliers & RADAI Added</h3>
+                <div class="chart-period-toggle" id="suppliersPeriodToggle">
+                    <button class="period-btn" data-period="weekly">This Week</button>
+                    <button class="period-btn active" data-period="monthly">This Month</button>
+                    <button class="period-btn" data-period="yearly">This Year</button>
+                </div>
+            </div>
+            <div class="chart-card-body" style="height:260px;">
+                <div class="chart-empty" id="suppliersChartEmpty">
+                    <i class="fas fa-truck-arrow-right"></i>
+                    <p>No new supplier data available</p>
+                </div>
+                <canvas id="suppliersChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-grid">
+        <a href="{% url 'cheque_create' %}" class="action-card"><i class="fas fa-plus-circle"></i><br><span>New Cheque</span></a>
+        <a href="{% url 'cheque_list' %}" class="action-card"><i class="fas fa-list"></i><br><span>My Cheques</span></a>
+        <a href="{% url 'reports' %}" class="action-card"><i class="fas fa-chart-bar"></i><br><span>Reports</span></a>
+        <a href="{% url 'profile_settings' %}" class="action-card"><i class="fas fa-user-gear"></i><br><span>My Profile</span></a>
+    </div>
+
+    <div class="charts-row" style="margin-bottom:18px;">
+        <div class="section-card" style="margin:0;">
+            <div class="section-card-head">
+                <h3><i class="fas fa-piggy-bank" style="margin-right:6px;"></i> Fund Clusters - Total Disbursed</h3>
+                <a href="{% url 'fund_clusters' %}" class="period-btn active" style="text-decoration:none;">View All</a>
+            </div>
+            <div class="section-card-body">
+                {% for fund in top_funds %}
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f1f5f9;">
+                    <div>
+                        <div style="font-weight:700; font-size:0.8125rem; color:#102033;">{{ fund.code }}</div>
+                        <div style="font-size:0.6875rem; color:#94a3b8;">{{ fund.name|truncatechars:25 }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:800; font-size:0.8125rem; color:#0d3a1e;">&#8369;{{ fund.released_amount|floatformat:2|intcomma }}</div>
+                        <div style="font-size:0.625rem; color:#94a3b8;">total disbursed</div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="text-align:center; padding:20px; color:#94a3b8; font-size:0.8125rem;">No fund clusters available.</div>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="chart-card" style="margin:0;">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-chart-line" style="margin-right:6px;"></i> Monthly Trend</h3>
+            </div>
+            <div class="chart-card-body" style="height:260px;">
+                <canvas id="sparklineChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    {% if stale_cheques_count > 0 %}
+    <div class="section-card" style="margin-bottom:18px; border-color:#fed7aa; background:#fffbeb;">
+        <div class="section-card-head" style="border-bottom-color:#fde68a;">
+            <h3 style="color:#92400e;"><i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i> Stale Cheques ({{ stale_cheques_count }})</h3>
+        </div>
+        <div class="section-card-body">
+            {% for c in stale_cheques_list %}
+            <div class="stale-item">
+                <div style="flex:1;">
+                    <div style="font-size:0.8125rem; font-weight:700; color:#102033;">#{{ c.real_cheque_number|default:c.pk }}</div>
+                    <div style="font-size:0.75rem; color:#64748b;">{{ c.payee_name|default:"--" }} &middot; {{ c.fund_cluster.code|default:"" }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.8125rem; font-weight:700;">&#8369;{{ c.amount|floatformat:2|intcomma }}</div>
+                    <div style="font-size:0.6875rem; color:#94a3b8;">{{ c.created_at|timesince }} ago</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if recent_cheques %}
+    <div class="chart-card" style="margin-bottom:0;">
+        <div class="chart-card-head">
+            <h3><i class="fas fa-clock-rotate-left" style="margin-right:6px;"></i> Recent Cheques</h3>
+            <a href="{% url 'cheque_list' %}" class="period-btn active" style="text-decoration:none;">View All</a>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead><tr><th>Cheque #</th><th>Payee</th><th>Amount</th><th>Date</th><th>Status</th><th>Stale Info</th><th></th></tr></thead>
+                <tbody>
+                {% for c in recent_cheques %}
+                <tr>
+                    <td><strong>#{{ c.real_cheque_number|default:c.pk }}</strong></td>
+                    <td>{{ c.payee_name|default:"--" }}</td>
+                    <td>&#8369;{{ c.amount|floatformat:2|intcomma }}</td>
+                    <td>{{ c.date }}</td>
+                    <td><span class="badge badge-{{ c.status }}">{{ c.get_status_display }}</span></td>
+                    <td>
+                        {% if c.status == 'released' %}
+                            <span style="font-size:12px; color:#10b981; font-weight:600;"><i class="fas fa-check-circle"></i> Released</span>
+                        {% elif c.status == 'voided' %}
+                            <span style="font-size:12px; color:#94a3b8; font-weight:600;"><i class="fas fa-ban"></i> Voided</span>
+                        {% elif c.stale_at %}
+                            {% if c.stale_is_overdue %}
+                                <span style="font-size:12px; color:#dc2626; font-weight:600;"><i class="fas fa-exclamation-triangle"></i> Stale</span>
+                            {% else %}
+                                <span style="font-size:12px; color:#d97706; font-weight:600;">{{ c.stale_days_remaining }} days left</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="font-size:12px; color:#94a3b8;">--</span>
+                        {% endif %}
+                    </td>
+                    <td><a href="{% url 'cheque_edit' c.pk %}" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i></a></td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="/media/chartjs/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var statusChart = null, monthlyChart = null, suppliersChart = null;
+    var currentSuppliersPeriod = 'monthly';
+    var currentMonthlyPeriod = 'monthly';
+
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+    const titleColor = isDark ? '#f8fafc' : '#102033';
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : '#f1f5f9';
+    const chartBorderColor = isDark ? '#111827' : '#ffffff';
+
+    function getCookie(n){var v=null;if(document.cookie){document.cookie.split(';').forEach(function(c){c=c.trim();if(c.startsWith(n+'='))v=decodeURIComponent(c.slice(n.length+1));});}return v;}
+    function checkEmpty(cid,eid,d){var c=document.getElementById(cid),e=document.getElementById(eid);if(!c||!e)return;var h=d&&d.some(function(v){return v>0;});c.style.display=h?'':'none';e.style.display=h?'none':'flex';}
+
+    function initStatusChart(data){
+        var ctx=document.getElementById('myChequeStatusChart');if(!ctx)return;if(statusChart)statusChart.destroy();
+        var labels=['Draft','Pending','Released','Voided'],values=[data.status.draft,data.status.pending,data.status.released,data.status.voided],colors=['#94a3b8','#f59e0b','#22c55e','#ef4444'];
+        if(data.status.stale&&data.status.stale>0){labels.push('Stale');values.push(data.status.stale);colors.push('#6b7280');}
+        checkEmpty('myChequeStatusChart','statusChartEmpty',values);
+        statusChart=new Chart(ctx,{type:'doughnut',data:{labels:labels,datasets:[{data:values,backgroundColor:colors,borderWidth:2,borderColor:chartBorderColor}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',animation:{animateRotate:true,duration:800},plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyleWidth:10,color:textColor,font:{size:11,weight:'600'}}}}}});
+    }
+
+    function initMonthlyChart(data){
+        var ctx=document.getElementById('myMonthlyChart');if(!ctx)return;if(monthlyChart)monthlyChart.destroy();
+        checkEmpty('myMonthlyChart','monthlyChartEmpty',data.months.counts);
+        monthlyChart=new Chart(ctx,{type:'bar',data:{labels:data.months.labels,datasets:[{label:'My Cheques',data:data.months.counts,backgroundColor:'#22c55e',borderRadius:6,borderSkipped:false,maxBarThickness:40},{label:'Amount Released',data:data.months.amounts,backgroundColor:'#3b82f6',borderRadius:6,borderSkipped:false,maxBarThickness:40,yAxisID:'y1'}]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},animation:{duration:800},scales:{x:{grid:{display:false},ticks:{color:textColor,font:{size:11,weight:'600'}}},y:{position:'left',beginAtZero:true,grid:{color:gridColor},ticks:{color:textColor,font:{size:11},stepSize:1},title:{display:true,text:'Count',color:titleColor,font:{size:11,weight:'600'}}},y1:{position:'right',beginAtZero:true,grid:{drawOnChartArea:false},ticks:{color:textColor,font:{size:11},callback:function(v){return '\u20B1'+v.toLocaleString();}},title:{display:true,text:'Amount',color:titleColor,font:{size:11,weight:'600'}}},plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyleWidth:10,color:textColor,font:{size:11,weight:'600'}}}}}}});
+    }
+
+    function initSuppliersChart(data){
+        var ctx=document.getElementById('suppliersChart');
+        var emptyEl=document.getElementById('suppliersChartEmpty');
+        if(!ctx)return;
+        var hasSupplierData=data.supplier_counts&&data.supplier_counts.some(function(c){return c>0;});
+        var hasRadaiData=data.radai_counts&&data.radai_counts.some(function(c){return c>0;});
+        var hasData=hasSupplierData||hasRadaiData;
+        if(!hasData){ctx.style.display='none';if(emptyEl)emptyEl.style.display='flex';if(suppliersChart){suppliersChart.destroy();suppliersChart=null;}return;}
+        ctx.style.display='block';if(emptyEl)emptyEl.style.display='none';
+        if(suppliersChart)suppliersChart.destroy();
+        suppliersChart=new Chart(ctx,{type:'line',data:{labels:data.labels,datasets:[{label:'New Suppliers',data:data.supplier_counts||[],borderColor:'#8b5cf6',backgroundColor:'rgba(139,92,246,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#8b5cf6',pointBorderColor:chartBorderColor,pointBorderWidth:2,pointRadius:5,pointHoverRadius:7},{label:'New RADAI',data:data.radai_counts||[],borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#22c55e',pointBorderColor:chartBorderColor,pointBorderWidth:2,pointRadius:5,pointHoverRadius:7}]},options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},animation:{duration:800},scales:{x:{grid:{display:false},ticks:{color:textColor,font:{size:11,weight:'600'}}},y:{beginAtZero:true,grid:{color:gridColor},ticks:{color:textColor,font:{size:11},stepSize:1},title:{display:true,text:'Count',color:titleColor,font:{size:11,weight:'600'}}}},plugins:{legend:{position:'bottom',labels:{padding:14,usePointStyle:true,pointStyleWidth:10,color:textColor,font:{size:11,weight:'600'}}}}}});
+    }
+
+    function fetchChartData(period){
+        fetch('{% url "cashier_dashboard_chart_data" %}?period='+encodeURIComponent(period),{headers:{'X-CSRFToken':getCookie('csrftoken'),'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){return r.json();}).then(function(d){initStatusChart(d);initMonthlyChart(d);}).catch(function(e){console.error('Chart error:',e);});
+    }
+
+    function fetchSuppliersChart(period){
+        fetch('{% url "cashier_suppliers_chart_data" %}?period='+encodeURIComponent(period),{headers:{'X-CSRFToken':getCookie('csrftoken'),'X-Requested-With':'XMLHttpRequest'}})
+        .then(function(r){return r.json();}).then(function(d){if(d.error){console.warn('Suppliers chart API error:',d.error);return;}initSuppliersChart(d);}).catch(function(e){console.error('Suppliers chart error:',e);});
+    }
+
+    var monthlyToggleEl=document.getElementById('monthlyPeriodToggle');
+    if(monthlyToggleEl){monthlyToggleEl.addEventListener('click',function(e){var btn=e.target.closest('.period-btn');if(!btn)return;monthlyToggleEl.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');currentMonthlyPeriod=btn.getAttribute('data-period');fetchChartData(currentMonthlyPeriod);});}
+    var suppliersToggleEl=document.getElementById('suppliersPeriodToggle');
+    if(suppliersToggleEl){suppliersToggleEl.addEventListener('click',function(e){var btn=e.target.closest('.period-btn');if(!btn)return;suppliersToggleEl.querySelectorAll('.period-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');currentSuppliersPeriod=btn.getAttribute('data-period');fetchSuppliersChart(currentSuppliersPeriod);});}
+
+    // Monthly trend sparkline
+    var sparklineCtx = document.getElementById('sparklineChart');
+    if (sparklineCtx) {
+        new Chart(sparklineCtx, {
+            type: 'line',
+            data: {
+                labels: [{% for label in month_labels_12 %}'{{ label }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+                datasets: [{
+                    label: 'Cheques Created',
+                    data: [{% for count in month_counts_12 %}{{ count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+                    borderColor: '#0f766e',
+                    backgroundColor: 'rgba(15, 118, 110, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#0f766e',
+                    pointBorderColor: chartBorderColor,
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                animation: { duration: 600 },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11, weight: '600' }, maxRotation: 45 } },
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 }, stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyleWidth: 8, color: textColor, font: { size: 11, weight: '600' } } }
+                }
+            }
+        });
+    }
+
+    {% if not is_guest %}
+    fetchChartData(currentMonthlyPeriod);fetchSuppliersChart(currentSuppliersPeriod);setInterval(function(){fetchChartData(currentMonthlyPeriod);},30000);setInterval(function(){fetchSuppliersChart(currentSuppliersPeriod);},30000);
+    {% endif %}
+});
+</script>
+{% endblock %}

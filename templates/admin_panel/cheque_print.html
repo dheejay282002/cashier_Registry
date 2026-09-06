@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Print Cheque #{{ cheque.cheque_number|default:cheque.pk }}{% endblock %}
+{% block content %}
+<style>
+@media print {
+    body * { visibility: hidden !important; }
+    .cheque-wrapper, .cheque-wrapper * { visibility: visible !important; }
+    .cheque-wrapper { position: absolute !important; left: 0 !important; top: 0 !important; width: 8in !important; height: 3in !important; margin: 0 !important; border: none !important; outline: none !important; box-shadow: none !important; box-sizing: border-box !important; }
+    @page { size: 8in 3in; margin: 0; }
+}
+.cheque-wrapper, .cheque-paper {
+    background: white; border: none !important; outline: none !important; border-radius: 0;
+    padding: 28px 32px; font-family: 'Courier New', monospace; box-sizing: border-box;
+    width: 8in; height: 3in; max-width: 100%; margin: 0 auto; box-shadow: none !important;
+}
+.cheque-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 22px; }
+.cheque-bank { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+.cheque-num-label { font-size: 12px; color: #888; }
+.cheque-num-val { font-size: 20px; font-weight: 700; }
+.cheque-date-line { text-align: right; margin-bottom: 18px; font-size: 14px; }
+.cheque-date-line .line { border-bottom: 1px solid #333; display: inline-block; min-width: 160px; text-align: center; padding: 2px 6px; }
+.cheque-payto { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.cheque-payto label { white-space: nowrap; font-size: 12px; font-weight: 700; }
+.cheque-payto .payline, .cheque-payto-line { flex: 1; border-bottom: 1px solid #333; padding: 2px 6px; font-size: 16px; font-weight: 700; min-height: 24px; margin-right: 160px; }
+.amount-box, .cheque-amount-box { float: right; border: 2px solid #333 !important; padding: 6px 18px; font-size: 16px; font-weight: 700; min-width: 160px; text-align: right; }
+.words-line, .cheque-words-line { clear: both; border-bottom: 1px solid #333; padding: 4px 6px; font-size: 14px; min-height: 26px; margin-bottom: 6px; margin-right: 40px; }
+.words-line2, .cheque-words-line2 { border-bottom: 1px solid #333 !important; padding: 4px 6px; font-size: 13px; min-height: 22px; margin-bottom: 20px; color: #555; }
+.cheque-footer { display: flex; justify-content: space-between; align-items: flex-end; }
+.sig-block { border-top: 1px solid #333; min-width: 180px; text-align: center; font-size: 12px; padding-top: 18px; margin-top: 10px; color: #555; }
+.sig-block .sig-title { font-weight:700; }
+.sig-block .sig-sub { font-size:11px; color:#666; margin-top:4px; font-weight:600; }
+.micr, .cheque-micr { margin-top: 28px; text-align: center; font-size: 13px; letter-spacing: 0.12em; color: #aaa; border-top: 1px dashed #ddd !important; padding-top: 6px; }
+.purpose-block { font-size: 12px; color: #444; max-width: 200px; line-height: 1.4; }
+</style>
+
+<div class="no-print" style="max-width:720px; margin:0 auto 16px; display:flex; gap:10px; align-items:center;">
+    <button onclick="printChequeOnly()" class="btn btn-primary"><i class="fas fa-print"></i> Print</button>
+    <a href="{% url 'cheque_edit' cheque.pk %}" class="btn btn-secondary"><i class="fas fa-pen"></i> Edit</a>
+    <a href="{% url 'cheque_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Back</a>
+    <span style="font-size:13px; color:var(--muted);">
+        {% if cheque.printed_at %}<i class="fas fa-check-circle" style="color:var(--success);"></i> Printed {{ cheque.printed_at|date:"M d, Y H:i" }}{% endif %}
+    </span>
+</div>
+
+<div class="cheque-wrapper" style="font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif; width: 8in; height: 3in; box-sizing: border-box; background: white; border: none !important; outline: none !important; box-shadow: none !important; position: relative; overflow: hidden; color: black;">
+    <!-- Fund Cluster Code -->
+    <div style="position: absolute; left: 0.5in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.fund_cluster.code|default:"—" }}</div>
+    
+    <!-- UACS Object Code -->
+    <div style="position: absolute; left: 1in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.uacs_object_code|default:"5021199000" }}</div>
+    
+    <!-- Cheque Number -->
+    <div style="position: absolute; right: 0.5in; top: 0.35in; font-size: 10pt; font-weight: normal; text-align: right;">{{ cheque.cheque_number|default:"______" }}</div>
+    
+    <!-- Spaced Date -->
+    <div id="printDate" style="position: absolute; right: 0.45in; top: 0.55in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
+    
+    <!-- Payee Name -->
+    <div id="printPayee" style="position: absolute; left: 1in; top: 0.90in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cheque.payee_name }}</div>
+    
+    <!-- Amount -->
+    <div style="position: absolute; right: 0.9in; top: 0.85in; font-size: 12pt; font-weight: normal; text-align: right;">{{ cheque.amount|floatformat:2|intcomma }}</div>
+    
+    <!-- Amount in Words -->
+    <div id="wordsLine1" style="position: absolute; left: 0.80in; top: 1.2in; font-size: 11pt; font-weight: normal; text-transform: uppercase; width: 5.7in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+</div>
+
+<script>
+function printChequeOnly() {
+    const cheque = document.querySelector('.cheque-wrapper');
+    if (!cheque) return window.print();
+    
+    const chequeClone = cheque.cloneNode(true);
+    chequeClone.style.border = 'none';
+    const chequeHtml = chequeClone.outerHTML;
+
+    const printCss = `
+        @page { size: 8in 3in; margin: 0; }
+        html,body { height: 100%; margin: 0; padding: 0; background: transparent; }
+        body { display:flex; align-items:flex-start; justify-content:center; height:100%; }
+        .print-stage { width:8in; height:3in; display:flex; align-items:flex-start; justify-content:center; }
+        .cheque-wrapper {
+            background: transparent;
+            border: none !important;
+            outline: none !important;
+            width: 8in;
+            height: 3in;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
+            color: black;
+            box-sizing: border-box;
+        }
+    `;
+
+    const head = `<head><meta charset="utf-8"><title>Print Cheque</title><style>${printCss}</style></head>`;
+    const html = `<!doctype html><html>${head}<body><div class="print-stage">${chequeHtml}</div></body></html>`;
+
+    const w = window.open('', '_blank', 'toolbar=0,location=0,menubar=0');
+    if (!w) return window.print();
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => {
+        w.print();
+    }, 350);
+}
+
+function amountToWords(amount) {
+    if (!amount || isNaN(amount) || amount <= 0) return '';
+    const ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+        'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+    const tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+    function below1000(n) {
+        if (n === 0) return '';
+        if (n < 20) return ones[n] + ' ';
+        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '') + ' ';
+        return ones[Math.floor(n / 100)] + ' HUNDRED ' + below1000(n % 100);
+    }
+    const parts = parseFloat(amount).toFixed(2).split('.');
+    const pesos = parseInt(parts[0]);
+    const centavos = parseInt(parts[1]);
+    let result = '';
+    if (pesos >= 1000000000) result += below1000(Math.floor(pesos / 1000000000)) + 'BILLION ';
+    if (pesos >= 1000000) result += below1000(Math.floor((pesos % 1000000000) / 1000000)) + 'MILLION ';
+    if (pesos >= 1000) result += below1000(Math.floor((pesos % 1000000) / 1000)) + 'THOUSAND ';
+    result += below1000(pesos % 1000);
+    const pesosText = (result.replace(/\s+/g, ' ').trim() || 'ZERO') + ' PESOS';
+    const centsFormatted = String(centavos).padStart(2, '0');
+    return (pesosText + ' & ' + centsFormatted + '/100 ONLY').toUpperCase();
+}
+
+function formatSpacedDate(dateStr) {
+    if (!dateStr) return '____________';
+    const parts = dateStr.split('-');
+    if (parts.length !== 3) return '____________';
+    const year = parts[0];
+    const month = parts[1];
+    const day = parts[2];
+    return month.charAt(0) + '   ' + month.charAt(1) + '      ' + day.charAt(0) + '   ' + day.charAt(1) + '      ' + year.charAt(0) + '   ' + year.charAt(1) + '   ' + year.charAt(2) + '   ' + year.charAt(3);
+}
+
+const rawDate = '{{ cheque.date|date:"Y-m-d" }}';
+document.getElementById('printDate').textContent = formatSpacedDate(rawDate);
+
+const amt = parseFloat('{{ cheque.amount|floatformat:2 }}');
+const words = amountToWords(amt);
+document.getElementById('wordsLine1').textContent = words;
+</script>
+{% endblock %}

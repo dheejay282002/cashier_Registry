@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% block content %}
+
+{% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+{% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+<style>
+.at-card { background:#fff; border-radius:12px; border:1px solid var(--line); padding:24px; width:100%; box-sizing:border-box; }
+.at-table-wrap { overflow-x:auto; border-radius:8px; border:1px solid var(--line); }
+.at-table { width:100%; border-collapse:collapse; font-size:14px; min-width:500px; }
+.at-table th { background:var(--nav); color:#fff; font-size:12px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; padding:13px 16px; text-align:left; }
+.at-table td { padding:11px 16px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.at-table tbody tr:last-child td { border-bottom:none; }
+.at-table tbody tr:nth-child(even) { background:#f8fafc; }
+.at-table tbody tr:hover { background:#eef4ff; transition:background 0.15s; }
+.uacs-badge { display:inline-block; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; padding:2px 9px; font-family:'Courier New',monospace; font-size:12px; color:#374151; }
+.row-num { color:var(--muted); font-size:13px; }
+
+/* Modals Redesign */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 9000;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.25s ease;
+}
+.modal-overlay.open {
+    display: flex;
+}
+.modal-box {
+    background: #ffffff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    overflow: hidden;
+    padding: 0;
+    animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes modalIn {
+    from { transform: scale(0.95) translateY(12px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+}
+.modal-header {
+    background: linear-gradient(135deg, #0d382b, #154c3a) !important;
+    padding: 20px 24px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
+    border-radius: 0 !important;
+}
+.modal-header h3 {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+}
+.modal-header h3 i {
+    color: #34d399 !important; /* light green icon for high contrast */
+    font-size: 20px !important;
+}
+#editModal .modal-header h3 i {
+    color: #fbbf24 !important; /* warning/gold icon for Rename */
+}
+.modal-close {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    font-size: 14px !important;
+}
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+    transform: rotate(90deg) !important;
+}
+.modal-body {
+    padding: 24px;
+}
+.modal-field {
+    margin-bottom: 20px;
+}
+.modal-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #222222;
+}
+.modal-field input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+}
+.modal-field input:focus {
+    outline: none;
+    border-color: #059669;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+.modal-field .hint {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 6px;
+}
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 18px;
+}
+</style>
+
+<!-- ── Breadcrumb ── -->
+<div style="margin-bottom:8px;">
+    <a href="{% url 'account_titles_management' %}" style="color:var(--muted); font-size:13px; text-decoration:none;">
+        <i class="fas fa-layer-group"></i> Account Titles
+    </a>
+    <span style="color:var(--muted); margin:0 6px; font-size:13px;">/</span>
+    <span style="font-size:13px; color:var(--ink); font-weight:600;">{{ group.name }}</span>
+</div>
+
+<div class="page-header">
+    <h2><i class="fas fa-table" style="color:var(--nav);"></i> {{ group.name }}</h2>
+    <button type="button" class="btn btn-primary" onclick="openAddModal()">
+        <i class="fas fa-plus"></i> Add Account Title
+    </button>
+</div>
+
+<div class="at-card">
+    <!-- Search -->
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+        <div style="position:relative; flex:1; min-width:220px; max-width:400px;">
+            <i class="fas fa-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:13px; pointer-events:none;"></i>
+            <input type="text" id="atSearch" placeholder="Search title or UACS..."
+                   oninput="filterTable()"
+                   style="width:100%; padding:9px 12px 9px 35px; border:1px solid var(--line); border-radius:8px; font-size:14px; box-sizing:border-box;">
+        </div>
+        <span id="atCount" style="font-size:13px; color:var(--muted);"></span>
+    </div>
+
+    <div class="at-table-wrap">
+        <table class="at-table">
+            <thead>
+                <tr>
+                    <th style="width:52px;">#</th>
+                    <th>Account Title</th>
+                    <th style="width:230px;">UACS Object Code</th>
+                    <th style="width:130px; text-align:center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="atBody">
+                {% for option in options %}
+                <tr data-text="{{ option.value|lower }} {{ option.uacs|lower }}">
+                    <td class="row-num">{{ forloop.counter }}</td>
+                    <td><strong>{{ option.value }}</strong></td>
+                    <td>
+                        {% if option.uacs %}
+                            <span class="uacs-badge">{{ option.uacs }}</span>
+                        {% else %}
+                            <span style="color:var(--muted); font-size:13px;">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:center; white-space:nowrap;">
+                        <button type="button" class="btn btn-secondary btn-sm" title="Edit"
+                                onclick="openEditModal('{{ option.pk }}', '{{ option.value|escapejs }}', '{{ option.uacs|escapejs }}')">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <form method="post" onsubmit="return confirm('Delete this account title?')" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="option_id" value="{{ option.pk }}">
+                            <button type="submit" class="btn btn-danger btn-sm" title="Delete">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr id="emptyRow">
+                    <td colspan="4" style="text-align:center; color:var(--muted); padding:36px;">
+                        <i class="fas fa-inbox" style="font-size:30px; opacity:0.3; display:block; margin-bottom:10px;"></i>
+                        No account titles yet. Click <strong>Add Account Title</strong> to get started.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ══ ADD MODAL ══════════════════════════════════════════ -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target===this)closeModal('addModal')">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-plus-circle"></i> Add Account Title</h3>
+            <button type="button" class="modal-close" onclick="closeModal('addModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+                <input type="hidden" name="action" value="add">
+                <div class="modal-field">
+                    <label for="mAddValue">Account Title <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="mAddValue" name="value" placeholder="e.g. Office Supplies and Materials" required autofocus>
+                </div>
+                <div class="modal-field">
+                    <label for="mAddUacs">UACS Object Code</label>
+                    <input type="text" id="mAddUacs" name="uacs" placeholder="e.g. 5020301000">
+                    <div class="hint">Optional — leave blank if not applicable.</div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ EDIT MODAL ═════════════════════════════════════════ -->
+<div class="modal-overlay" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3><i class="fas fa-pen"></i> Edit Account Title</h3>
+            <button type="button" class="modal-close" onclick="closeModal('editModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="modal-body">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="option_id" id="mEditId">
+                <div class="modal-field">
+                    <label for="mEditValue">Account Title <span style="color:#dc2626;">*</span></label>
+                    <input type="text" id="mEditValue" name="value" required>
+                </div>
+                <div class="modal-field">
+                    <label for="mEditUacs">UACS Object Code</label>
+                    <input type="text" id="mEditUacs" name="uacs" placeholder="e.g. 5020301000">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background:#f59e0b;border-color:#f59e0b;">
+                        <i class="fas fa-save"></i> Update
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') ['addModal','editModal'].forEach(closeModal); });
+
+function openAddModal() {
+    document.getElementById('mAddValue').value = '';
+    document.getElementById('mAddUacs').value  = '';
+    openModal('addModal');
+    setTimeout(()=>document.getElementById('mAddValue').focus(), 80);
+}
+function openEditModal(id, value, uacs) {
+    document.getElementById('mEditId').value    = id;
+    document.getElementById('mEditValue').value = value;
+    document.getElementById('mEditUacs').value  = uacs;
+    openModal('editModal');
+    setTimeout(()=>document.getElementById('mEditValue').focus(), 80);
+}
+
+function filterTable() {
+    const q = document.getElementById('atSearch').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('#atBody tr[data-text]');
+    let visible = 0;
+    rows.forEach(row => {
+        const match = !q || row.dataset.text.includes(q);
+        row.style.display = match ? '' : 'none';
+        if (match) visible++;
+    });
+    const c = document.getElementById('atCount');
+    if (c) c.textContent = q ? `${visible} result${visible!==1?'s':''}` : '';
+}
+
+{% if error %}openAddModal();{% endif %}
+</script>
+{% endblock %}

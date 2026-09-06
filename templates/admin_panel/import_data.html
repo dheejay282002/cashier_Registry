@@ -1,0 +1,298 @@
+{% extends 'base.html' %}
+{% block title %}Import Data{% endblock %}
+{% block nav_import %}active{% endblock %}
+{% block content %}
+
+<style>
+.supplier-table thead th {
+    background: linear-gradient(135deg, #0f3d2e, #17563d);
+    color: #ffffff;
+    border-bottom: 1px solid #0b2f23;
+    text-align: center;
+}
+
+/* Responsive Grid Layout Container */
+.import-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (min-width: 768px) {
+    .import-grid {
+        grid-template-columns: 1fr 2fr;
+        gap: 24px;
+    }
+}
+
+/* Scrollable Container Wrapper for Responsive Tables */
+.table-responsive-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 62vh;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: white;
+    padding: 10px;
+}
+
+/* Action button spacing improvements for touch screens */
+.action-buttons {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+}
+
+/* ── Dark Mode Overrides for Import Data ── */
+[data-theme="dark"] .table-responsive-wrapper,
+[data-theme="dark"] div[style*="background:white"],
+[data-theme="dark"] div[style*="background: white"] {
+    background: #111827 !important;
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border-color: #1a1a1a !important;
+}
+
+[data-theme="dark"] select#importType,
+[data-theme="dark"] input[type="file"] {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border-color: #222222 !important;
+}
+
+[data-theme="dark"] label,
+[data-theme="dark"] h3,
+[data-theme="dark"] p.page-sub {
+    color: #f8fafc !important;
+}
+</style>
+
+{% if error %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('error','Error','{{ error|escapejs }}');});</script>{% endif %}
+{% if success %}<script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>{% endif %}
+
+{% if import_warnings %}
+<div style="background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:16px 20px; margin-bottom:18px;">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <i class="fas fa-exclamation-triangle" style="color:#856404; font-size:18px;"></i>
+        <strong style="font-size:14px; color:#856404;">Import Warnings — {{ import_warnings|length }} Row(s) Skipped</strong>
+    </div>
+    <ul style="margin:0; padding-left:20px; font-size:13px; color:#664d03; line-height:1.9;">
+        {% for w in import_warnings %}
+        <li>{{ w }}</li>
+        {% endfor %}
+    </ul>
+    <div style="margin-top:10px; font-size:12px; color:#856404;">
+        <i class="fas fa-info-circle"></i> Please register the missing Fund Clusters first, then re-import the skipped rows.
+    </div>
+</div>
+{% endif %}
+
+<div class="page-center">
+  <h2>Import Data</h2>
+  <p class="page-sub">Upload Excel files to import suppliers, cheques, and other transactional data into the system.</p>
+</div>
+
+<div style="max-width:520px; margin:20px auto 0;">
+    <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+        <h3 style="font-size:15px; font-weight:700; margin-bottom:16px; text-align:center;">Upload File</h3>
+        <form method="post" enctype="multipart/form-data" id="importForm">
+            {% csrf_token %}
+            <div style="margin-bottom:14px;">
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Import Type</label>
+                <select name="import_type" id="importType" style="width:100%; padding:9px; border:1px solid #d1d5db; border-radius:8px; font-size:14px; height:42px; background:white;">
+                    <option value="suppliers" {% if import_type == 'suppliers' %}selected{% endif %}>Suppliers</option>
+                    <option value="fund_clusters" {% if import_type == 'fund_clusters' %}selected{% endif %}>Fund Clusters</option>
+                    <option value="radai" {% if import_type == 'radai' %}selected{% endif %}>RADAI</option>
+                </select>
+            </div>
+            <div style="margin-bottom:14px;">
+                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">File (.csv, .xlsx, .xls)</label>
+                <input id="fileInput" type="file" name="file" accept=".csv,.xlsx,.xls" required style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:8px; font-size:13px; box-sizing:border-box; background:white;">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%; min-height:42px;"><i class="fas fa-eye"></i> Preview Import</button>
+        </form>
+        <div class="action-buttons" style="justify-content:center; margin-top:12px;">
+            <a id="templateXlsxBtn" class="btn btn-secondary btn-sm" href="/import/template/?import_type={{ import_type|default:'suppliers' }}&format=xlsx"><i class="fas fa-file-excel"></i> Download Template</a>
+            <a id="templateCsvBtn" class="btn btn-secondary btn-sm" href="/import/template/?import_type={{ import_type|default:'suppliers' }}&format=csv"><i class="fas fa-file-csv"></i> CSV</a>
+        </div>
+    </div>
+</div>
+
+<div style="max-width:520px; margin:20px auto 0;">
+    <details style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:12px;">
+        <summary style="padding:14px 18px; cursor:pointer; font-size:14px; font-weight:700; color:#222222; list-style:none; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-info-circle" style="color:#64748b;"></i> File Format Requirements
+            <i class="fas fa-chevron-down" style="margin-left:auto; font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+        </summary>
+        <div style="padding:0 18px 16px; font-size:13px; color:#475569; line-height:1.6;">
+            <p style="margin-bottom:10px;"><strong>Suppliers:</strong> Check Serial, Check Date, DV/Payroll No., ORS/BURS No., Responsibility Center, UACS Object Code, Payee, Nature of Payments, Gross Amount, Professional Tax, Tax (5%/3%), Tax (2%/1%), Net Amount, Fund Cluster, Remarks, Other Deductions</p>
+            <p style="margin-bottom:10px;"><strong>Fund Clusters:</strong> code, name, description, balance, is_active</p>
+            <p style="margin-bottom:0;"><strong>RADAI:</strong> Date, Serial No., Payee, Amount, ORS/BURS No. & Responsibility Center, Nature of Payment, DV/Payroll No., UACS Object Code, Fund Cluster, Remarks</p>
+        </div>
+    </details>
+
+    <details style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;">
+        <summary style="padding:14px 18px; cursor:pointer; font-size:14px; font-weight:700; color:#222222; list-style:none; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-check-circle" style="color:#64748b;"></i> Import Rules
+            <i class="fas fa-chevron-down" style="margin-left:auto; font-size:11px; color:#94a3b8; transition:transform 0.2s;"></i>
+        </summary>
+        <div style="padding:0 18px 16px;">
+            <ul style="font-size:13px; color:#475569; padding-left:18px; line-height:1.8; margin:0;">
+                <li>Supplier imports create a new row for each imported record</li>
+                <li>RADAI imports create a new row for each imported record</li>
+                <li>Fund cluster imports are matched by <strong>code</strong> and updated if they already exist</li>
+                <li>All imports are logged in the Audit Log</li>
+                <li>Preview is shown before final import</li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+<script>
+document.querySelectorAll('details').forEach(function(d){
+    d.addEventListener('toggle', function(){
+        var icon = d.querySelector('.fa-chevron-down');
+        if(icon) icon.style.transform = d.open ? 'rotate(180deg)' : '';
+    });
+});
+</script>
+
+<div id="importModalBackdrop" style="display:{% if show_import_modal %}flex{% else %}none{% endif %}; position:fixed; inset:0; background:rgba(15, 23, 42, 0.58); align-items:center; justify-content:center; z-index:5000; padding:12px;">
+    <div style="width:min(1200px, 96%); max-height:92vh; overflow:hidden; background:white; border-radius:14px; box-shadow:0 24px 60px rgba(15, 23, 42, 0.28); display:flex; flex-direction:column;">
+        
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #e5e7eb;">
+            <div>
+                <h3 style="margin:0; font-size:17px; font-weight:800;">Import Preview</h3>
+                <div style="font-size:12px; color:#6b7280; margin-top:4px;">Select a sheet to preview and import only that sheet.</div>
+            </div>
+            <button type="button" id="closeImportModal" style="border:none; background:transparent; font-size:28px; line-height:1; cursor:pointer; color:#6b7280; padding: 4px 8px;">&times;</button>
+        </div>
+
+        <div style="padding:16px 20px; overflow-y:auto; flex:1; box-sizing: border-box;">
+            <form method="post" enctype="multipart/form-data" id="confirmImportForm">
+                {% csrf_token %}
+                <input type="hidden" name="import_type" value="{{ import_type }}">
+                <input type="hidden" name="confirm" value="1">
+                <input type="hidden" name="upload_token" value="{{ upload_token }}">
+
+                {% if preview_sheets %}
+                <div style="display:flex; align-items:flex-start; md-align-items:center; gap:8px; margin-bottom:14px; flex-direction:column; sm-flex-direction:row;">
+                    <div style="display:flex; align-items:center; gap:8px; width:100%;">
+                        <label for="sheetSelect" style="font-size:13px; font-weight:700; white-space:nowrap;">Sheet:</label>
+                        <select id="sheetSelect" name="sheet" style="padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; flex:1; min-width:180px; height:38px;">
+                            {% for s in sheet_names %}
+                                <option value="{{ s }}" {% if s == preview_sheet_name %}selected{% endif %}>{{ s }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="font-size:12px; color:#6b7280; margin-top:2px;">Only the selected sheet will be imported.</div>
+                </div>
+
+                <div class="table-responsive-wrapper">
+                    {% for sname, srows in preview_sheets.items %}
+                    <div class="sheet-block" data-sheet-block="{{ sname }}" style="display:{% if sname == preview_sheet_name %}block{% else %}none{% endif %};">
+                        <div style="margin:4px 0 10px; font-size:12px; color:#6b7280;">Showing sheet: <strong>{{ sname }}</strong> ({{ srows.row_count }} rows × {{ srows.col_count }} cols)</div>
+                        <table class="sheet-preview" style="width:max-content; min-width:100%; border-collapse:collapse; table-layout:fixed;">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:36px; padding:6px 8px; border:1px solid #cbd5e1; background:#f8fafc; position:sticky; left:0; z-index:3;">#</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in srows.rows %}
+                                <tr>
+                                    <td style="min-width:36px; padding:6px 8px; border:1px solid #cbd5e1; background:#f8fafc; font-size:12px; text-align:right; position:sticky; left:0; z-index:2;">{{ forloop.counter }}</td>
+                                    {% for cell in row.cells %}
+                                        <td rowspan="{{ cell.rowspan }}" colspan="{{ cell.colspan }}" style="min-width:100px; padding:6px 8px; border:1px solid #94a3b8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; {{ cell.style }}{% if cell.is_blank %}color:transparent;{% endif %}">{{ cell.value|default:"&nbsp;" }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="table-responsive-wrapper">
+                    <table style="width:max-content; min-width:100%; border-collapse:collapse; table-layout:fixed;">
+                        <thead>
+                            <tr>
+                                {% for key in preview_rows.0.keys %}
+                                <th style="text-align:left; padding:10px 8px; border-bottom:1px solid #e5e7eb; font-size:13px; background:#f9fafb;">{{ key }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in preview_rows %}
+                            <tr>
+                                {% for val in row.values %}
+                                <td style="font-size:13px; padding:8px; border-bottom:1px solid #f3f4f6; white-space:nowrap;">{{ val|default:"—" }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px; flex-wrap:wrap;">
+                    <button type="button" id="cancelImportModal" class="btn" style="background:#e5e7eb; color:#111827; flex:1; sm-flex:none; min-height:40px; justify-content:center;">Cancel</button>
+                    <button type="submit" class="btn btn-success" style="flex:1; sm-flex:none; min-height:40px; justify-content:center;"><i class="fas fa-check"></i> Confirm Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function(){
+        const modal = document.getElementById('importModalBackdrop');
+        const closeBtn = document.getElementById('closeImportModal');
+        const cancelBtn = document.getElementById('cancelImportModal');
+        const sheetSelect = document.getElementById('sheetSelect');
+        const importType = document.getElementById('importType');
+        const templateXlsxBtn = document.getElementById('templateXlsxBtn');
+        const templateCsvBtn = document.getElementById('templateCsvBtn');
+
+        function updateTemplateLinks(){
+            if (!importType || !templateXlsxBtn || !templateCsvBtn) return;
+            const selected = importType.value || 'suppliers';
+            templateXlsxBtn.href = `/import/template/?import_type=${selected}&format=xlsx`;
+            templateCsvBtn.href = `/import/template/?import_type=${selected}&format=csv`;
+        }
+
+        function showOnlySelectedSheet(){
+            if (!sheetSelect) return;
+            const selected = sheetSelect.value;
+            document.querySelectorAll('.sheet-block').forEach(block => {
+                block.style.display = block.getAttribute('data-sheet-block') === selected ? 'block' : 'none';
+            });
+        }
+
+        if (sheetSelect) {
+            sheetSelect.addEventListener('change', showOnlySelectedSheet);
+            showOnlySelectedSheet();
+        }
+
+        if (importType) {
+            importType.addEventListener('change', updateTemplateLinks);
+            updateTemplateLinks();
+        }
+
+        function closeModal(){
+            if (modal) modal.style.display = 'none';
+        }
+
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    })();
+</script>
+{% endblock %}
