@@ -1,13 +1,26 @@
 <style>
     .supplier-modal-backdrop {
-        display: none;
         position: fixed;
         inset: 0;
         z-index: 5000;
-        background: rgba(15, 23, 42, 0.58);
+        display: flex;
         align-items: center;
         justify-content: center;
         padding: 18px;
+        background: rgba(15, 23, 42, 0);
+        pointer-events: none;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                    background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                    visibility 0.3s;
+    }
+
+    .supplier-modal-backdrop.active {
+        pointer-events: auto;
+        opacity: 1;
+        visibility: visible;
+        background: rgba(15, 23, 42, 0.58);
     }
 
     .supplier-modal {
@@ -18,6 +31,25 @@
         border-radius: 18px;
         box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
         border: 1px solid rgba(255, 255, 255, 0.35);
+        transform: scale(0.92) translateY(20px);
+        opacity: 0;
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+                    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .supplier-modal-backdrop.active .supplier-modal {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+    }
+
+    .supplier-modal-backdrop.closing {
+        opacity: 0;
+        background: rgba(15, 23, 42, 0);
+    }
+
+    .supplier-modal-backdrop.closing .supplier-modal {
+        transform: scale(0.95) translateY(10px);
+        opacity: 0;
     }
 
     .supplier-modal-head {
@@ -337,7 +369,8 @@
                    id="fieldPayee"
                    list="payeeChoices"
                    required
-                   placeholder="Type or select payee...">
+                   placeholder="Type or select payee..."
+                   oninput="this.value=this.value.replace(/[0-9]/g,'')">
 
             <datalist id="payeeChoices">
                 {% for payee_name in payee_choices %}
@@ -429,8 +462,8 @@
             <input type="text" name="nature_of_payments" id="fieldNature">
         </div>
         <div class="supplier-field">
-            <label>Amount</label>
-            <input type="text" name="amount" id="fieldAmount" placeholder="₱0.00" autocomplete="off">
+            <label>Gross Amount</label>
+            <input type="text" name="gross_amount" id="fieldAmount" placeholder="₱0.00" autocomplete="off">
         </div>
         <div class="supplier-field" style="align-items:flex-start;">
             <label>Tax Type</label>
@@ -449,8 +482,6 @@
             <input type="text" name="tax_5" id="fieldTax5" >
 
         <!--<input type="text" name="tax_5" id="fieldTax5" class="auto-readonly" readonly>-->
-
-            <span style="font-size:11px; color:var(--muted);"> </span>
         </div>
         <div class="supplier-field" id="containerTax2">
             <label id="labelTax2">{{ tax_2_label|default:"Tax (2%/1%)" }}</label>
@@ -460,21 +491,18 @@
         
             <span style="font-size:11px; color:var(--muted);"> </span>
         </div>
-        <div class="supplier-field" id="containerProRate">
+        <div class="supplier-field" id="containerProAmount" style="grid-column: span 2;">
             <label>Professional Tax</label>
-            <input type="number" name="professional_tax_rate" id="fieldProfessionalTaxRate" step="0.01" min="0" placeholder="0.00">
-        </div>
-        <div class="supplier-field" id="containerProAmount">
-            <label>Professional Tax Amount</label>
-            <input type="text" id="fieldProfessionalTaxAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00">
-            <input type="hidden" name="professional_tax" id="fieldProfessionalTax" value="0.00">
+            <input type="text" name="professional_tax" id="fieldProfessionalTaxAmount" placeholder="₱0.00" autocomplete="off">
+            <input type="hidden" name="professional_tax_rate" id="fieldProfessionalTaxRate" value="">
+            <input type="hidden" id="fieldProfessionalTax" value="0.00">
         </div>
     </div>
 
     <div class="supplier-grid-4" id="rowGrossWrapper" style="margin-top:12px;">
         <div class="supplier-field gross-center" id="grossWrapper" style="grid-column: 2 / span 2; text-align: center;">
-            <label style="text-align: center; display: block; width: 100%;">Gross Amount</label>
-            <input type="text" name="gross_amount" id="fieldGrossAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00" style="font-weight:700; text-align:center; font-size:15px;">
+            <label style="text-align: center; display: block; width: 100%;">Net Amount</label>
+            <input type="text" name="amount" id="fieldGrossAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00" style="font-weight:700; text-align:center; font-size:15px;">
             <input type="hidden" id="fieldCalculatedGross" name="calculated_gross" value="0.00">
         </div>
     </div>
@@ -604,7 +632,7 @@
         function pad2(n) { return (n < 10 ? '0' + n : String(n)); }
         try {
             const now = new Date();
-            const isoDate = now.toISOString().slice(0, 10);
+            const isoDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
             if (!DEFAULT_SUPPLIER_VALUES.date) DEFAULT_SUPPLIER_VALUES.date = isoDate;
 
             // fallback check serial when backend default is missing
@@ -664,24 +692,39 @@
 
 
     // --- 1. THE AUTO-CALCULATION LOGIC ---
-// Triggered when Amount or Pro Rate changes
+// Triggered when Gross Amount changes
 function updateAllTaxesAndGross() {
     const isWithholdingChecked = document.getElementById('fieldIsVat')?.checked;
-    const amount = parseNumber(document.getElementById('fieldAmount')?.value);
-    const proRateVal = document.getElementById('fieldProfessionalTaxRate')?.value || '';
+    const gross = parseNumber(document.getElementById('fieldAmount')?.value);
 
-    // A. Calculate Professional Tax (Always Independent)
-    let proRate = proRateVal.trim() !== '' ? parseNumber(proRateVal) / 100 : 0;
-    let proTax = roundHalfUp(amount * proRate);
+    // Get dynamic tax rates from form data attributes
+    const form = document.getElementById('supplierForm');
+    const tax1RateStr = form?.getAttribute('data-tax1-rate') || '5%/3%';
+    const tax2RateStr = form?.getAttribute('data-tax2-rate') || '2%/1%';
     
-    document.getElementById('fieldProfessionalTaxAmount').value = formatAmount(proTax);
-    document.getElementById('fieldProfessionalTax').value = formatAmountHidden(proTax);
+    // Parse rates: format is "VAT%/Non-VAT%"
+    let t1VatRate = 0.05, t1NvRate = 0.03;
+    let t2VatRate = 0.02, t2NvRate = 0.01;
+    
+    if (tax1RateStr.includes('/')) {
+        const parts = tax1RateStr.replace(/%/g, '').split('/');
+        t1VatRate = parseFloat(parts[0]) / 100 || 0.05;
+        t1NvRate = parseFloat(parts[1]) / 100 || 0.03;
+    }
+    if (tax2RateStr.includes('/')) {
+        const parts = tax2RateStr.replace(/%/g, '').split('/');
+        t2VatRate = parseFloat(parts[0]) / 100 || 0.02;
+        t2NvRate = parseFloat(parts[1]) / 100 || 0.01;
+    }
+    
+    // Use VAT rates for VAT mode, Non-VAT rates for non-VAT mode
+    const t1Rate = isWithholdingChecked ? t1VatRate : 0;
+    const t2Rate = isWithholdingChecked ? t2VatRate : 0;
 
-    // B. Calculate Withholding Taxes (Based on 1.06 Divisor)
+    // Withholding taxes: percentage of Gross, deducted to reach Net
     if (isWithholdingChecked) {
-        let base = roundHalfUp(amount / 1.06);
-        let t1 = roundHalfUp(base * 0.05);
-        let t2 = roundHalfUp(base * 0.01);
+        let t1 = roundHalfUp(gross * t1Rate);
+        let t2 = roundHalfUp(gross * t2Rate);
         
         document.getElementById('fieldTax5').value = formatAmount(t1);
         document.getElementById('fieldTax2').value = formatAmount(t2);
@@ -690,66 +733,52 @@ function updateAllTaxesAndGross() {
         document.getElementById('fieldTax2').value = formatAmount(0);
     }
 
-    // C. Refresh the Gross
-    updateGrossOnly();
+    // Refresh Net (Professional Tax is user-entered, not recalculated here)
+    updateNetOnly();
 }
 
-// --- 2. THE OVERRIDE LOGIC ---
-// Triggered when manually typing in Tax boxes, Other Deductions, or after Auto-Calc
-function updateGrossOnly() {
-    const amount = parseNumber(document.getElementById('fieldAmount')?.value);
+// --- 2. NET AMOUNT = Gross − deductions (percentages decrease) ---
+function updateNetOnly() {
+    const gross = parseNumber(document.getElementById('fieldAmount')?.value);
     const t1 = parseNumber(document.getElementById('fieldTax5')?.value);
     const t2 = parseNumber(document.getElementById('fieldTax2')?.value);
     const pro = parseNumber(document.getElementById('fieldProfessionalTaxAmount')?.value);
     const other = parseNumber(document.getElementById('fieldOtherDeductions')?.value);
 
-    const finalGross = roundHalfUp(amount + t1 + t2 + pro + other);
+    const finalNet = roundHalfUp(gross - t1 - t2 - pro - other);
 
-    document.getElementById('fieldGrossAmount').value = formatAmount(finalGross);
-    document.getElementById('fieldCalculatedGross').value = formatAmountHidden(finalGross);
+    document.getElementById('fieldGrossAmount').value = formatAmount(finalNet);
+    document.getElementById('fieldCalculatedGross').value = formatAmountHidden(finalNet);
+    const proHidden = document.getElementById('fieldProfessionalTax');
+    if (proHidden) proHidden.value = formatAmountHidden(pro);
+}
+
+// Back-compat aliases
+function updateGrossOnly() {
+    updateNetOnly();
 }
 
 // --- 3. EVENT LISTENER BINDING ---
 document.addEventListener('DOMContentLoaded', () => {
-    // These trigger full recalculation of taxes
+    // These trigger full recalculation of taxes from Gross
     document.getElementById('fieldAmount')?.addEventListener('input', updateAllTaxesAndGross);
-    document.getElementById('fieldProfessionalTaxRate')?.addEventListener('input', updateAllTaxesAndGross);
     document.getElementById('fieldIsVat')?.addEventListener('change', toggleTaxFields);
 
-    // These ONLY update the Gross (Preserves your manual edits in the tax boxes)
-    ['fieldTax5', 'fieldTax2', 'fieldOtherDeductions'].forEach(id => {
-        const elem = document.getElementById(id);
-        if (elem) {
-            elem.addEventListener('input', updateGrossOnly);
-            // Apply currency masking (₱ and commas) on blur
-            setupAmountFieldFocusBlur(id);
-        }
+    // These ONLY update the Net (Preserves manual edits in tax/pro/other boxes)
+    ['fieldTax5', 'fieldTax2', 'fieldOtherDeductions', 'fieldProfessionalTaxAmount'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', updateNetOnly);
     });
-    
-    // Apply masking to Amount field too
-    setupAmountFieldFocusBlur('fieldAmount');
+
+    // Currency masking (₱ and commas) on focus/blur
+    ['fieldAmount', 'fieldOtherDeductions', 'fieldProfessionalTaxAmount'].forEach(setupAmountFieldFocusBlur);
 });
 
 
 
 
 
-function toggleTaxFields() {
-    const isWithholdingChecked = document.getElementById('fieldIsVat')?.checked;
-    const c1 = document.getElementById('containerTax5');
-    const c2 = document.getElementById('containerTax2');
-    
-    // Only hide the Withholding Tax containers. 
-    // DO NOT hide the Professional Tax containers.
-    if (c1) c1.style.display = isWithholdingChecked ? '' : 'none';
-    if (c2) c2.style.display = isWithholdingChecked ? '' : 'none';
-    
-    updateAllTaxesAndGross();
-}
-
-
     function updateProfessionalTaxAmount() {
-        updateAllTaxesAndGross();
+        updateNetOnly();
     }
 
     function toggleTaxFields() {
@@ -766,7 +795,7 @@ function toggleTaxFields() {
     }
 
     function updateGrossAmount() {
-        updateAllTaxesAndGross();
+        updateNetOnly();
     }
 
     function syncAllTaxAndGross() {
@@ -781,6 +810,24 @@ function toggleTaxFields() {
         const title = document.getElementById('supplierModalTitle');
         const action = document.getElementById('supplierAction');
         const submitBtn = document.getElementById('supplierSubmitBtn');
+
+        // Fetch fresh tax data from API
+        fetch('/api/supplier-modal-context/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    const form = document.getElementById('supplierForm');
+                    if (form) {
+                        form.setAttribute('data-tax1-rate', data.tax_1_rate || '5%/3%');
+                        form.setAttribute('data-tax2-rate', data.tax_2_rate || '2%/1%');
+                    }
+                    const labelT5 = document.getElementById('labelTax5');
+                    const labelT2 = document.getElementById('labelTax2');
+                    if (labelT5) labelT5.textContent = data.tax_1_label || 'Tax (5%/3%)';
+                    if (labelT2) labelT2.textContent = data.tax_2_label || 'Tax (2%/1%)';
+                }
+            })
+            .catch(() => {});
 
         // Close any open Actions dropdown
         document.querySelectorAll('.dropdown-menu, .actions-dropdown').forEach(el => {
@@ -799,16 +846,15 @@ function toggleTaxFields() {
             setFieldValue('fieldDate', trigger.dataset.date);
             setFieldValue('fieldPayee', trigger.dataset.payee);
             setFieldValue('fieldNature', trigger.dataset.natureOfCollections);
-            setFieldValue('fieldAmount', formatAmount(trigger.dataset.amount));
+            setFieldValue('fieldAmount', formatAmount(trigger.dataset.grossAmount));
             setFieldValue('fieldDvPayroll', trigger.dataset.dvPayroll);
             setFieldValue('fieldOrsBurs', trigger.dataset.orsBurs);
             setFieldValue('fieldResponsibilityCenter', trigger.dataset.responsibilityCenter);
-            setFieldValue('fieldProfessionalTaxRate', trigger.dataset.professionalTaxRate);
             setFieldValue('fieldProfessionalTax', formatAmountHidden(trigger.dataset.professionalTax));
             setFieldValue('fieldProfessionalTaxAmount', formatAmount(trigger.dataset.professionalTax));
             setFieldValue('fieldTax5', formatAmount(trigger.dataset.tax5));
             setFieldValue('fieldTax2', formatAmount(trigger.dataset.tax2));
-            setFieldValue('fieldGrossAmount', formatAmount(trigger.dataset.grossAmount));
+            setFieldValue('fieldGrossAmount', formatAmount(trigger.dataset.amount));
             setFieldValue('fieldAccountTitle', trigger.dataset.accountTitle);
             setFieldValue('fieldFundCluster', trigger.dataset.fundCluster);
             setFieldValue('fieldFundClusterId', trigger.dataset.fundClusterId || '');
@@ -871,15 +917,19 @@ function toggleTaxFields() {
 
         try { toggleOtherDetails(mode !== 'create'); } catch (e) { }
 
-        modal.style.display = 'flex';
+        modal.classList.add('active');
         modal.setAttribute('aria-hidden', 'false');
     }
 
     function closeSupplierModal() {
         const modal = document.getElementById('supplierModal');
         if (!modal) return;
-        modal.style.display = 'none';
+        modal.classList.remove('active');
+        modal.classList.add('closing');
         modal.setAttribute('aria-hidden', 'true');
+        setTimeout(function() {
+            modal.classList.remove('closing');
+        }, 350);
     }
 
     document.getElementById('supplierModal')?.addEventListener('click', function (event) {
@@ -914,32 +964,6 @@ function toggleTaxFields() {
         }
     }
 
-    ['fieldAmount', 'fieldProfessionalTaxRate', 'fieldOtherDeductions'].forEach(function (id) {
-        const field = document.getElementById(id);
-        if (!field) return;
-        const triggerUpdate = function () {
-            if (id === 'fieldAmount') {
-                updateTaxAmountsFromAmount();
-                updateProfessionalTaxAmount();
-            }
-            if (id === 'fieldProfessionalTaxRate') updateProfessionalTaxAmount();
-            updateGrossAmount();
-        };
-        field.addEventListener('input', triggerUpdate);
-        if (field.tagName === 'SELECT') {
-            field.addEventListener('change', triggerUpdate);
-        }
-    });
-
-    const vatCheckbox = document.getElementById('fieldIsVat');
-    if (vatCheckbox) {
-        vatCheckbox.addEventListener('change', function () {
-            toggleTaxFields();
-            updateTaxAmountsFromAmount();
-            updateGrossAmount();
-        });
-    }
-
     function toggleOtherDetails(force) {
         const body = document.getElementById('otherDetailsBody');
         const btn = document.getElementById('toggleOtherDetailsBtn');
@@ -970,8 +994,6 @@ function toggleTaxFields() {
             this.value = formatAmount(num);
         });
     }
-
-    ['fieldAmount', 'fieldOtherDeductions'].forEach(setupAmountFieldFocusBlur);
 
     // Enhance datalist inputs to show all options on focus, restoring on blur/submit if not modified
     const datalistInputs = ['fieldPayee', 'fieldApproval', 'fieldRemarksText', 'fieldAccountTitle'];
@@ -1021,6 +1043,14 @@ function toggleTaxFields() {
             }
         });
 
+        // Strip ₱ signs and commas from money fields before submit
+        ['fieldAmount', 'fieldTax5', 'fieldTax2', 'fieldGrossAmount', 'fieldOtherDeductions', 'fieldProfessionalTaxAmount'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.value) {
+                el.value = el.value.replace(/,/g, '').replace(/₱/g, '').replace(/\u20B1/g, '').trim();
+            }
+        });
+
         // Duplicate validation for create action
         const action = document.getElementById('supplierAction')?.value;
         if (action === 'create') {
@@ -1028,28 +1058,30 @@ function toggleTaxFields() {
             const dvPayroll = document.getElementById('fieldDvPayroll')?.value.trim();
             const orsBurs = document.getElementById('fieldOrsBurs')?.value.trim();
 
-            const rows = document.querySelectorAll('#supplierTableBody tr');
-            for (const row of rows) {
-                const cells = row.querySelectorAll('td');
-                if (cells.length > 1) {
-                    const existingSerial = cells[1]?.textContent.trim();
-                    const existingDv = cells[3]?.textContent.trim();
-                    const existingOrs = cells[4]?.textContent.trim();
+            if (typeof document.getElementById('supplierTableBody') !== 'undefined') {
+                const rows = document.querySelectorAll('#supplierTableBody tr');
+                for (const row of rows) {
+                    const cells = row.querySelectorAll('td');
+                    if (cells.length > 1) {
+                        const existingSerial = cells[1]?.textContent.trim();
+                        const existingDv = cells[3]?.textContent.trim();
+                        const existingOrs = cells[4]?.textContent.trim();
 
-                    if (serial && existingSerial && existingSerial === serial) {
-                        e.preventDefault();
-                        showDuplicateModal('Serial Number', serial);
-                        return false;
-                    }
-                    if (dvPayroll && existingDv && existingDv === dvPayroll) {
-                        e.preventDefault();
-                        showDuplicateModal('DV/Payroll No.', dvPayroll);
-                        return false;
-                    }
-                    if (orsBurs && existingOrs && existingOrs === orsBurs) {
-                        e.preventDefault();
-                        showDuplicateModal('ORS/BURS No.', orsBurs);
-                        return false;
+                        if (serial && existingSerial && existingSerial === serial) {
+                            e.preventDefault();
+                            showDuplicateModal('Serial Number', serial);
+                            return false;
+                        }
+                        if (dvPayroll && existingDv && existingDv === dvPayroll) {
+                            e.preventDefault();
+                            showDuplicateModal('DV/Payroll No.', dvPayroll);
+                            return false;
+                        }
+                        if (orsBurs && existingOrs && existingOrs === orsBurs) {
+                            e.preventDefault();
+                            showDuplicateModal('ORS/BURS No.', orsBurs);
+                            return false;
+                        }
                     }
                 }
             }

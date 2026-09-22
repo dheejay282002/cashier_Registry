@@ -734,11 +734,14 @@
             display: flex;
             align-items: center;
             padding: 0 15px;
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: 0;
+            width: 100%;
             z-index: 2000;
             box-shadow: 0 3px 12px rgba(15, 23, 42, 0.12);
             justify-content: space-between;
+            box-sizing: border-box;
         }
 
         .navbar-left {
@@ -852,10 +855,10 @@
 
         .mini-sidebar {
             position: fixed;
-            top: 55px;
+            top: 57px;
             left: 0;
             width: 64px;
-            height: calc(100% - 55px);
+            height: calc(100% - 57px);
             background: rgba(14, 45, 10, 0.75);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -863,6 +866,7 @@
             z-index: 2800;
             display: flex;
             flex-direction: column;
+            align-items: center;
             transition: width 0.32s cubic-bezier(0.22, 1, 0.36, 1);
             overflow: hidden;
             overflow-y: auto;
@@ -878,8 +882,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             gap: 2px;
             width: 100%;
+            padding-left: 0;
+            padding-right: 0;
         }
 
         .sidebar-top {
@@ -956,6 +963,7 @@
         body.desktop-nav-hover-expanded .mini-sidebar {
             width: 220px;
             padding: 0 8px;
+            align-items: stretch;
         }
 
         body.desktop-nav-hover-expanded .mini-sidebar {
@@ -1002,10 +1010,10 @@
 
         .sidebar {
             position: fixed;
-            top: 55px;
+            top: 57px;
             left: -260px;
             width: 260px;
-            height: calc(100% - 55px);
+            height: calc(100% - 57px);
             background: rgba(14, 45, 10, 0.75);
             backdrop-filter: blur(20px) saturate(180%);
             -webkit-backdrop-filter: blur(20px) saturate(180%);
@@ -1055,10 +1063,10 @@
 
         .overlay {
             position: fixed;
-            top: 55px;
+            top: 57px;
             left: 0;
             width: 100%;
-            height: calc(100% - 55px);
+            height: calc(100% - 57px);
             background: rgba(0, 0, 0, 0.5);
             display: none;
             z-index: 2500;
@@ -1071,12 +1079,18 @@
         .content {
             padding: 24px;
             margin-left: 64px;
-            transition: margin-left 0.25s ease;
+            margin-top: 57px;
+            transition: margin-left 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+            overflow-x: hidden;
+            width: calc(100% - 64px);
+            box-sizing: border-box;
+            min-height: calc(100vh - 57px);
         }
 
         body.desktop-nav-expanded .content,
         body.desktop-nav-hover-expanded .content {
             margin-left: 220px;
+            width: calc(100% - 220px);
         }
 
         .cards {
@@ -1397,12 +1411,10 @@
             width: 100%;
             height: 2px;
             background: var(--header-accent);
-        }
-
-        .header-line {
-            width: 100%;
-            height: 2px;
-            background: var(--header-accent);
+            position: fixed;
+            top: 55px;
+            left: 0;
+            z-index: 2001;
         }
 
         @media (max-width: 768px) {
@@ -1444,10 +1456,10 @@
 
         .settings-drawer {
             position: fixed;
-            top: 55px;
+            top: 57px;
             left: -240px;
             width: 240px;
-            height: calc(100% - 55px);
+            height: calc(100% - 57px);
             background: rgba(9, 32, 7, 0.72);
             backdrop-filter: blur(16px) saturate(180%);
             -webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -1476,11 +1488,13 @@
 
         body.settings-drawer-open .content {
             margin-left: 304px;
+            width: calc(100% - 304px);
         }
 
         body.desktop-nav-expanded.settings-drawer-open .content,
         body.desktop-nav-hover-expanded.settings-drawer-open .content {
             margin-left: 460px;
+            width: calc(100% - 460px);
         }
 
         .settings-drawer-header {
@@ -1905,11 +1919,9 @@
             }
         }
     </style>
-
-
-    <div class="header-line1"></div>
-
 </head>
+
+<body data-is-admin="{{ is_admin|yesno:'true,false' }}" data-role="{{ current_profile.role|default:request.user.profile.role|default:'' }}">
 
 <div id="globalPageLoader">
     <div class="ring-loader-wrap">
@@ -1955,7 +1967,6 @@
         <p style="font-size:13px; opacity:0.5; margin:0;">Move mouse or press any key to cancel</p>
     </div>
 </div>
-<body data-is-admin="{{ is_admin|yesno:'true,false' }}">
 
 
     <!--Here-->
@@ -2008,6 +2019,14 @@
                     <span class="mini-label">Fund Clusters</span>
                 </a>
             {% endif %}
+            {% if 'archives' in role_permissions.navigation or is_admin %}
+            {% if request.user.profile.role != 'guest' and request.user.profile.role != 'budget_accounting' %}
+            <a class="mini-link {% block nav_archives %}{% endblock %}" href="{% url 'archives' %}" title="Archives">
+                <i class="fas fa-box-archive"></i>
+                <span class="mini-label">Archives</span>
+            </a>
+            {% endif %}
+            {% endif %}
         {% else %}
             {% if 'suppliers' in role_permissions.navigation %}
                 <a class="mini-link" href="{% url 'cashier_suppliers' %}" title="Suppliers">
@@ -2045,15 +2064,23 @@
                     <span class="mini-label">Fund Clusters</span>
                 </a>
             {% endif %}
+            {% if 'archives' in role_permissions.navigation %}
+            {% if request.user.profile.role != 'guest' and request.user.profile.role != 'budget_accounting' %}
+            <a class="mini-link" href="{% url 'archives' %}" title="Archives">
+                <i class="fas fa-box-archive"></i>
+                <span class="mini-label">Archives</span>
+            </a>
+            {% endif %}
+            {% endif %}
         {% endif %}
     </div>
 
     <div class="sidebar-bottom">
-        <a class="mini-link" id="msgInboxBtn" title="Messages" style="cursor:pointer; position:relative;" onclick="toggleMsgInbox()">
+       <!--- <a class="mini-link" id="msgInboxBtn" title="Messages" style="cursor:pointer; position:relative;" onclick="toggleMsgInbox()">
             <i class="fas fa-envelope"></i>
             <span class="mini-label">Messages</span>
             <span id="msgBadge" style="display:none; position:absolute; top:2px; right:6px; background:#ef4444; color:#fff; font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:8px; text-align:center; line-height:16px; padding:0 4px;">0</span>
-        </a>
+        </a>-->
 
         <a class="mini-link" id="settingsToggleBtn" title="Settings" style="cursor:pointer;">
             <i class="fas fa-gear"></i>
@@ -2103,6 +2130,13 @@
             <a class="settings-drawer-link {% block nav_sysset %}{% endblock %}" href="{% url 'business_info' %}" title="System Information">
                 <i class="fas fa-building"></i>
                 <span class="settings-drawer-label">System Information</span>
+            </a>
+        {% endif %}
+
+        {% if is_admin %}
+            <a class="settings-drawer-link {% block nav_taxes %}{% endblock %}" href="{% url 'taxes_management' %}" title="Taxes">
+                <i class="fas fa-percent"></i>
+                <span class="settings-drawer-label">Taxes</span>
             </a>
         {% endif %}
 
@@ -2264,6 +2298,10 @@
             <a href="{% url 'business_info' %}" onclick="closeMenu()"><i class="fas fa-building"></i> System Information</a>
         {% endif %}
 
+        {% if is_admin %}
+            <a href="{% url 'taxes_management' %}" onclick="closeMenu()"><i class="fas fa-percent"></i> Taxes</a>
+        {% endif %}
+
         {% if is_admin and 'system_settings' in role_permissions.navigation %}
             <a href="{% url 'email_settings' %}" onclick="closeMenu()"><i class="fas fa-envelope"></i> Email Settings</a>
         {% endif %}
@@ -2332,7 +2370,6 @@
 </div>
 <!--end here-->
 
-    </div>
     <div class="header-line"></div>
 
     <div class="content">{% block content %}{% endblock %}</div>
@@ -3034,14 +3071,18 @@
             const settingsDrawer = document.getElementById("settingsDrawer");
             
             if (settingsBtn && settingsDrawer) {
+                const STORAGE_KEY = "settingsDrawerOpen";
+
                 // Auto-detect and mark active settings page link based on current URL path
                 const normalizePath = p => p.replace(/\/$/, "");
                 const currentPath = normalizePath(window.location.pathname);
+                let isSettingsPage = false;
                 settingsDrawer.querySelectorAll(".settings-drawer-link").forEach(link => {
                     try {
                         const linkPath = normalizePath(new URL(link.href, window.location.origin).pathname);
                         if (currentPath === linkPath || (currentPath.startsWith(linkPath + "/") && linkPath !== "")) {
                             link.classList.add("active");
+                            isSettingsPage = true;
                         }
                     } catch (e) {}
                 });
@@ -3050,13 +3091,21 @@
                     settingsBtn.classList.add("active");
                     settingsDrawer.classList.add("open");
                     document.body.classList.add("settings-drawer-open");
+                    localStorage.setItem(STORAGE_KEY, "true");
                 };
 
                 const closeDrawer = () => {
                     settingsBtn.classList.remove("active");
                     settingsDrawer.classList.remove("open");
                     document.body.classList.remove("settings-drawer-open");
+                    localStorage.setItem(STORAGE_KEY, "false");
                 };
+
+                // Restore drawer state from localStorage or auto-open on settings pages
+                const wasOpen = localStorage.getItem(STORAGE_KEY);
+                if (wasOpen === "true" || isSettingsPage) {
+                    openDrawer();
+                }
 
                 settingsBtn.addEventListener("click", (e) => {
                     e.stopPropagation();
@@ -3075,21 +3124,14 @@
                     });
                 }
 
-                // Click outside settings drawer to close, but only if we are NOT on an active settings page.
+                // Click outside settings drawer to close
                 document.addEventListener("click", (e) => {
-                    const activeSettingsLink = settingsDrawer.querySelector(".settings-drawer-link.active");
-                    if (!activeSettingsLink) {
+                    if (settingsDrawer.classList.contains("open")) {
                         if (!settingsDrawer.contains(e.target) && e.target !== settingsBtn && !settingsBtn.contains(e.target)) {
                             closeDrawer();
                         }
                     }
                 });
-
-                // Auto-open drawer if currently on an active settings page
-                const activeSettingsLink = settingsDrawer.querySelector(".settings-drawer-link.active");
-                if (activeSettingsLink) {
-                    openDrawer();
-                }
             }
         });
 
@@ -5034,6 +5076,52 @@
         transform: rotate(180deg);
     }
 
+    /* Hide all creation / action FABs for guest and budget_accounting users */
+    body[data-role="guest"] .supplier-master-fab,
+    body[data-role="guest"] .cheque-master-fab,
+    body[data-role="guest"] #chequeMasterFab,
+    body[data-role="guest"] #chequeMasterMenu,
+    body[data-role="guest"] .create-radai-fab,
+    body[data-role="guest"] .create-cheque-fab,
+    body[data-role="guest"] .check-kiosk-fab,
+    body[data-role="budget_accounting"] .supplier-master-fab,
+    body[data-role="budget_accounting"] .cheque-master-fab,
+    body[data-role="budget_accounting"] #chequeMasterFab,
+    body[data-role="budget_accounting"] #chequeMasterMenu,
+    body[data-role="budget_accounting"] .create-radai-fab,
+    body[data-role="budget_accounting"] .create-cheque-fab,
+    body[data-role="budget_accounting"] .check-kiosk-fab {
+        display: none !important;
+    }
+
+    /* Supplier Floating Action Button */
+    .supplier-master-fab {
+        position: fixed;
+        bottom: 24px !important;
+        right: 190px !important;
+        z-index: 990 !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 22px;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, #0d9488, #14b8a6);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.9375rem;
+        box-shadow: 0 8px 24px rgba(20, 184, 166, 0.4);
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none;
+    }
+    .supplier-master-fab:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 12px 30px rgba(20, 184, 166, 0.55);
+        color: #ffffff;
+    }
+    .supplier-master-fab .fab-icon { font-size: 18px; }
+
     .cheque-master-menu {
         position: fixed;
         bottom: 84px !important;
@@ -5600,6 +5688,13 @@ function attachPasswordValidation(inputId) {
 })();
 </script>
 
+{% if current_profile.role != 'guest' and current_profile.role != 'budget_accounting' and request.user.profile.role != 'guest' and request.user.profile.role != 'budget_accounting' %}
+<!-- Supplier Floating Action Button -->
+<button type="button" class="supplier-master-fab" title="Add Supplier" onclick="openGlobalSupplierModal()">
+  <div class="fab-icon"><i class="fas fa-user-plus"></i></div>
+  <div class="fab-text">Supplier</div>
+</button>
+
 <!-- Master Floating Cheque Action Button & Popover Menu -->
 <div id="chequeMasterFab" class="cheque-master-fab" onclick="toggleChequeMasterMenu(event)" title="Cheque Actions">
   <div class="fab-icon"><i class="fas fa-money-check-alt"></i></div>
@@ -5624,6 +5719,7 @@ function attachPasswordValidation(inputId) {
     </div>
   </button>
 </div>
+{% endif %}
 
 <script>
   function toggleChequeMasterMenu(show) {
@@ -5669,10 +5765,30 @@ function attachPasswordValidation(inputId) {
         </div>
 
         <div class="info-tile" style="padding:12px; grid-column: 1 / -1;">
-          <div class="tile-label" style="margin-bottom:6px;">Payee / Supplier Name (Auto-Syncs Details)</div>
-          <input type="text" id="kioskPayeeName" name="payee_name" list="kioskPayeesDatalist" class="chatbot-input" required placeholder="Select or type Payee Name..." oninput="syncKioskPayeeDetails(this.value); validateKioskForm();" onchange="syncKioskPayeeDetails(this.value); validateKioskForm();" onkeydown="if(event.key==='Enter'){event.preventDefault(); autocompleteKioskPayee(this);}" style="width:100%; border-radius:8px; padding:10px;" />
-          <datalist id="kioskPayeesDatalist"></datalist>
+          <div class="tile-label" style="margin-bottom:6px;">Payee / Supplier Name</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="kioskPayeeName" name="payee_name" list="kioskPayeesDatalist" class="chatbot-input" placeholder="Select or type Payee Name..." oninput="syncKioskPayeeDetails(this.value);" onchange="syncKioskPayeeDetails(this.value);" onkeydown="if(event.key==='Enter'){event.preventDefault(); autocompleteKioskPayee(this);}" style="flex:1; border-radius:8px; padding:10px;" />
+            <datalist id="kioskPayeesDatalist"></datalist>
+            <button type="button" id="kioskAddSupplierBtn" class="btn btn-primary" onclick="addKioskSupplier()" style="padding:10px 16px; border-radius:8px; white-space:nowrap;">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
           <input type="hidden" id="kioskPayeeId" name="payee_id" />
+
+          <!-- Selected Suppliers List -->
+          <div id="kioskSelectedSuppliers" style="margin-top:12px; display:none;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:12px; font-weight:600; color:#374151;">Selected Suppliers</span>
+              <button type="button" id="kioskClearAllBtn" class="btn btn-secondary" onclick="clearAllKioskSuppliers()" style="padding:4px 10px; font-size:11px; border-radius:6px;">
+                <i class="fas fa-times"></i> Clear All
+              </button>
+            </div>
+            <div id="kioskSuppliersList" style="max-height:180px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; background:#fafafa;"></div>
+            <div style="margin-top:8px; padding:8px 12px; background:#f0fdf4; border-radius:6px; border:1px solid #bbf7d0;">
+              <span style="font-size:12px; color:#166534;">Total: <strong id="kioskTotalAmount">₱0.00</strong></span>
+              <span style="font-size:11px; color:#6b7280; margin-left:12px;">(<span id="kioskSupplierCount">0</span> supplier(s))</span>
+            </div>
+          </div>
         </div>
 
         <div class="info-tile" style="padding:12px;">
@@ -5706,7 +5822,7 @@ function attachPasswordValidation(inputId) {
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
         <button type="button" class="btn btn-secondary" onclick="closeCreateChequeKioskModal()" style="padding:10px 20px; border-radius:8px;">Cancel</button>
         <button type="submit" id="kioskSubmitBtn" class="btn btn-success" disabled style="padding:10px 24px; border-radius:8px; background:linear-gradient(135deg, #10b981 0%, #059669 100%); border:none; font-weight:700; display:flex; align-items:center; gap:8px; opacity:0.5; cursor:not-allowed;">
-          <i class="fas fa-print"></i> Save &amp; Print Cheque
+          <i class="fas fa-print"></i> <span id="kioskSubmitText">Save &amp; Print Cheque</span>
         </button>
       </div>
     </form>
@@ -5719,6 +5835,18 @@ function attachPasswordValidation(inputId) {
           <span>Cheque Saved Successfully &amp; Ready for Print!</span>
         </div>
         <span id="kioskPreviewChequeBadge" style="color:#10b981; font-weight:700; font-family:'JetBrains Mono', monospace;">#SAVED</span>
+      </div>
+
+      <!-- Multi-cheque navigation -->
+      <div id="kioskChequeNav" style="display:none; justify-content:center; align-items:center; gap:12px; margin-bottom:10px; padding:8px; background:#f9fafb; border-radius:8px;">
+        <button type="button" class="btn btn-secondary" id="kioskPrevCheque" onclick="kioskNavCheque(-1)" style="padding:6px 12px; font-size:12px;">
+          <i class="fas fa-chevron-left"></i> Prev
+        </button>
+        <span id="kioskChequeProgress" style="font-size:13px; font-weight:600; color:#374151;">1 / 1</span>
+        <button type="button" class="btn btn-secondary" id="kioskNextCheque" onclick="kioskNavCheque(1)" style="padding:6px 12px; font-size:12px;">
+          Next <i class="fas fa-chevron-right"></i>
+        </button>
+        <span id="kioskChequePayee" style="font-size:12px; color:#6b7280; margin-left:8px;"></span>
       </div>
 
       <div style="position:relative; width:100%; height:330px; border-radius:0; overflow:hidden; border:none !important; background:#ffffff; display:flex; align-items:center; justify-content:center;">
@@ -5839,9 +5967,33 @@ function attachPasswordValidation(inputId) {
       </div>
 
       <div class="action-panel">
-        <button id="releaseBtn" class="btn btn-release" onclick="markAsReleased()">
+        <button id="releaseBtn" class="btn btn-release" onclick="openReleaseModal()">
           Mark as Released / Claimed
         </button>
+      </div>
+    </div>
+
+    <div id="releaseConfirmModal" style="display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:16px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#065f46,#047857);color:#fff;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;">
+          <h3 style="margin:0;font-size:16px;font-weight:700;"><i class="fas fa-check-double" style="margin-right:8px;"></i>Confirm Release</h3>
+          <button onclick="closeReleaseModal()" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
+        </div>
+        <div style="padding:24px;">
+          <p style="margin:0 0 16px;font-size:14px;color:#374151;">Mark this check as released? You may optionally set a past date/time if the claim happened earlier.</p>
+          <div style="margin-bottom:14px;">
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Release Date <span style="font-weight:400;color:#9ca3af;">(optional — defaults to now)</span></label>
+            <input type="date" id="releaseDateInput" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px;">Release Time <span style="font-weight:400;color:#9ca3af;">(optional — defaults to now)</span></label>
+            <input type="time" id="releaseTimeInput" style="width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;box-sizing:border-box;">
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button onclick="closeReleaseModal()" style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:14px;font-weight:600;cursor:pointer;color:#374151;">Cancel</button>
+            <button onclick="confirmRelease()" id="confirmReleaseBtn" style="padding:10px 20px;border:none;border-radius:8px;background:#10b981;color:#fff;font-size:14px;font-weight:600;cursor:pointer;"><i class="fas fa-check-double" style="margin-right:6px;"></i>Release</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -6572,6 +6724,8 @@ function attachPasswordValidation(inputId) {
     const amtEl = document.getElementById('kioskAmountInput');
     const numInput = document.getElementById('kioskChequeNumber');
 
+    console.log('[syncKioskPayeeDetails] Called with:', payeeName);
+
     const setLockState = (locked) => {
       const inputs = [bankEl, acctEl, purposeEl, amtEl];
       inputs.forEach(el => {
@@ -6637,6 +6791,7 @@ function attachPasswordValidation(inputId) {
     }
 
     if (s) {
+      console.log('[syncKioskPayeeDetails] Found supplier in map/API:', s.name, 'amount:', s.amount);
       if (payeeIdEl) payeeIdEl.value = s.id || '';
 
       if (numInput && s.check_serial) {
@@ -6662,18 +6817,23 @@ function attachPasswordValidation(inputId) {
       }
 
       if (bankEl && s.bank_name) bankEl.value = s.bank_name;
+      else if (bankEl && !bankEl.value) bankEl.value = 'LANDBANK';
       if (acctEl && s.account_number) acctEl.value = s.account_number;
       if (purposeEl && (s.nature_of_collections || s.remarks)) {
         purposeEl.value = s.nature_of_collections || s.remarks;
       }
-      if (amtEl && s.amount && parseFloat(s.amount) > 0) {
-        amtEl.value = parseFloat(s.amount).toFixed(2);
+      if (amtEl && s.amount !== undefined && s.amount !== null && String(s.amount) !== '') {
+        const parsedAmt = parseFloat(s.amount);
+        if (!isNaN(parsedAmt)) {
+          amtEl.value = parsedAmt > 0 ? parsedAmt.toFixed(2) : '0.00';
+        }
       }
 
       setLockState(true);
     } else {
+      console.log('[syncKioskPayeeDetails] No supplier found for:', payeeName);
       if (payeeIdEl) payeeIdEl.value = '';
-      if (bankEl) bankEl.value = '';
+      if (bankEl) bankEl.value = 'LANDBANK';
       if (acctEl) acctEl.value = '';
       if (purposeEl) purposeEl.value = '';
       if (amtEl) amtEl.value = '';
@@ -6717,6 +6877,9 @@ function attachPasswordValidation(inputId) {
     const btn = document.getElementById('kioskSubmitBtn');
     if (!btn) return;
 
+    const suppliers = window._kioskSelectedSuppliers || [];
+    const hasMultipleSuppliers = suppliers.length > 0;
+
     const payeeNameVal = (payeeNameEl ? payeeNameEl.value : '').trim();
     const hasPayeeId = !!(payeeIdEl && payeeIdEl.value);
 
@@ -6731,7 +6894,8 @@ function attachPasswordValidation(inputId) {
       (purposeEl && purposeEl.value.trim())
     );
 
-    if (payeeNameVal && (hasPayeeId || allFilled)) {
+    // Enable if multiple suppliers OR single supplier with all fields filled
+    if (hasMultipleSuppliers || (payeeNameVal && (hasPayeeId || allFilled))) {
       btn.disabled = false;
       btn.style.opacity = '1';
       btn.style.cursor = 'pointer';
@@ -6740,8 +6904,8 @@ function attachPasswordValidation(inputId) {
       btn.disabled = true;
       btn.style.opacity = '0.5';
       btn.style.cursor = 'not-allowed';
-      if (!payeeNameVal) {
-        btn.title = 'Please enter Payee Name.';
+      if (!payeeNameVal && !hasMultipleSuppliers) {
+        btn.title = 'Please enter Payee Name or add suppliers.';
       } else if (!hasPayeeId) {
         btn.title = 'Payee not found in system. Fill all fields to print custom cheque.';
       } else {
@@ -6753,6 +6917,155 @@ function attachPasswordValidation(inputId) {
   function closeCustomPayeeWarningModal() {
     const modal = document.getElementById('customPayeeWarningModal');
     if (modal) modal.style.display = 'none';
+  }
+
+  // Multi-supplier management
+  window._kioskSelectedSuppliers = [];
+
+  function addKioskSupplier() {
+    const payeeInput = document.getElementById('kioskPayeeName');
+    const payeeIdEl = document.getElementById('kioskPayeeId');
+    const bankEl = document.getElementById('kioskBankName');
+    const acctEl = document.getElementById('kioskAccountNumber');
+    const fundSel = document.getElementById('kioskFundCluster');
+    const amtEl = document.getElementById('kioskAmountInput');
+    const purposeEl = document.getElementById('kioskPurposeInput');
+    const chequeNumEl = document.getElementById('kioskChequeNumber');
+
+    const rawName = (payeeInput ? payeeInput.value : '').trim();
+    if (!rawName) {
+      if (typeof showToast === 'function') showToast('warning', 'Empty', 'Please enter or select a supplier name.');
+      return;
+    }
+
+    // Resolve the clean supplier name (strip seq prefix like "#123 — " if user typed it)
+    let cleanName = rawName;
+    const dashMatch = rawName.match(/^\S+\s*[—–-]\s*(.+)$/);
+    if (dashMatch) cleanName = dashMatch[1].trim();
+
+    // Check if already added (compare against clean name)
+    if (window._kioskSelectedSuppliers.some(s => s.name.toLowerCase() === cleanName.toLowerCase())) {
+      if (typeof showToast === 'function') showToast('warning', 'Duplicate', 'Supplier already added.');
+      return;
+    }
+
+    // Look up supplier from map first for accurate data
+    const nameLower = cleanName.toLowerCase();
+    let s = window._kioskSuppliersMap[nameLower];
+    if (!s) {
+      const matchKey = Object.keys(window._kioskSuppliersMap).find(k => k === nameLower || k.includes(nameLower) || nameLower.includes(k));
+      if (matchKey) s = window._kioskSuppliersMap[matchKey];
+    }
+
+    // Build supplier data: prefer map data, fall back to form field values
+    const fId = (payeeIdEl ? payeeIdEl.value : '').trim() || (s ? String(s.id || '') : '');
+    const fBank = (bankEl ? bankEl.value.trim() : '') || (s ? (s.bank_name || '') : '') || 'LANDBANK';
+    const fAcct = (acctEl ? acctEl.value.trim() : '') || (s ? (s.account_number || '') : '');
+    const fFundId = (fundSel ? fundSel.value.trim() : '') || (s ? (s.fund_cluster_id || '') : '');
+    const fFundLabel = (fundSel && fundSel.selectedIndex >= 0 ? fundSel.options[fundSel.selectedIndex].text : '') || (s ? (s.display_label || s.fund_cluster_code || '') : '');
+    const fAmount = (amtEl ? parseFloat(amtEl.value) : 0) || (s ? parseFloat(s.amount) || 0 : 0);
+    const fPurpose = (purposeEl ? purposeEl.value.trim() : '') || (s ? (s.nature_of_collections || s.remarks || '') : '');
+    const fChequeNum = (chequeNumEl ? chequeNumEl.value.trim() : '') || (s ? (s.check_serial || '') : '');
+
+    const supplier = {
+      id: fId,
+      name: cleanName,
+      bank_name: fBank || 'LANDBANK',
+      account_number: fAcct,
+      fund_cluster_id: fFundId,
+      fund_cluster_label: fFundLabel,
+      amount: fAmount,
+      purpose: fPurpose,
+      cheque_number: fChequeNum
+    };
+
+    console.log('[addKioskSupplier] Captured supplier:', JSON.stringify(supplier));
+
+    window._kioskSelectedSuppliers.push(supplier);
+    renderKioskSuppliersList();
+
+    // Clear input for next supplier
+    if (payeeInput) payeeInput.value = '';
+    if (payeeIdEl) payeeIdEl.value = '';
+    if (amtEl) amtEl.value = '';
+    if (purposeEl) purposeEl.value = '';
+    validateKioskForm();
+  }
+
+  function removeKioskSupplier(index) {
+    window._kioskSelectedSuppliers.splice(index, 1);
+    renderKioskSuppliersList();
+    validateKioskForm();
+  }
+
+  function clearAllKioskSuppliers() {
+    window._kioskSelectedSuppliers = [];
+    renderKioskSuppliersList();
+    validateKioskForm();
+  }
+
+  function renderKioskSuppliersList() {
+    const container = document.getElementById('kioskSuppliersList');
+    const wrapper = document.getElementById('kioskSelectedSuppliers');
+    const totalEl = document.getElementById('kioskTotalAmount');
+    const countEl = document.getElementById('kioskSupplierCount');
+    const submitText = document.getElementById('kioskSubmitText');
+    const suppliers = window._kioskSelectedSuppliers;
+
+    if (!container || !wrapper) return;
+
+    if (suppliers.length === 0) {
+      wrapper.style.display = 'none';
+      if (submitText) submitText.innerHTML = 'Save &amp; Print Cheque';
+      return;
+    }
+
+    wrapper.style.display = 'block';
+    if (submitText) submitText.innerHTML = `Save &amp; Print ${suppliers.length} Cheque${suppliers.length > 1 ? 's' : ''}`;
+
+    let html = '<table style="width:100%; border-collapse:collapse; font-size:12px;">';
+    html += '<thead><tr style="background:#e5e7eb; text-align:left;"><th style="padding:6px 8px;">Payee</th><th style="padding:6px 8px;">Amount</th><th style="padding:6px 8px; width:40px;"></th></tr></thead><tbody>';
+
+    let total = 0;
+    suppliers.forEach((s, i) => {
+      total += s.amount;
+      html += `<tr style="border-bottom:1px solid #e5e7eb; background:${i % 2 === 0 ? '#fff' : '#f9fafb'};">
+        <td style="padding:6px 8px; font-weight:500;">${s.name}</td>
+        <td style="padding:6px 8px; color:#059669; font-family:'JetBrains Mono',monospace;">₱${s.amount.toFixed(2)}</td>
+        <td style="padding:6px 8px; text-align:center;">
+          <button type="button" onclick="removeKioskSupplier(${i})" style="background:none; border:none; color:#dc2626; cursor:pointer; padding:2px 4px;" title="Remove">
+            <i class="fas fa-times-circle"></i>
+          </button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+    if (totalEl) totalEl.textContent = `₱${total.toFixed(2)}`;
+    if (countEl) countEl.textContent = suppliers.length;
+    refreshKioskDatalist();
+  }
+
+  function refreshKioskDatalist() {
+    const datalist = document.getElementById('kioskPayeesDatalist');
+    const suppliers = window._kioskAllSuppliers || [];
+    const selected = window._kioskSelectedSuppliers || [];
+    const selectedNames = new Set(selected.map(s => (s.name || '').toLowerCase()));
+
+    if (datalist) {
+      let html = '';
+      suppliers.forEach(s => {
+        const sName = (s.name || '').trim();
+        if (!sName) return;
+        if (selectedNames.has(sName.toLowerCase())) return;
+        window._kioskSuppliersMap[sName.toLowerCase()] = s;
+        const displayVal = s.seq_number ? `${s.seq_number} — ${sName}` : sName;
+        window._kioskSuppliersMap[displayVal.toLowerCase()] = s;
+        html += `<option value="${sName}">${s.seq_number ? s.seq_number + ' — ' + sName : sName}</option>`;
+      });
+      datalist.innerHTML = html;
+    }
   }
 
   async function openCreateChequeKioskModal() {
@@ -6797,22 +7110,20 @@ function attachPasswordValidation(inputId) {
         }
 
         if (Array.isArray(res.suppliers)) {
-          const datalist = document.getElementById('kioskPayeesDatalist');
-          if (datalist) {
-            let html = '';
-            res.suppliers.forEach(s => {
-              window._kioskSuppliersMap[s.name.toLowerCase()] = s;
-              const displayVal = s.seq_number ? `${s.seq_number} — ${s.name}` : s.name;
-              window._kioskSuppliersMap[displayVal.toLowerCase()] = s;
-              html += `<option value="${s.name}">${s.seq_number ? s.seq_number + ' — ' + s.name : s.name}</option>`;
-            });
-            datalist.innerHTML = html;
-          }
+          window._kioskAllSuppliers = res.suppliers;
+          refreshKioskDatalist();
+        }
 
-          const payeeInput = document.getElementById('kioskPayeeName');
-          if (payeeInput && payeeInput.value.trim()) {
-            syncKioskPayeeDetails(payeeInput.value.trim());
+        const payeeInput = document.getElementById('kioskPayeeName');
+        if (payeeInput && !payeeInput.value.trim() && Array.isArray(res.suppliers) && res.suppliers.length > 0) {
+          const nextSupplier = res.suppliers[0];
+          const nextName = (nextSupplier.name || '').trim();
+          if (nextName) {
+            payeeInput.value = nextName;
+            syncKioskPayeeDetails(nextName);
           }
+        } else if (payeeInput && payeeInput.value.trim()) {
+          syncKioskPayeeDetails(payeeInput.value.trim());
         }
       }
     } catch(e) {}
@@ -6836,18 +7147,121 @@ function attachPasswordValidation(inputId) {
       const form = document.getElementById('createChequeKioskForm');
       const preview = document.getElementById('kioskPrintPreviewArea');
       const iframe = document.getElementById('kioskPrintIframe');
+      const nav = document.getElementById('kioskChequeNav');
       if (form) { form.reset(); form.style.display = 'block'; }
       if (preview) preview.style.display = 'none';
       if (iframe) iframe.src = 'about:blank';
+      if (nav) nav.style.display = 'none';
+      window._kioskSelectedSuppliers = [];
+      window._kioskCreatedCheques = [];
+      window._kioskChequeIndex = 0;
+      renderKioskSuppliersList();
       validateKioskForm();
     }, 300);
   }
 
-  function printKioskIframe() {
-    const frame = document.getElementById('kioskPrintIframe');
-    if (frame && frame.contentWindow) {
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
+  async function printKioskIframe() {
+    const cheques = window._kioskCreatedCheques || [];
+
+    // Multi-cheque: print sequentially through the iframe, auto-advancing
+    if (cheques.length > 1) {
+      const printBtn = document.querySelector('[onclick="printKioskIframe()"]');
+      if (printBtn) { printBtn.disabled = true; printBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Printing...'; }
+
+      for (let i = 0; i < cheques.length; i++) {
+        // Load this cheque into the iframe
+        await loadKioskChequePreview(i);
+
+        // Wait for iframe content to fully render
+        const iframe = document.getElementById('kioskPrintIframe');
+        await new Promise(r => setTimeout(r, 600));
+
+        // Print the iframe
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch(e) {}
+
+        // Wait for print dialog to close (afterprint event or fallback timeout)
+        await new Promise(resolve => {
+          let resolved = false;
+          const done = () => { if (!resolved) { resolved = true; resolve(); } };
+          try {
+            iframe.contentWindow.addEventListener('afterprint', done, { once: true });
+          } catch(e) {}
+          // Fallback: assume dialog closes within 8 seconds
+          setTimeout(done, 8000);
+        });
+
+        // Brief pause before loading next cheque
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      if (printBtn) { printBtn.disabled = false; printBtn.innerHTML = '<i class="fas fa-print"></i> Print Document'; }
+    } else {
+      // Single cheque: print directly via iframe contentWindow
+      const frame = document.getElementById('kioskPrintIframe');
+      if (frame) {
+        try {
+          if (frame.contentWindow) {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+          } else {
+            frame.focus();
+            frame.print();
+          }
+        } catch(e) {
+          console.error('[printKioskIframe] Frame print error:', e);
+          try { window.print(); } catch(err) {}
+        }
+      }
+    }
+  }
+
+  // Multi-cheque navigation
+  window._kioskCreatedCheques = [];
+  window._kioskChequeIndex = 0;
+
+  async function loadKioskChequePreview(index) {
+    const cheques = window._kioskCreatedCheques;
+    if (!cheques || index < 0 || index >= cheques.length) return;
+
+    window._kioskChequeIndex = index;
+    const cheque = cheques[index];
+    const iframe = document.getElementById('kioskPrintIframe');
+    const badge = document.getElementById('kioskPreviewChequeBadge');
+    const nav = document.getElementById('kioskChequeNav');
+    const progress = document.getElementById('kioskChequeProgress');
+    const payeeLabel = document.getElementById('kioskChequePayee');
+    const prevBtn = document.getElementById('kioskPrevCheque');
+    const nextBtn = document.getElementById('kioskNextCheque');
+
+    if (badge) badge.textContent = `#${cheque.cheque_number} — ${index + 1}/${cheques.length}`;
+    if (nav) nav.style.display = cheques.length > 1 ? 'flex' : 'none';
+    if (progress) progress.textContent = `${index + 1} / ${cheques.length}`;
+    if (payeeLabel) payeeLabel.textContent = cheque.payee_name || '';
+    if (prevBtn) prevBtn.disabled = index === 0;
+    if (nextBtn) nextBtn.disabled = index === cheques.length - 1;
+
+    const printUrl = `/cheques/${cheque.pk}/print/?embed=1`;
+    try {
+      const printResp = await fetch(printUrl, { credentials: 'same-origin' });
+      if (printResp.ok) {
+        const htmlContent = await printResp.text();
+        iframe.srcdoc = htmlContent;
+      } else {
+        iframe.src = printUrl;
+      }
+    } catch(err) {
+      iframe.src = printUrl;
+    }
+  }
+
+  function kioskNavCheque(delta) {
+    const cheques = window._kioskCreatedCheques || [];
+    const newIndex = window._kioskChequeIndex + delta;
+    if (newIndex >= 0 && newIndex < cheques.length) {
+      loadKioskChequePreview(newIndex);
     }
   }
 
@@ -6855,17 +7269,32 @@ function attachPasswordValidation(inputId) {
     const form = document.getElementById('createChequeKioskForm');
     const preview = document.getElementById('kioskPrintPreviewArea');
     const card = document.querySelector('#createChequeKioskModal .kiosk-card');
+    const nav = document.getElementById('kioskChequeNav');
     if (card) card.style.maxWidth = '680px';
     if (form) {
       form.reset();
       form.style.display = 'block';
     }
     if (preview) preview.style.display = 'none';
+    if (nav) nav.style.display = 'none';
+    window._kioskSelectedSuppliers = [];
+    window._kioskCreatedCheques = [];
+    window._kioskChequeIndex = 0;
+    renderKioskSuppliersList();
     openCreateChequeKioskModal();
   }
 
   function submitCreateChequeKiosk(e) {
     e.preventDefault();
+    const suppliers = window._kioskSelectedSuppliers || [];
+
+    if (suppliers.length > 0) {
+      // Multiple suppliers - submit directly
+      proceedSubmitCreateChequeKiosk();
+      return;
+    }
+
+    // Single supplier mode - check if payee is registered
     const payeeIdEl = document.getElementById('kioskPayeeId');
     const payeeNameEl = document.getElementById('kioskPayeeName');
 
@@ -6888,47 +7317,103 @@ function attachPasswordValidation(inputId) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; }
 
     const form = document.getElementById('createChequeKioskForm');
-    const formData = new FormData(form);
+    const suppliers = window._kioskSelectedSuppliers || [];
+    const isMultiMode = suppliers.length > 0;
 
     try {
-      const resp = await fetch('/cheques/new/', {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': getCsrfToken(),
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: formData
-      });
-      const data = await resp.json();
+      let resp, data;
+
+      if (isMultiMode) {
+        // Multiple suppliers mode
+        console.log('[MultiCheque] Submitting suppliers:', JSON.stringify(suppliers));
+        const formData = new FormData(form);
+        formData.delete('payee_id');
+        formData.delete('payee_name');
+        formData.delete('amount');
+        formData.append('suppliers', JSON.stringify(suppliers));
+
+        resp = await fetch('/cheques/new/', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        });
+        data = await resp.json();
+        console.log('[MultiCheque] Server response:', JSON.stringify(data));
+      } else {
+        // Single supplier mode
+        const formData = new FormData(form);
+        resp = await fetch('/cheques/new/', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        });
+        data = await resp.json();
+      }
+
       if (resp.ok && data.ok) {
-        const preview = document.getElementById('kioskPrintPreviewArea');
-        const iframe = document.getElementById('kioskPrintIframe');
-        const badge = document.getElementById('kioskPreviewChequeBadge');
+        if (isMultiMode && data.count) {
+          // Multiple cheques created - store for sequential preview
+          window._kioskCreatedCheques = data.cheques || [];
+          window._kioskChequeIndex = 0;
 
-        let rawPrintUrl = data.print_url || `/cheques/${data.cheque_id}/print/`;
-        const printUrl = rawPrintUrl + (rawPrintUrl.includes('?') ? '&embed=1' : '?embed=1');
-        if (badge) badge.textContent = `#${data.cheque_number || 'SAVED'}`;
+          const preview = document.getElementById('kioskPrintPreviewArea');
+          const badge = document.getElementById('kioskPreviewChequeBadge');
+          const card = document.querySelector('#createChequeKioskModal .kiosk-card');
+          if (card) card.style.maxWidth = '860px';
+          if (form) form.style.display = 'none';
+          if (preview) preview.style.display = 'block';
 
-        try {
-          const printResp = await fetch(printUrl, { credentials: 'same-origin' });
-          if (printResp.ok) {
-            const htmlContent = await printResp.text();
-            iframe.srcdoc = htmlContent;
-          } else {
+          window._kioskSelectedSuppliers = [];
+          renderKioskSuppliersList();
+
+          await loadKioskChequePreview(0);
+
+          if (typeof showToast === 'function') {
+            showToast('success', 'Cheques Created', `${data.count} cheques created successfully.`);
+          }
+        } else {
+          // Single cheque - original behavior
+          window._kioskCreatedCheques = [{
+            pk: data.cheque_id,
+            cheque_number: data.cheque_number || 'SAVED',
+            payee_name: document.getElementById('kioskPayeeName') ? document.getElementById('kioskPayeeName').value : ''
+          }];
+          window._kioskChequeIndex = 0;
+
+          const preview = document.getElementById('kioskPrintPreviewArea');
+          const iframe = document.getElementById('kioskPrintIframe');
+          const badge = document.getElementById('kioskPreviewChequeBadge');
+
+          let rawPrintUrl = data.print_url || `/cheques/${data.cheque_id}/print/`;
+          const printUrl = rawPrintUrl + (rawPrintUrl.includes('?') ? '&embed=1' : '?embed=1');
+          if (badge) badge.textContent = `#${data.cheque_number || 'SAVED'}`;
+
+          try {
+            const printResp = await fetch(printUrl, { credentials: 'same-origin' });
+            if (printResp.ok) {
+              const htmlContent = await printResp.text();
+              iframe.srcdoc = htmlContent;
+            } else {
+              iframe.src = printUrl;
+            }
+          } catch(err) {
             iframe.src = printUrl;
           }
-        } catch(err) {
-          iframe.src = printUrl;
-        }
 
-        const card = document.querySelector('#createChequeKioskModal .kiosk-card');
-        if (card) card.style.maxWidth = '860px';
+          const card = document.querySelector('#createChequeKioskModal .kiosk-card');
+          if (card) card.style.maxWidth = '860px';
+          if (form) form.style.display = 'none';
+          if (preview) preview.style.display = 'block';
 
-        if (form) form.style.display = 'none';
-        if (preview) preview.style.display = 'block';
-
-        if (typeof showToast === 'function') {
-          showToast('success', 'Cheque Saved & Ready for Print', 'Cheque saved! Printed layout loaded below.');
+          if (typeof showToast === 'function') {
+            showToast('success', 'Cheque Saved & Ready for Print', 'Cheque saved! Printed layout loaded below.');
+          }
         }
 
         if (typeof loadCheques === 'function') {
@@ -7093,6 +7578,7 @@ function attachPasswordValidation(inputId) {
             isRealDb: true,
             pk: res.pk,
             status: res.status,
+            is_archived: !!res.is_archived || res.validity === 'archived' || res.status === 'archived',
             matches: res.matches || []
           };
           checkDB[checkNo] = data;
@@ -7155,7 +7641,18 @@ function attachPasswordValidation(inputId) {
     banner.className = 'status-banner';
 
     // State routing & button logic (Display status inside the button below)
-    if (data.isReleased || data.status === 'released') {
+    if (data.is_archived || data.status === 'archived') {
+      banner.classList.add('status-stale');
+      statusText.textContent = `ARCHIVED CHECK - THIS CHEQUE WAS ARCHIVED`;
+      releaseStatus.textContent = 'Archived';
+      releaseStatus.style.color = '#6b7280';
+      releaseBtn.disabled = true;
+      releaseBtn.style.background = '#6b7280';
+      releaseBtn.style.color = '#ffffff';
+      releaseBtn.style.opacity = '0.9';
+      releaseBtn.style.cursor = 'not-allowed';
+      releaseBtn.innerHTML = `<i class="fas fa-archive"></i> ARCHIVED CHEQUE`;
+    } else if (data.isReleased || data.status === 'released') {
       banner.classList.add('status-released');
       statusText.textContent = `CHECK ALREADY RELEASED / CLAIMED`;
       releaseStatus.textContent = data.released_display ? `Released: ${data.released_display}` : 'Released';
@@ -7250,7 +7747,30 @@ function attachPasswordValidation(inputId) {
     resultArea.style.display = 'block';
   }
 
-  async function markAsReleased() {
+  function openReleaseModal() {
+    if (!currentLoadedCheck) return;
+    var now = new Date();
+    var dateInput = document.getElementById('releaseDateInput');
+    var timeInput = document.getElementById('releaseTimeInput');
+    if (dateInput) dateInput.value = now.toISOString().slice(0, 10);
+    if (timeInput) timeInput.value = now.toTimeString().slice(0, 5);
+    document.getElementById('releaseConfirmModal').style.display = 'flex';
+  }
+
+  function closeReleaseModal() {
+    document.getElementById('releaseConfirmModal').style.display = 'none';
+  }
+
+  function confirmRelease() {
+    var dateInput = document.getElementById('releaseDateInput');
+    var timeInput = document.getElementById('releaseTimeInput');
+    var releaseDate = dateInput ? dateInput.value : '';
+    var releaseTime = timeInput ? timeInput.value : '';
+    closeReleaseModal();
+    markAsReleased(releaseDate || null, releaseTime || null);
+  }
+
+  async function markAsReleased(releaseDate, releaseTime) {
     if (!currentLoadedCheck) return;
     const data = checkDB[currentLoadedCheck];
     if (!data) return;
@@ -7267,24 +7787,56 @@ function attachPasswordValidation(inputId) {
     if (data.isRealDb && data.pk) {
       try {
         const csrfToken = getCsrfToken();
-        const resp = await fetch(`/cheques/${data.pk}/advance/`, {
+        const body = { check_no: currentLoadedCheck };
+        if (releaseDate) body.release_date = releaseDate;
+        if (releaseTime) body.release_time = releaseTime;
+        const resp = await fetch('{% url "check_validator_release" %}', {
           method: 'POST',
           headers: {
             'X-CSRFToken': csrfToken,
             'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/x-www-form-urlencoded'
-          }
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
         });
-        if (resp.ok) {
-          const res = await resp.json();
-          if (res.ok) {
-            data.status = 'released';
-            data.isReleased = true;
-            data.releasedAt = res.released_at || timestamp;
+        let res;
+        try { res = await resp.json(); } catch(e) { res = { ok: false, error: 'Server returned an invalid response (status ' + resp.status + ').' }; }
+        if (resp.ok && res.ok) {
+          data.status = 'released';
+          data.isReleased = true;
+          data.releasedAt = res.released_at || timestamp;
+          var newDisplay = (res.cheque && res.cheque.released_display) || res.released_at || '';
+          data.released_display = newDisplay;
+          checkDB[currentLoadedCheck] = data;
+
+          var mainBanner = document.getElementById('statusBanner');
+          var mainStatusText = document.getElementById('statusText');
+          var mainReleaseStatus = document.getElementById('dispReleaseStatus');
+          var mainReleaseBtn = document.getElementById('releaseBtn');
+          if (mainBanner) { mainBanner.className = 'status-banner status-released'; }
+          if (mainStatusText) { mainStatusText.textContent = 'CHECK ALREADY RELEASED / CLAIMED' + (newDisplay ? ' (' + newDisplay + ')' : ''); }
+          if (mainReleaseStatus) { mainReleaseStatus.textContent = 'Released' + (newDisplay ? ': ' + newDisplay : ''); mainReleaseStatus.style.color = 'var(--kiosk-released)'; }
+          if (mainReleaseBtn) { mainReleaseBtn.disabled = true; mainReleaseBtn.style.background = '#8b5cf6'; mainReleaseBtn.style.color = '#ffffff'; mainReleaseBtn.style.opacity = '0.9'; mainReleaseBtn.style.cursor = 'not-allowed'; mainReleaseBtn.innerHTML = '<i class="fas fa-check-circle"></i> RELEASED'; }
+
+          showToast('success', 'Check Released', 'Check #' + currentLoadedCheck + ' has been marked as released.');
+          loadRecentDbChecks();
+          return;
+        } else {
+          showToast('error', 'Cannot Release', res.error || 'Unable to release this check.');
+          if (releaseBtn) {
+            releaseBtn.disabled = false;
+            releaseBtn.innerHTML = `<i class="fas fa-check-double"></i> MARK AS RELEASED / CLAIMED`;
           }
+          return;
         }
       } catch (err) {
-        console.warn("Advance status request warning:", err);
+        console.warn("Release request warning:", err);
+        showToast('error', 'Release Failed', 'A network error occurred. Please try again.');
+        if (releaseBtn) {
+          releaseBtn.disabled = false;
+          releaseBtn.innerHTML = `<i class="fas fa-check-double"></i> MARK AS RELEASED / CLAIMED`;
+        }
+        return;
       }
     }
 
@@ -7348,7 +7900,7 @@ function attachPasswordValidation(inputId) {
 <script>
 /* ── Force-hide floating buttons during actual print (not just preview) ── */
 (function(){
-  var selectors = '.a11y-fab,.a11y-panel,.cheque-master-fab,.chatbot-fab,.create-cheque-fab,.check-kiosk-fab,.no-print';
+  var selectors = '.a11y-fab,.a11y-panel,.cheque-master-fab,.supplier-master-fab,.chatbot-fab,.create-cheque-fab,.check-kiosk-fab,.no-print';
   function hideForPrint(){
     document.querySelectorAll(selectors).forEach(function(el){ el.style.setProperty('display','none','important'); });
   }
@@ -7357,6 +7909,275 @@ function attachPasswordValidation(inputId) {
   }
   window.addEventListener('beforeprint', hideForPrint);
   window.addEventListener('afterprint', restoreAfterPrint);
+
+  /* ── Hide cheque & a11y FABs on reports page ── */
+  if (window.location.pathname.indexOf('/reports') !== -1) {
+    document.querySelectorAll('.a11y-fab,.a11y-panel,.cheque-master-fab,.supplier-master-fab').forEach(function(el){ el.style.setProperty('display','none','important'); });
+  }
+})();
+</script>
+
+{% include 'admin_panel/_supplier_modal.html' %}
+
+<script>
+(function(){
+  var _supplierModalLoaded = false;
+
+  function fetchSupplierContext(callback) {
+    fetch('{% url "supplier_modal_context" %}', {
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      populateSupplierDatalists(data);
+      callback();
+    })
+    .catch(function(){ callback(); });
+  }
+
+  function populateSupplierDatalists(data) {
+    var payeeDl = document.getElementById('payeeChoices');
+    if (payeeDl && data.payee_choices) {
+      payeeDl.innerHTML = '';
+      data.payee_choices.forEach(function(name){
+        var opt = document.createElement('option');
+        opt.value = name;
+        payeeDl.appendChild(opt);
+      });
+    }
+
+    var atDl = document.getElementById('accountTitleChoices');
+    if (atDl && data.account_title_groups) {
+      atDl.innerHTML = '';
+      data.account_title_groups.forEach(function(g){
+        if (g.uacs) {
+          var optG = document.createElement('option');
+          optG.value = g.name;
+          optG.setAttribute('data-uacs', g.uacs);
+          atDl.appendChild(optG);
+        }
+        (g.titles || []).forEach(function(t){
+          var opt = document.createElement('option');
+          opt.value = t.value;
+          opt.setAttribute('data-uacs', t.uacs || '');
+          atDl.appendChild(opt);
+        });
+      });
+    }
+
+    var fcSel = document.getElementById('fieldFundCluster');
+    if (fcSel && data.fund_clusters) {
+      var firstOpt = fcSel.querySelector('option[value=""]');
+      fcSel.innerHTML = '';
+      if (firstOpt) fcSel.appendChild(firstOpt);
+      data.fund_clusters.forEach(function(fc){
+        var opt = document.createElement('option');
+        opt.value = fc.code;
+        opt.setAttribute('data-pk', fc.pk);
+        opt.textContent = fc.code + ' - ' + fc.name;
+        fcSel.appendChild(opt);
+      });
+    }
+
+    var remarksDl = document.getElementById('remarksChoices');
+    if (remarksDl && data.remark_options) {
+      remarksDl.innerHTML = '';
+      data.remark_options.forEach(function(r){
+        var opt = document.createElement('option');
+        opt.value = r;
+        remarksDl.appendChild(opt);
+      });
+    }
+
+    var approvalDl = document.getElementById('approvalChoices');
+    if (approvalDl && data.approval_options) {
+      approvalDl.innerHTML = '';
+      data.approval_options.forEach(function(a){
+        var opt = document.createElement('option');
+        opt.value = a;
+        approvalDl.appendChild(opt);
+      });
+    }
+
+    if (data.cashier_full_name) {
+      var cf = document.getElementById('fieldCashier');
+      var cfh = document.getElementById('fieldCashierHidden');
+      if (cf) cf.value = data.cashier_full_name;
+      if (cfh) cfh.value = data.cashier_full_name;
+    }
+
+    if (data.auto_supplier_defaults && typeof DEFAULT_SUPPLIER_VALUES !== 'undefined') {
+      var d = data.auto_supplier_defaults;
+      if (d.mr_or) DEFAULT_SUPPLIER_VALUES.check_serial = d.mr_or;
+      if (d.date) DEFAULT_SUPPLIER_VALUES.date = d.date;
+      if (d.dv_payroll) DEFAULT_SUPPLIER_VALUES.dv_payroll = d.dv_payroll;
+      if (d.ors_burs) DEFAULT_SUPPLIER_VALUES.ors_burs = d.ors_burs;
+      if (d.responsibility_center) DEFAULT_SUPPLIER_VALUES.responsibility_center = d.responsibility_center;
+    }
+  }
+
+  function setGlobalFieldValue(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.value = value || '';
+  }
+
+  window.openGlobalSupplierModal = function() {
+    fetchSupplierContext(function(){
+      if (typeof openSupplierModal === 'function') {
+        openSupplierModal('create');
+      }
+    });
+  };
+
+  var origSupplierFormSubmit = null;
+
+  document.addEventListener('DOMContentLoaded', function(){
+    var form = document.getElementById('supplierForm');
+    if (!form) return;
+
+    form.addEventListener('submit', function(e){
+      e.preventDefault();
+
+      var submitBtn = document.getElementById('supplierSubmitBtn');
+      if (submitBtn) submitBtn.disabled = true;
+
+      var formData = new FormData(form);
+
+      fetch('{% url "supplier_create_ajax" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
+      })
+      .then(function(r){ return r.json(); })
+      .then(function(resp){
+        if (submitBtn) submitBtn.disabled = false;
+        if (resp.ok) {
+          var isEdit = formData.get('action') === 'edit';
+          showToast('success', 'Success', resp.message || (isEdit ? 'Supplier updated.' : 'Supplier added.'));
+          if (isEdit) {
+            closeSupplierModal();
+            location.reload();
+          } else {
+            resetSupplierForm();
+            appendSupplierRow(resp);
+            if (typeof computeDefaultSequences === 'function') {
+              computeDefaultSequences();
+              if (typeof setFieldValue === 'function' && typeof DEFAULT_SUPPLIER_VALUES !== 'undefined') {
+                setFieldValue('fieldCheckSerial', DEFAULT_SUPPLIER_VALUES.check_serial);
+                setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
+                setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
+                setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
+              }
+            }
+          }
+        } else {
+          showToast('error', 'Error', resp.error || 'Failed to add supplier.');
+        }
+      })
+      .catch(function(err){
+        if (submitBtn) submitBtn.disabled = false;
+        showToast('error', 'Error', 'Network error. Please try again.');
+      });
+    });
+  });
+
+  function appendSupplierRow(d) {
+    var tbody = document.getElementById('supplierTableBody');
+    if (!tbody) return;
+    // remove empty-state row
+    var emptyRow = tbody.querySelector('td[colspan]');
+    if (emptyRow && emptyRow.closest('tr') && emptyRow.closest('tr').querySelector('td[colspan]') === emptyRow) {
+      emptyRow.closest('tr').remove();
+    }
+    var tr = document.createElement('tr');
+    tr.setAttribute('data-or-source', 'new');
+    var fmtAmt = function(v) { return v ? '\u20B1 ' + parseFloat(v).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : ''; };
+    var esc = function(s) { var el = document.createElement('span'); el.textContent = s || ''; return el.innerHTML; };
+    var deleteBtn = '';
+    if (typeof CAN_DELETE_SUPPLIERS !== 'undefined' && CAN_DELETE_SUPPLIERS) {
+      deleteBtn = '<form method="post" style="display:inline;" onsubmit="requestDeleteConfirmation(event, this, \'Please enter your password (or an admin password) to confirm archiving of this supplier:\')">' +
+        '<input type="hidden" name="action" value="delete"><input type="hidden" name="sup_id" value="' + d.id + '">' +
+        '<button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-box-archive"></i></button></form>';
+    }
+    tr.innerHTML =
+      '<td style="color:var(--muted);">1</td>' +
+      '<td>' + esc(d.mr_or) + '</td>' +
+      '<td>' + esc(d.date) + '</td>' +
+      '<td><strong>' + esc(d.account_name) + '</strong></td>' +
+      '<td>' + esc(d.dv_payroll) + '</td>' +
+      '<td>' + esc(d.ors_burs) + '</td>' +
+      '<td>' + esc(d.responsibility_center) + '</td>' +
+      '<td>' + esc(d.uacs) + '</td>' +
+      '<td>' + esc(d.account_title) + '</td>' +
+      '<td class="truncate-wide" title="' + esc(d.nature_of_collections) + '">' + esc(d.nature_of_collections) + '</td>' +
+      '<td>' + (d.gross_amount ? '<strong>' + fmtAmt(d.gross_amount) + '</strong>' : ' ') + '</td>' +
+      '<td>' + (d.professional_tax ? fmtAmt(d.professional_tax) : ' ') + '</td>' +
+      '<td>' + (d.tax_5 ? fmtAmt(d.tax_5) : ' ') + '</td>' +
+      '<td>' + (d.tax_2 ? fmtAmt(d.tax_2) : ' ') + '</td>' +
+      '<td>' + (d.amount ? fmtAmt(d.amount) : ' ') + '</td>' +
+      '<td>' + esc(d.other_deductions || '0') + '</td>' +
+      '<td>' + esc(d.fund_cluster_label) + '</td>' +
+      '<td class="remark-cell" data-supplier-id="' + d.id + '" data-current-remark="' + esc(d.remarks) + '"><span class="remark-text inline-editable-remark" title="Click to change remark">' + esc(d.remarks || 'Add Remarks!') + '</span></td>' +
+      '<td><span class="badge badge-' + esc(d.status) + '">' + esc(d.status_display) + '</span></td>' +
+      '<td><button class="btn btn-sm btn-secondary" onclick="openSupplierModal(\'edit\', this)" data-id="' + d.id + '" data-mr-or="' + esc(d.mr_or) + '" data-date="' + (d.date_yyyy_mm_dd || '') + '" data-payee="' + esc(d.account_name) + '" data-dv-payroll="' + esc(d.dv_payroll) + '" data-ors-burs="' + esc(d.ors_burs) + '" data-responsibility-center="' + esc(d.responsibility_center) + '" data-uacs="' + esc(d.uacs) + '" data-account-title="' + esc(d.account_title) + '" data-nature-of-collections="' + esc(d.nature_of_collections) + '" data-amount="' + (d.amount || '0.00') + '" data-gross-amount="' + esc(d.gross_amount) + '" data-professional-tax="' + esc(d.professional_tax) + '" data-tax5="' + esc(d.tax_5) + '" data-tax2="' + esc(d.tax_2) + '" data-remarks="' + esc(d.remarks) + '" data-status="' + esc(d.status) + '" data-fund-cluster="' + esc(d.fund_cluster_label) + '"><i class="fas fa-pen"></i></button>' + deleteBtn + '</td>';
+    tbody.insertBefore(tr, tbody.firstChild);
+    // re-number all rows
+    var allRows = tbody.querySelectorAll('tr');
+    allRows.forEach(function(row, i) {
+      var numCell = row.querySelector('td:first-child');
+      if (numCell) numCell.textContent = allRows.length - i;
+    });
+    // update count
+    var tableCountDiv = document.querySelector('.table-count');
+    if (tableCountDiv) tableCountDiv.textContent = 'Showing all ' + allRows.length + ' suppliers.';
+  }
+
+  function resetSupplierForm() {
+    var form = document.getElementById('supplierForm');
+    if (!form) return;
+
+    var action = document.getElementById('supplierAction');
+    var submitBtn = document.getElementById('supplierSubmitBtn');
+    var title = document.getElementById('supplierModalTitle');
+
+    if (action) action.value = 'create';
+    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Supplier';
+    if (title) title.innerHTML = '<i class="fas fa-plus"></i> Add Supplier';
+
+    var fieldsToClear = [
+      'fieldPayee', 'fieldAccountTitle', 'fieldUacsObjectCode',
+      'fieldNature', 'fieldAmount', 'fieldTax5', 'fieldTax2',
+      'fieldProfessionalTaxRate', 'fieldProfessionalTax', 'fieldProfessionalTaxAmount',
+      'fieldGrossAmount', 'fieldCalculatedGross', 'fieldApproval',
+      'fieldOtherDeductions', 'fieldRemarksText'
+    ];
+    fieldsToClear.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) {
+        if (id === 'fieldProfessionalTax' || id === 'fieldCalculatedGross') {
+          el.value = '0.00';
+        } else if (id === 'fieldProfessionalTaxRate') {
+          el.value = '';
+        } else if (id === 'fieldTax5' || id === 'fieldTax2' || id === 'fieldProfessionalTaxAmount' || id === 'fieldGrossAmount') {
+          el.value = '₱0.00';
+        } else {
+          el.value = '';
+        }
+      }
+    });
+
+    var vatCb = document.getElementById('fieldIsVat');
+    if (vatCb) vatCb.checked = false;
+    var statusSel = document.getElementById('fieldStatus');
+    if (statusSel) statusSel.value = 'active';
+    var supId = document.getElementById('supplierId');
+    if (supId) supId.value = '';
+
+    fetchSupplierContext(function(){});
+
+    if (typeof syncAllTaxAndGross === 'function') syncAllTaxAndGross();
+    if (typeof toggleTaxFields === 'function') toggleTaxFields();
+  }
 })();
 </script>
 
