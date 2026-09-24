@@ -11,9 +11,7 @@
         pointer-events: none;
         opacity: 0;
         visibility: hidden;
-        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                    background 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                    visibility 0.3s;
+        transition: none;
     }
 
     .supplier-modal-backdrop.active {
@@ -31,25 +29,26 @@
         border-radius: 18px;
         box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
         border: 1px solid rgba(255, 255, 255, 0.35);
-        transform: scale(0.92) translateY(20px);
-        opacity: 0;
-        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-                    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: none;
+        opacity: 1;
+        transition: none;
     }
 
     .supplier-modal-backdrop.active .supplier-modal {
-        transform: scale(1) translateY(0);
+        transform: none;
         opacity: 1;
     }
 
     .supplier-modal-backdrop.closing {
         opacity: 0;
         background: rgba(15, 23, 42, 0);
+        transition: none;
     }
 
     .supplier-modal-backdrop.closing .supplier-modal {
-        transform: scale(0.95) translateY(10px);
+        transform: none;
         opacity: 0;
+        transition: none;
     }
 
     .supplier-modal-head {
@@ -67,6 +66,25 @@
     .supplier-modal-head h3 {
         margin: 0;
         font-size: 18px;
+    }
+
+    .supplier-modal-head .modal-close-btn {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .supplier-modal-head .modal-close-btn:hover {
+        background: rgba(255, 255, 255, 0.22);
     }
 
     .supplier-modal-body {
@@ -264,6 +282,35 @@
         min-height: 90px;
     }
 
+    .serial-feedback {
+        display: none;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+        margin-top: 2px;
+    }
+
+    .serial-feedback.show {
+        display: block;
+    }
+
+    .serial-feedback.is-error {
+        color: #dc2626;
+    }
+
+    .serial-feedback.is-ok {
+        color: #15803d;
+    }
+
+    .supplier-field input.serial-invalid {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
+    .supplier-field input.serial-valid {
+        border-color: #16a34a !important;
+    }
+
     .supplier-control-row {
         display: flex;
         gap: 8px;
@@ -314,18 +361,290 @@
 .gross-normal {
     grid-column: 3 / span 2;
 }
+
+/* Tax Type pills */
+.tax-type-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    min-height: 38px;
+}
+
+.tax-type-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border: 1px solid #d6dde7;
+    border-radius: 999px;
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    color: #163c2a;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.tax-type-pill input {
+    width: auto !important;
+    margin: 0;
+    accent-color: #15803d;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.tax-type-pill:has(input:checked) {
+    border-color: #15803d;
+    background: #ecfdf3;
+    color: #14532d;
+    box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.12);
+}
+
+.tax-type-help {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.35;
+}
+
+/* Tax calculation sub-panel */
+.tax-calc-panel {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #e5eaf0;
+    border-radius: 12px;
+    background: #f8fbff;
+}
+
+.tax-calc-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.tax-calc-panel-head h5 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #163c2a;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+#rowTaxesAndPro {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    align-items: end;
+}
+
+#rowTaxesAndPro #taxSlotsWrap {
+    display: contents;
+}
+
+#rowTaxesAndPro .supplier-field,
+#rowTaxesAndPro .tax-slot,
+#rowTaxesAndPro #containerProAmount {
+    min-width: 0;
+    max-width: none;
+}
+
+#rowTaxesAndPro .tax-slot label,
+#rowTaxesAndPro #containerProAmount > label:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.tax-slot-controls,
+.pro-tax-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+}
+
+.tax-slot-controls select,
+.tax-slot-controls input,
+.pro-tax-controls input {
+    flex: 1;
+    min-width: 0;
+}
+
+.pro-enable-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #163c2a;
+    margin-bottom: 2px;
+    min-height: 18px;
+}
+
+.pro-enable-row input {
+    width: auto !important;
+    margin: 0;
+    accent-color: #15803d;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+}
+
+/* Net amount result bar */
+#rowGrossWrapper {
+    display: block !important;
+    margin-top: 14px !important;
+}
+
+#grossWrapper {
+    grid-column: auto !important;
+    width: 100%;
+    max-width: 420px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 10px 12px;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    background: #f0fdf4;
+}
+
+#grossWrapper label {
+    font-size: 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #166534 !important;
+}
+
+#grossWrapper input {
+    font-weight: 700 !important;
+    text-align: center !important;
+    font-size: 18px !important;
+    border-color: #86efac !important;
+    background: #fff !important;
+    color: #14532d !important;
+}
+
+/* Payment layout tweaks */
+.payment-meta-row {
+    margin-top: 12px;
+    align-items: end;
+}
+
+.payment-meta-row .tax-type-field {
+    grid-column: span 1;
+}
+
+/* Other details collapse */
+.other-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0 12px;
+}
+
+.other-line {
+    flex: 1;
+    height: 1px;
+    background: #e5eaf0;
+}
+
+#toggleOtherDetailsBtn {
+    background: #fff;
+    border: 1px solid #d6dde7;
+    border-radius: 14px;
+    padding: 4px 10px;
+    min-width: 72px;
+    height: 28px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #163c2a;
+    cursor: pointer;
+}
+
+#toggleOtherDetailsBtn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+[data-theme="dark"] .tax-type-pill {
+    background: #1f2937;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+[data-theme="dark"] .tax-type-pill:has(input:checked) {
+    background: #064e3b;
+    border-color: #10b981;
+    color: #d1fae5;
+}
+
+[data-theme="dark"] .tax-calc-panel {
+    background: #0b1220;
+    border-color: #1f2937;
+}
+
+[data-theme="dark"] .tax-calc-panel-head h5,
+[data-theme="dark"] .pro-enable-row {
+    color: #e5e7eb;
+}
+
+[data-theme="dark"] #grossWrapper {
+    background: #052e16;
+    border-color: #166534;
+}
+
+[data-theme="dark"] #grossWrapper input {
+    background: #0b1220 !important;
+    border-color: #166534 !important;
+    color: #bbf7d0 !important;
+}
+
+[data-theme="dark"] .other-line,
+[data-theme="dark"] #toggleOtherDetailsBtn {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+@media (max-width: 900px) {
+    #rowTaxesAndPro {
+        grid-template-columns: 1fr;
+    }
+
+    #grossWrapper {
+        max-width: none;
+    }
+
+    .payment-meta-row .tax-type-field {
+        grid-column: span 1;
+    }
+}
 </style>
 
 <div id="supplierModal" class="supplier-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="supplier-modal">
         <div class="supplier-modal-head">
             <h3 id="supplierModalTitle"><i class="fas fa-plus"></i> Add Supplier</h3>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="closeSupplierModal()"><i
-                    class="fas fa-times"></i></button>
+            <button type="button" class="modal-close-btn" onclick="closeSupplierModal()" aria-label="Close">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
         <div class="supplier-modal-body">
-            <form method="post" id="supplierForm" data-tax1-rate="{{ tax_1_rate|default:'5%/3%' }}"
-                data-tax2-rate="{{ tax_2_rate|default:'2%/1%' }}">
+<form method="post" id="supplierForm" data-tax1-rate="{{ tax_1_rate|default:'' }}"
+data-tax2-rate="{{ tax_2_rate|default:'' }}">
+<script type="application/json" id="taxChoicesJson">{{ tax_choices|default:"[]"|safe }}</script>
+<script type="application/json" id="goodsServiceRatesJson">{{ goods_service_rates|default:"{}"|safe }}</script>
                 {% csrf_token %}
                 <input type="hidden" name="action" id="supplierAction" value="create">
                 <input type="hidden" name="sup_id" id="supplierId" value="">
@@ -342,7 +661,9 @@
                    name="check_serial"
                    id="fieldCheckSerial"
                    placeholder="Auto-generated, editable"
-                   autocomplete="off">
+                   autocomplete="off"
+                   maxlength="60">
+            <span id="fieldCheckSerialFeedback" class="serial-feedback" aria-live="polite"></span>
         </div>
 
         <div class="supplier-field" style="grid-column: span 2;">
@@ -409,7 +730,12 @@
             <input type="text"
                    name="uacs"
                    id="fieldUacsObjectCode"
-                   autocomplete="off">
+                   autocomplete="off"
+                   inputmode="numeric" pattern="[0-9]*"
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                   onchange="this.value=this.value.replace(/[^0-9]/g,'')"
+                   onkeypress="return /[0-9]/.test(String.fromCharCode(event.which))"
+                   onpaste="setTimeout(function(el){ el.value=el.value.replace(/[^0-9]/g,''); }, 0, this)">
         </div>
 
         <div class="supplier-field">
@@ -456,7 +782,7 @@
         </div>
     </div>
 
-    <div class="supplier-grid-4" style="margin-top:12px;">
+    <div class="supplier-grid-4 payment-meta-row">
         <div class="supplier-field" style="grid-column: span 2;">
             <label>Nature of Payments</label>
             <input type="text" name="nature_of_payments" id="fieldNature">
@@ -465,45 +791,43 @@
             <label>Gross Amount</label>
             <input type="text" name="gross_amount" id="fieldAmount" placeholder="₱0.00" autocomplete="off">
         </div>
-        <div class="supplier-field" style="align-items:flex-start;">
+        <div class="supplier-field tax-type-field">
             <label>Tax Type</label>
-            <div style="display:flex; gap:12px; align-items:center;">
-                <label style="display:flex; align-items:center; gap:6px; font-size:14px;">
+            <div class="tax-type-row">
+                <label class="tax-type-pill" title="VAT vs Non-VAT">
                     <input type="checkbox" name="is_vat" id="fieldIsVat"> VAT
                 </label>
-                <span style="font-size:13px; color:var(--muted);">Unchecked = Non VAT</span>
+                <label class="tax-type-pill" title="Skip all taxes for this supplier">
+                    <input type="checkbox" name="tax_exempt" id="fieldTaxExempt"> Tax Exempt
+                </label>
+            </div>
+            <div class="tax-type-help">VAT off = Non VAT. Tax Exempt skips all taxes.</div>
+        </div>
+    </div>
+
+    <div class="tax-calc-panel" id="taxCalcPanel">
+        <div class="tax-calc-panel-head">
+            <h5>Tax Calculations</h5>
+            <span class="tax-type-help" style="margin-top:0;">Auto-computed from Gross</span>
+        </div>
+        <div id="rowTaxesAndPro">
+            <div id="taxSlotsWrap"></div>
+            <div class="supplier-field" id="containerProAmount">
+                <label title="5% of Gross when enabled">Prof. Tax (5%)</label>
+                <div class="pro-enable-row">
+                    <input type="checkbox" name="enable_professional_tax" id="fieldEnableProfTax"> Enable
+                </div>
+                <input type="text" name="professional_tax" id="fieldProfessionalTaxAmount" placeholder="₱0.00" autocomplete="off" readonly tabindex="-1" class="auto-readonly">
+                <input type="hidden" name="professional_tax_rate" id="fieldProfessionalTaxRate" value="0.00">
+                <input type="hidden" id="fieldProfessionalTax" value="0.00">
             </div>
         </div>
-    </div>
-
-    <div class="supplier-grid-4" id="rowTaxesAndPro" style="margin-top:12px;">
-        <div class="supplier-field" id="containerTax5">
-            <label id="labelTax5">{{ tax_1_label|default:"Tax (5%/3%)" }}</label>
-            <input type="text" name="tax_5" id="fieldTax5" >
-
-        <!--<input type="text" name="tax_5" id="fieldTax5" class="auto-readonly" readonly>-->
-        </div>
-        <div class="supplier-field" id="containerTax2">
-            <label id="labelTax2">{{ tax_2_label|default:"Tax (2%/1%)" }}</label>
-            <input type="text" name="tax_2" id="fieldTax2">
-
-<!--        <input type="text" name="tax_2" id="fieldTax2" class="auto-readonly" readonly>-->
-        
-            <span style="font-size:11px; color:var(--muted);"> </span>
-        </div>
-        <div class="supplier-field" id="containerProAmount" style="grid-column: span 2;">
-            <label>Professional Tax</label>
-            <input type="text" name="professional_tax" id="fieldProfessionalTaxAmount" placeholder="₱0.00" autocomplete="off">
-            <input type="hidden" name="professional_tax_rate" id="fieldProfessionalTaxRate" value="">
-            <input type="hidden" id="fieldProfessionalTax" value="0.00">
-        </div>
-    </div>
-
-    <div class="supplier-grid-4" id="rowGrossWrapper" style="margin-top:12px;">
-        <div class="supplier-field gross-center" id="grossWrapper" style="grid-column: 2 / span 2; text-align: center;">
-            <label style="text-align: center; display: block; width: 100%;">Net Amount</label>
-            <input type="text" name="amount" id="fieldGrossAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00" style="font-weight:700; text-align:center; font-size:15px;">
-            <input type="hidden" id="fieldCalculatedGross" name="calculated_gross" value="0.00">
+        <div id="rowGrossWrapper">
+            <div class="supplier-field gross-center" id="grossWrapper">
+                <label>Net Amount</label>
+                <input type="text" name="amount" id="fieldGrossAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00">
+                <input type="hidden" id="fieldCalculatedGross" name="calculated_gross" value="0.00">
+            </div>
         </div>
     </div>
 </div>
@@ -511,12 +835,11 @@
 
                 <div class="supplier-section">
                     <h4>Other Details</h4>
-                    <div class="other-toggle" style="display:flex;align-items:center;gap:8px;margin:8px 0 12px;">
-                        <span class="other-line" style="flex:1;height:1px;background:#e5eaf0;"></span>
+                    <div class="other-toggle">
+                        <span class="other-line"></span>
                         <button type="button" id="toggleOtherDetailsBtn" aria-expanded="true"
-                            onclick="toggleOtherDetails()"
-                            style="background:#fff;border:1px solid #d6dde7;border-radius:14px;padding:4px 8px;width:36px;height:28px;">v</button>
-                        <span class="other-line" style="flex:1;height:1px;background:#e5eaf0;"></span>
+                            onclick="toggleOtherDetails()">SHOW</button>
+                        <span class="other-line"></span>
                     </div>
                     <div id="otherDetailsBody">
                         <div class="supplier-grid-4">
@@ -692,60 +1015,230 @@
 
 
     // --- 1. THE AUTO-CALCULATION LOGIC ---
-// Triggered when Gross Amount changes
-function updateAllTaxesAndGross() {
-    const isWithholdingChecked = document.getElementById('fieldIsVat')?.checked;
-    const gross = parseNumber(document.getElementById('fieldAmount')?.value);
+// Live list from Taxes page — always mirrors current DB (no hardcoded leftovers)
+function getTaxChoices() {
+    if (window._taxChoicesLoaded) {
+        return Array.isArray(window._taxChoices) ? window._taxChoices : [];
+    }
+    const el = document.getElementById('taxChoicesJson');
+    if (el && el.textContent) {
+        try {
+            const parsed = JSON.parse(el.textContent);
+            if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+    }
+    return [];
+}
+function ratesFromRateStr(rateStr, isVat) {
+    // Dual rates "5%/3%" → first = VAT, second = Non-VAT. Show only the active side.
+    if (rateStr === undefined || rateStr === null || rateStr === '') return [];
+    const s = String(rateStr).replace(/%/g, '').trim();
+    if (!s) return [];
+    if (s.includes('/')) {
+        const parts = s.split('/');
+        const raw = (typeof isVat === 'boolean')
+            ? (isVat ? parts[0] : (parts[1] !== undefined && parts[1] !== '' ? parts[1] : parts[0]))
+            : parts[0];
+        const n = parseFloat(raw);
+        return (!isNaN(n) && n >= 0) ? [n] : [];
+    }
+    const n = parseFloat(s);
+    return (!isNaN(n) && n >= 0) ? [n] : [];
+}
+function getGoodsServiceRates() {
+    if (window._goodsServiceRates && typeof window._goodsServiceRates === 'object') {
+        return window._goodsServiceRates;
+    }
+    const el = document.getElementById('goodsServiceRatesJson');
+    if (el && el.textContent) {
+        try {
+            const parsed = JSON.parse(el.textContent);
+            if (parsed && typeof parsed === 'object') {
+                window._goodsServiceRates = parsed;
+                return parsed;
+            }
+        } catch (e) {}
+    }
+    return { goods: '1.00', services: '2.00' };
+}
+function getGoodsServiceRatePct(type) {
+    const rates = getGoodsServiceRates();
+    const key = String(type || '').toLowerCase();
+    if (key === 'goods') return parseFloat(rates.goods) || 0;
+    if (key === 'services') return parseFloat(rates.services) || 0;
+    return 0;
+}
+function taxSlotIds(n) {
+    if (n === 1) return { container: 'containerTax5', rate: 'fieldTax5Rate', amount: 'fieldTax5', rateName: 'tax_1_option', amountName: 'tax_5' };
+    // n === 2 is Goods/Service (fixed slot below); extra tax choices use tax_3, tax_4, …
+    if (n === 2) return { container: 'containerTax2', rate: 'fieldGoodsServiceType', amount: 'fieldTax2', rateName: 'goods_service_type', amountName: 'tax_2' };
+    return { container: 'containerTax' + n, rate: 'fieldTax' + n + 'Rate', amount: 'fieldTax' + n, rateName: 'tax_' + n + '_option', amountName: 'tax_' + n };
+}
+function renderTaxSlots() {
+    const wrap = document.getElementById('taxSlotsWrap');
+    if (!wrap) return;
+    const choices = getTaxChoices();
+    const gsRates = getGoodsServiceRates();
+    const vatNow = isVatChecked();
+    const prevVals = {};
+    wrap.querySelectorAll('[id]').forEach(el => {
+        if (el.id) prevVals[el.id] = el.value;
+    });
+    const prevGs = prevVals['fieldGoodsServiceType'] || '';
+    wrap.innerHTML = '';
 
-    // Get dynamic tax rates from form data attributes
+    // One slot per active tax on the Taxes page (Tax 1, Tax 2, Tax 3, …)
+    // Field map: choice 0 → tax_1_option/tax_5 · choice 1 → tax_3_option/tax_3 · choice 2 → tax_4_option/tax_4 · …
+    function slotFieldMap(choiceIndex) {
+        if (choiceIndex === 0) return taxSlotIds(1);
+        const n = choiceIndex + 2; // 1→3, 2→4, 3→5 …
+        return taxSlotIds(n);
+    }
+    choices.forEach((c, idx) => {
+        const ids = slotFieldMap(idx);
+        // Dual rates: VAT → 5%/2% · Non-VAT → 3%/1%
+        const rates = ratesFromRateStr(c.rate || '', vatNow);
+        const label = (c && c.label) || 'Tax';
+        const slot = document.createElement('div');
+        slot.className = 'supplier-field tax-slot';
+        slot.id = ids.container;
+        let rateOpts = '';
+        rates.forEach(r => {
+            rateOpts += '<option value="' + r + '">' + r + '%</option>';
+        });
+        if (!rates.length) rateOpts = '<option value="">—</option>';
+        slot.innerHTML =
+            '<label>' + label + '</label>' +
+            '<div class="tax-slot-controls">' +
+            '<select name="' + ids.rateName + '" id="' + ids.rate + '" class="tax-rate-select" data-amount-id="' + ids.amount + '" onchange="updateAllTaxesAndGross()">' + rateOpts + '</select>' +
+            '<input type="text" name="' + ids.amountName + '" id="' + ids.amount + '" class="auto-readonly tax-amount-input" readonly aria-readonly="true" tabindex="-1" placeholder="₱0.00">' +
+            '</div>';
+        wrap.appendChild(slot);
+        const sel = document.getElementById(ids.rate);
+        const prevRate = prevVals[ids.rate] || '';
+        const prevAmt = prevVals[ids.amount] || '';
+        if (sel) {
+            if (prevRate && sel.querySelector('option[value="' + prevRate + '"]')) sel.value = prevRate;
+            else if (rates.length) sel.value = String(rates[0]);
+        }
+        const amt = document.getElementById(ids.amount);
+        if (amt) amt.value = prevAmt || '₱0.00';
+    });
+
+    // Goods / Service dropdown (always present — separate from Tax Rates list)
+    const ids2 = taxSlotIds(2);
+    const slot2 = document.createElement('div');
+    slot2.className = 'supplier-field tax-slot';
+    slot2.id = ids2.container;
+    const gsPctGoods = gsRates.goods || '1.00';
+    const gsPctServices = gsRates.services || '2.00';
+    slot2.innerHTML =
+        '<label>Goods / Service</label>' +
+        '<div class="tax-slot-controls">' +
+        '<select name="' + ids2.rateName + '" id="' + ids2.rate + '" class="tax-rate-select goods-service-select" data-amount-id="' + ids2.amount + '" onchange="updateAllTaxesAndGross()">' +
+        '<option value="">None</option>' +
+        '<option value="goods">Goods (' + gsPctGoods + '%)</option>' +
+        '<option value="services">Services (' + gsPctServices + '%)</option>' +
+        '</select>' +
+        '<input type="text" name="' + ids2.amountName + '" id="' + ids2.amount + '" class="auto-readonly tax-amount-input" readonly aria-readonly="true" tabindex="-1" placeholder="₱0.00">' +
+        '</div>';
+    wrap.appendChild(slot2);
+    const gsSel = document.getElementById(ids2.rate);
+    if (gsSel) {
+        const gsVal = String(prevGs || '').toLowerCase();
+        if (gsVal === 'goods' || gsVal === 'services') gsSel.value = gsVal;
+        else gsSel.value = '';
+    }
+    const amt2 = document.getElementById(ids2.amount);
+    if (amt2) amt2.value = prevVals[ids2.amount] || '₱0.00';
+
+    // Bind amount edits (delegated — slots are rebuilt)
+    wrap.querySelectorAll('.tax-amount-input').forEach(inp => {
+        inp.addEventListener('input', updateNetOnly);
+    });
+    if (!choices.length && !wrap.querySelector('.tax-slot')) {
+        wrap.innerHTML = '<div class="supplier-field" style="grid-column: 1 / -1;"><label>Taxes</label><div class="tax-type-help" style="margin-top:0;">No active taxes on the Taxes page. Goods/Service rates still apply.</div></div>';
+    }
+}
+function applyTaxChoicesToForm() {
     const form = document.getElementById('supplierForm');
-    const tax1RateStr = form?.getAttribute('data-tax1-rate') || '5%/3%';
-    const tax2RateStr = form?.getAttribute('data-tax2-rate') || '2%/1%';
-    
-    // Parse rates: format is "VAT%/Non-VAT%"
-    let t1VatRate = 0.05, t1NvRate = 0.03;
-    let t2VatRate = 0.02, t2NvRate = 0.01;
-    
-    if (tax1RateStr.includes('/')) {
-        const parts = tax1RateStr.replace(/%/g, '').split('/');
-        t1VatRate = parseFloat(parts[0]) / 100 || 0.05;
-        t1NvRate = parseFloat(parts[1]) / 100 || 0.03;
+    const choices = getTaxChoices();
+    if (!form) return;
+    const c1 = choices[0];
+    form.setAttribute('data-tax1-rate', (c1 && c1.rate) ? c1.rate : '');
+    form.setAttribute('data-tax2-rate', '');
+}
+function populateTaxRateOptions() {
+    applyTaxChoicesToForm();
+    renderTaxSlots();
+}
+function getSelectedTaxRate(selectEl) {
+    if (!selectEl || !selectEl.value) return 0;
+    const n = parseFloat(selectEl.value);
+    return isNaN(n) ? 0 : n / 100;
+}
+// Triggered when Gross Amount or a tax rate dropdown changes
+function isVatChecked() {
+    return !!document.getElementById('fieldIsVat')?.checked;
+}
+function isTaxExemptChecked() {
+    return !!document.getElementById('fieldTaxExempt')?.checked;
+}
+function updateAllTaxesAndGross() {
+    const gross = parseNumber(document.getElementById('fieldAmount')?.value);
+    const vat = isVatChecked();
+    const exempt = isTaxExemptChecked();
+    const proAmt = document.getElementById('fieldProfessionalTaxAmount');
+    const proRate = document.getElementById('fieldProfessionalTaxRate');
+    const proHidden = document.getElementById('fieldProfessionalTax');
+    if (exempt) {
+        document.querySelectorAll('#taxSlotsWrap .tax-amount-input').forEach(el => {
+            el.value = formatAmount(0);
+        });
+        document.querySelectorAll('#taxSlotsWrap .tax-rate-select').forEach(sel => {
+            if (sel.classList.contains('goods-service-select')) sel.value = '';
+        });
+        const enableProfCheckbox = document.getElementById('fieldEnableProfTax');
+        if (enableProfCheckbox) enableProfCheckbox.checked = false;
+        if (proAmt) proAmt.value = formatAmount(0);
+        if (proRate) proRate.value = '0.00';
+        if (proHidden) proHidden.value = formatAmountHidden(0);
+        updateNetOnly();
+        return;
     }
-    if (tax2RateStr.includes('/')) {
-        const parts = tax2RateStr.replace(/%/g, '').split('/');
-        t2VatRate = parseFloat(parts[0]) / 100 || 0.02;
-        t2NvRate = parseFloat(parts[1]) / 100 || 0.01;
-    }
-    
-    // Use VAT rates for VAT mode, Non-VAT rates for non-VAT mode
-    const t1Rate = isWithholdingChecked ? t1VatRate : 0;
-    const t2Rate = isWithholdingChecked ? t2VatRate : 0;
-
-    // Withholding taxes: percentage of Gross, deducted to reach Net
-    if (isWithholdingChecked) {
-        let t1 = roundHalfUp(gross * t1Rate);
-        let t2 = roundHalfUp(gross * t2Rate);
-        
-        document.getElementById('fieldTax5').value = formatAmount(t1);
-        document.getElementById('fieldTax2').value = formatAmount(t2);
-    } else {
-        document.getElementById('fieldTax5').value = formatAmount(0);
-        document.getElementById('fieldTax2').value = formatAmount(0);
-    }
-
-    // Refresh Net (Professional Tax is user-entered, not recalculated here)
+    // VAT: (Gross/1.12)×rate · Non-VAT: Gross×rate
+    const base = vat ? gross / 1.12 : gross;
+    document.querySelectorAll('#taxSlotsWrap .tax-rate-select').forEach(sel => {
+        const amt = document.getElementById(sel.dataset.amountId);
+        if (!amt) return;
+        if (sel.classList.contains('goods-service-select')) {
+            const ratePct = getGoodsServiceRatePct(sel.value) / 100;
+            amt.value = formatAmount(roundHalfUp(base * ratePct));
+            return;
+        }
+        const rate = getSelectedTaxRate(sel);
+        amt.value = formatAmount(roundHalfUp(base * rate));
+    });
+    // Professional tax optional — 5% of Gross only when Enable is checked
+    const enableProf = !!document.getElementById('fieldEnableProfTax')?.checked;
+    const prof = enableProf ? roundHalfUp(gross * 0.05) : 0;
+    if (proAmt) proAmt.value = formatAmount(prof);
+    if (proRate) proRate.value = enableProf ? '5.00' : '0.00';
+    if (proHidden) proHidden.value = formatAmountHidden(prof);
     updateNetOnly();
 }
 
 // --- 2. NET AMOUNT = Gross − deductions (percentages decrease) ---
 function updateNetOnly() {
     const gross = parseNumber(document.getElementById('fieldAmount')?.value);
-    const t1 = parseNumber(document.getElementById('fieldTax5')?.value);
-    const t2 = parseNumber(document.getElementById('fieldTax2')?.value);
+    let t = 0;
+    document.querySelectorAll('#taxSlotsWrap .tax-amount-input').forEach(el => {
+        t += parseNumber(el.value);
+    });
     const pro = parseNumber(document.getElementById('fieldProfessionalTaxAmount')?.value);
     const other = parseNumber(document.getElementById('fieldOtherDeductions')?.value);
 
-    const finalNet = roundHalfUp(gross - t1 - t2 - pro - other);
+    const finalNet = roundHalfUp(gross - t - pro - other);
 
     document.getElementById('fieldGrossAmount').value = formatAmount(finalNet);
     document.getElementById('fieldCalculatedGross').value = formatAmountHidden(finalNet);
@@ -763,14 +1256,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // These trigger full recalculation of taxes from Gross
     document.getElementById('fieldAmount')?.addEventListener('input', updateAllTaxesAndGross);
     document.getElementById('fieldIsVat')?.addEventListener('change', toggleTaxFields);
+    document.getElementById('fieldEnableProfTax')?.addEventListener('change', updateAllTaxesAndGross);
+    document.getElementById('fieldTaxExempt')?.addEventListener('change', updateAllTaxesAndGross);
 
-    // These ONLY update the Net (Preserves manual edits in tax/pro/other boxes)
-    ['fieldTax5', 'fieldTax2', 'fieldOtherDeductions', 'fieldProfessionalTaxAmount'].forEach(id => {
-        document.getElementById(id)?.addEventListener('input', updateNetOnly);
-    });
+    // These ONLY update the Net (tax slots + prof tax are auto-computed from Gross)
+    document.getElementById('fieldOtherDeductions')?.addEventListener('input', updateNetOnly);
 
     // Currency masking (₱ and commas) on focus/blur
-    ['fieldAmount', 'fieldOtherDeductions', 'fieldProfessionalTaxAmount'].forEach(setupAmountFieldFocusBlur);
+    ['fieldAmount', 'fieldOtherDeductions'].forEach(setupAmountFieldFocusBlur);
+
+    // First paint from server-rendered Taxes page list
+    populateTaxRateOptions();
 });
 
 
@@ -782,11 +1278,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleTaxFields() {
-        const isVat = document.getElementById('fieldIsVat')?.checked;
-        const c1 = document.getElementById('containerTax5');
-        const c2 = document.getElementById('containerTax2');
-        if (c1) c1.style.display = isVat ? '' : 'none';
-        if (c2) c2.style.display = isVat ? '' : 'none';
+        // Rebuild rate options for VAT (5%/2%) vs Non-VAT (3%/1%), then recalc
+        document.querySelectorAll('#taxSlotsWrap .tax-slot').forEach(el => {
+            el.style.display = '';
+        });
+        renderTaxSlots();
         updateAllTaxesAndGross();
     }
 
@@ -810,24 +1306,139 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = document.getElementById('supplierModalTitle');
         const action = document.getElementById('supplierAction');
         const submitBtn = document.getElementById('supplierSubmitBtn');
+        if (typeof clearSerialFeedback === 'function') clearSerialFeedback();
 
-        // Fetch fresh tax data from API
-        fetch('/api/supplier-modal-context/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(r => r.json())
-            .then(data => {
-                if (data.ok) {
-                    const form = document.getElementById('supplierForm');
-                    if (form) {
-                        form.setAttribute('data-tax1-rate', data.tax_1_rate || '5%/3%');
-                        form.setAttribute('data-tax2-rate', data.tax_2_rate || '2%/1%');
-                    }
-                    const labelT5 = document.getElementById('labelTax5');
-                    const labelT2 = document.getElementById('labelTax2');
-                    if (labelT5) labelT5.textContent = data.tax_1_label || 'Tax (5%/3%)';
-                    if (labelT2) labelT2.textContent = data.tax_2_label || 'Tax (2%/1%)';
+        function populateModeFields() {
+            if (mode === 'edit' && trigger) {
+                title.innerHTML = '<i class="fas fa-pen"></i> Edit Supplier';
+                action.value = 'edit';
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Save Changes';
+
+                setFieldValue('supplierId', trigger.dataset.id);
+                setFieldValue('fieldCheckSerial', trigger.dataset.mrOr);
+                setFieldValue('fieldOrNumber', trigger.dataset.orNumber);
+                setFieldValue('fieldDate', trigger.dataset.date);
+                scheduleSerialValidation();
+                setFieldValue('fieldPayee', trigger.dataset.payee);
+                setFieldValue('fieldNature', trigger.dataset.natureOfCollections);
+                setFieldValue('fieldAmount', formatAmount(trigger.dataset.grossAmount));
+                setFieldValue('fieldDvPayroll', trigger.dataset.dvPayroll);
+                setFieldValue('fieldOrsBurs', trigger.dataset.orsBurs);
+                setFieldValue('fieldResponsibilityCenter', trigger.dataset.responsibilityCenter);
+                // Set VAT / Tax Exempt BEFORE rebuilding rate options (5%/2% vs 3%/1%)
+                const vatCheckbox = document.getElementById('fieldIsVat');
+                if (vatCheckbox) {
+                    vatCheckbox.checked = String(trigger.dataset.isVat).toLowerCase() === 'true';
                 }
-            })
-            .catch(() => {});
+                const exemptCheckbox = document.getElementById('fieldTaxExempt');
+                if (exemptCheckbox) {
+                    exemptCheckbox.checked = String(trigger.dataset.taxExempt || '').toLowerCase() === 'true';
+                }
+                const enableProfCheckbox = document.getElementById('fieldEnableProfTax');
+                const savedProfTax = parseNumber(trigger.dataset.professionalTax);
+                if (enableProfCheckbox) {
+                    enableProfCheckbox.checked = savedProfTax > 0;
+                }
+                setFieldValue('fieldProfessionalTaxRate', enableProfCheckbox?.checked ? '5.00' : '0.00');
+                setFieldValue('fieldProfessionalTax', formatAmountHidden(trigger.dataset.professionalTax));
+                setFieldValue('fieldProfessionalTaxAmount', formatAmount(trigger.dataset.professionalTax));
+                populateTaxRateOptions();
+                // Restore saved rates if they still exist on the Taxes page
+                const rate1Sel = document.getElementById('fieldTax5Rate');
+                const gsSel = document.getElementById('fieldGoodsServiceType');
+                if (rate1Sel) {
+                    const r1 = parseFloat(String(trigger.dataset.tax1Option || '').replace('%', '').trim());
+                    if (!isNaN(r1) && rate1Sel.querySelector('option[value="' + r1 + '"]')) rate1Sel.value = String(r1);
+                }
+                if (gsSel) {
+                    const gsVal = String(trigger.dataset.goodsServiceType || trigger.dataset.tax2Option || '').toLowerCase();
+                    gsSel.value = (gsVal === 'goods' || gsVal === 'services') ? gsVal : '';
+                }
+                setFieldValue('fieldTax5', formatAmount(trigger.dataset.tax5));
+                setFieldValue('fieldTax2', formatAmount(trigger.dataset.tax2));
+                // Extra tax slots (Tax 3, Tax 4, …)
+                [['tax3', 'fieldTax3', 'fieldTax3Rate'], ['tax4', 'fieldTax4', 'fieldTax4Rate']].forEach(([dsKey, amtId, rateId]) => {
+                    const amtEl = document.getElementById(amtId);
+                    const rateEl = document.getElementById(rateId);
+                    const amtVal = trigger.dataset[dsKey] || '';
+                    const rateVal = trigger.dataset[dsKey + 'Option'] || '';
+                    if (amtEl) amtEl.value = amtVal ? formatAmount(amtVal) : formatAmount(0);
+                    if (rateEl && rateVal) {
+                        const opt = Array.from(rateEl.options).find(o => o.value === String(parseFloat(rateVal)));
+                        if (opt) rateEl.value = opt.value;
+                    }
+                });
+                setFieldValue('fieldGrossAmount', formatAmount(trigger.dataset.amount));
+                setFieldValue('fieldAccountTitle', trigger.dataset.accountTitle);
+                setFieldValue('fieldFundCluster', trigger.dataset.fundCluster);
+                setFieldValue('fieldFundClusterId', trigger.dataset.fundClusterId || '');
+                setFieldValue('fieldCashier', trigger.dataset.cashierName || '{{ cashier_full_name|escapejs }}');
+                setFieldValue('fieldCashierHidden', trigger.dataset.cashierName || '{{ cashier_full_name|escapejs }}');
+                setFieldValue('fieldApproval', trigger.dataset.approval || '');
+                setFieldValue('fieldOtherDeductions', formatAmount(trigger.dataset.otherDeductions));
+                setFieldValue('fieldUacsObjectCode', trigger.dataset.uacs);
+                setFieldValue('fieldRemarksText', trigger.dataset.remarksText || trigger.dataset.remarks);
+                setFieldValue('fieldStatus', trigger.dataset.status || 'active');
+                updateAllTaxesAndGross();
+            } else {
+                title.innerHTML = '<i class="fas fa-plus"></i> Add Supplier';
+                action.value = 'create';
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Supplier';
+
+                // Compute fresh sequences from current table data
+                computeDefaultSequences();
+                setFieldValue('fieldCheckSerial', DEFAULT_SUPPLIER_VALUES.check_serial);
+                setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
+                setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
+                setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
+                scheduleSerialValidation();
+
+                setFieldValue('supplierId', '');
+                setFieldValue('fieldCheckSerial', DEFAULT_SUPPLIER_VALUES.check_serial);
+                setFieldValue('fieldOrNumber', DEFAULT_SUPPLIER_VALUES.or_number);
+                setFieldValue('fieldDate', DEFAULT_SUPPLIER_VALUES.date);
+                setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
+                setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
+                setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
+                setFieldValue('fieldNature', '');
+                setFieldValue('fieldPayee', '');
+                setFieldValue('fieldAmount', '');
+                setFieldValue('fieldUacsObjectCode', '');
+                setFieldValue('fieldProfessionalTaxRate', '0.00');
+                setFieldValue('fieldProfessionalTax', '0.00');
+                setFieldValue('fieldProfessionalTaxAmount', formatAmount(0));
+                const enableProfCheckbox = document.getElementById('fieldEnableProfTax');
+                if (enableProfCheckbox) enableProfCheckbox.checked = false;
+                // Reset VAT first so rate options rebuild as Non-VAT (3%/1%)
+                const vatCheckbox = document.getElementById('fieldIsVat');
+                if (vatCheckbox) {
+                    vatCheckbox.checked = false;
+                }
+                const exemptCheckboxCreate = document.getElementById('fieldTaxExempt');
+                if (exemptCheckboxCreate) {
+                    exemptCheckboxCreate.checked = false;
+                }
+                populateTaxRateOptions();
+                document.querySelectorAll('#taxSlotsWrap .tax-amount-input').forEach(el => {
+                    el.value = formatAmount(0);
+                });
+                setFieldValue('fieldGrossAmount', formatAmount(0));
+                setFieldValue('fieldAccountTitle', '');
+                setFieldValue('fieldFundCluster', '');
+                setFieldValue('fieldFundClusterId', '');
+                setFieldValue('fieldCashier', '{{ cashier_full_name|escapejs }}');
+                setFieldValue('fieldCashierHidden', '{{ cashier_full_name|escapejs }}');
+                setFieldValue('fieldApproval', '');
+                setFieldValue('fieldOtherDeductions', formatAmount(0));
+                setFieldValue('fieldRemarksText', '');
+                setFieldValue('fieldStatus', 'active');
+            }
+
+            syncAllTaxAndGross();
+            try { toggleOtherDetails(mode !== 'create'); } catch (e) { }
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+        }
 
         // Close any open Actions dropdown
         document.querySelectorAll('.dropdown-menu, .actions-dropdown').forEach(el => {
@@ -835,90 +1446,51 @@ document.addEventListener('DOMContentLoaded', () => {
             el.classList.remove('show');
         });
 
-        if (mode === 'edit' && trigger) {
-            title.innerHTML = '<i class="fas fa-pen"></i> Edit Supplier';
-            action.value = 'edit';
-            submitBtn.innerHTML = '<i class="fas fa-check"></i> Save Changes';
-
-            setFieldValue('supplierId', trigger.dataset.id);
-            setFieldValue('fieldCheckSerial', trigger.dataset.mrOr);
-            setFieldValue('fieldOrNumber', trigger.dataset.orNumber);
-            setFieldValue('fieldDate', trigger.dataset.date);
-            setFieldValue('fieldPayee', trigger.dataset.payee);
-            setFieldValue('fieldNature', trigger.dataset.natureOfCollections);
-            setFieldValue('fieldAmount', formatAmount(trigger.dataset.grossAmount));
-            setFieldValue('fieldDvPayroll', trigger.dataset.dvPayroll);
-            setFieldValue('fieldOrsBurs', trigger.dataset.orsBurs);
-            setFieldValue('fieldResponsibilityCenter', trigger.dataset.responsibilityCenter);
-            setFieldValue('fieldProfessionalTax', formatAmountHidden(trigger.dataset.professionalTax));
-            setFieldValue('fieldProfessionalTaxAmount', formatAmount(trigger.dataset.professionalTax));
-            setFieldValue('fieldTax5', formatAmount(trigger.dataset.tax5));
-            setFieldValue('fieldTax2', formatAmount(trigger.dataset.tax2));
-            setFieldValue('fieldGrossAmount', formatAmount(trigger.dataset.amount));
-            setFieldValue('fieldAccountTitle', trigger.dataset.accountTitle);
-            setFieldValue('fieldFundCluster', trigger.dataset.fundCluster);
-            setFieldValue('fieldFundClusterId', trigger.dataset.fundClusterId || '');
-            setFieldValue('fieldCashier', trigger.dataset.cashierName || '{{ cashier_full_name|escapejs }}');
-            setFieldValue('fieldCashierHidden', trigger.dataset.cashierName || '{{ cashier_full_name|escapejs }}');
-            setFieldValue('fieldApproval', trigger.dataset.approval || '');
-            setFieldValue('fieldOtherDeductions', formatAmount(trigger.dataset.otherDeductions));
-            setFieldValue('fieldUacsObjectCode', trigger.dataset.uacs);
-            const vatCheckbox = document.getElementById('fieldIsVat');
-            if (vatCheckbox) {
-                vatCheckbox.checked = String(trigger.dataset.isVat).toLowerCase() === 'true';
-            }
-            setFieldValue('fieldRemarksText', trigger.dataset.remarksText || trigger.dataset.remarks);
-            setFieldValue('fieldStatus', trigger.dataset.status || 'active');
-        } else {
-            title.innerHTML = '<i class="fas fa-plus"></i> Add Supplier';
-            action.value = 'create';
-            submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Supplier';
-
-            // Compute fresh sequences from current table data
-            computeDefaultSequences();
-            setFieldValue('fieldCheckSerial', DEFAULT_SUPPLIER_VALUES.check_serial);
-            setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
-            setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
-            setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
-
-            setFieldValue('supplierId', '');
-            setFieldValue('fieldCheckSerial', DEFAULT_SUPPLIER_VALUES.check_serial);
-            setFieldValue('fieldOrNumber', DEFAULT_SUPPLIER_VALUES.or_number);
-            setFieldValue('fieldDate', DEFAULT_SUPPLIER_VALUES.date);
-            setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
-            setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
-            setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
-            setFieldValue('fieldNature', '');
-            setFieldValue('fieldPayee', '');
-            setFieldValue('fieldAmount', '');
-            setFieldValue('fieldUacsObjectCode', '');
-            setFieldValue('fieldProfessionalTaxRate', '');
-            setFieldValue('fieldProfessionalTax', '0.00');
-            setFieldValue('fieldProfessionalTaxAmount', formatAmount(0));
-            setFieldValue('fieldTax5', formatAmount(0));
-            setFieldValue('fieldTax2', formatAmount(0));
-            setFieldValue('fieldGrossAmount', formatAmount(0));
-            setFieldValue('fieldAccountTitle', '');
-            setFieldValue('fieldFundCluster', '');
-            setFieldValue('fieldFundClusterId', '');
-            setFieldValue('fieldCashier', '{{ cashier_full_name|escapejs }}');
-            setFieldValue('fieldCashierHidden', '{{ cashier_full_name|escapejs }}');
-            setFieldValue('fieldApproval', '');
-            setFieldValue('fieldOtherDeductions', formatAmount(0));
-            const vatCheckbox = document.getElementById('fieldIsVat');
-            if (vatCheckbox) {
-                vatCheckbox.checked = false;
-            }
-            setFieldValue('fieldRemarksText', '');
-            setFieldValue('fieldStatus', 'active');
+        // Open immediately when tax choices are already loaded (no wait)
+        if (window._taxChoicesLoaded) {
+            populateModeFields();
+            fetch('/api/supplier-modal-context/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.json())
+                .then(data => {
+                    if (data && (data.ok || Array.isArray(data.tax_choices))) {
+                        window._taxChoices = Array.isArray(data.tax_choices) ? data.tax_choices : [];
+                        if (data.goods_service_rates) window._goodsServiceRates = data.goods_service_rates;
+                        const form = document.getElementById('supplierForm');
+                        if (form) {
+                            form.setAttribute('data-tax1-rate', data.tax_1_rate || '');
+                            form.setAttribute('data-tax2-rate', data.tax_2_rate || '');
+                        }
+                        if (modal?.classList.contains('active')) {
+                            populateModeFields();
+                        }
+                    }
+                })
+                .catch(() => {});
+            return;
         }
 
-        syncAllTaxAndGross();
-
-        try { toggleOtherDetails(mode !== 'create'); } catch (e) { }
-
+        // First open: show backdrop now, fill fields when context arrives
         modal.classList.add('active');
         modal.setAttribute('aria-hidden', 'false');
+        fetch('/api/supplier-modal-context/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(data => {
+                if (data && (data.ok || Array.isArray(data.tax_choices))) {
+                    window._taxChoices = Array.isArray(data.tax_choices) ? data.tax_choices : [];
+                    if (data.goods_service_rates) window._goodsServiceRates = data.goods_service_rates;
+                    window._taxChoicesLoaded = true;
+                    const form = document.getElementById('supplierForm');
+                    if (form) {
+                        form.setAttribute('data-tax1-rate', data.tax_1_rate || '');
+                        form.setAttribute('data-tax2-rate', data.tax_2_rate || '');
+                    }
+                }
+                populateModeFields();
+            })
+            .catch(() => {
+                window._taxChoicesLoaded = true;
+                populateModeFields();
+            });
     }
 
     function closeSupplierModal() {
@@ -927,9 +1499,7 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.classList.remove('active');
         modal.classList.add('closing');
         modal.setAttribute('aria-hidden', 'true');
-        setTimeout(function() {
-            modal.classList.remove('closing');
-        }, 350);
+        modal.classList.remove('closing');
     }
 
     document.getElementById('supplierModal')?.addEventListener('click', function (event) {
@@ -957,7 +1527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const selectedOption = Array.from(dataList.options).find(opt => opt.value === inputElem.value);
 
         if (selectedOption) {
-            const uacs = selectedOption.getAttribute('data-uacs') || '';
+            const uacs = (selectedOption.getAttribute('data-uacs') || '').replace(/[^0-9]/g, '');
             uacsField.value = uacs; // Auto-fill the matched UACS code
         } else {
             uacsField.value = ''; // Clear if the input doesn't match an existing option
@@ -1035,6 +1605,92 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // ── Check Serial auto-validator ─────────────────────────────────
+    let serialCheckTimer = null;
+    let serialCheckSeq = 0;
+    let serialCheckState = { value: '', exists: false };
+
+    function setSerialFeedback(message, kind) {
+        const input = document.getElementById('fieldCheckSerial');
+        const feedback = document.getElementById('fieldCheckSerialFeedback');
+        if (!input || !feedback) return;
+        input.classList.remove('serial-invalid', 'serial-valid');
+        feedback.classList.remove('show', 'is-error', 'is-ok');
+        if (!message) return;
+        feedback.textContent = message;
+        feedback.classList.add('show');
+        if (kind === 'error') {
+            feedback.classList.add('is-error');
+            input.classList.add('serial-invalid');
+        } else if (kind === 'ok') {
+            feedback.classList.add('is-ok');
+            input.classList.add('serial-valid');
+        }
+    }
+
+    function clearSerialFeedback() {
+        serialCheckState = { value: '', exists: false };
+        setSerialFeedback('', '');
+    }
+
+    function validateCheckSerial(force) {
+        const input = document.getElementById('fieldCheckSerial');
+        if (!input) return Promise.resolve(false);
+        const serial = input.value.trim();
+        const action = document.getElementById('supplierAction')?.value || 'create';
+        const supId = document.getElementById('supplierId')?.value || '';
+
+        if (!serial) {
+            clearSerialFeedback();
+            return Promise.resolve(true);
+        }
+        if (!force && serialCheckState.value === serial) {
+            if (serialCheckState.exists) {
+                setSerialFeedback(`Check No. ${serial} is already used.`, 'error');
+                return Promise.resolve(false);
+            }
+            setSerialFeedback(`Check No. ${serial} is available.`, 'ok');
+            return Promise.resolve(true);
+        }
+
+        const seq = ++serialCheckSeq;
+        setSerialFeedback('Checking Check Serial...', '');
+        const params = new URLSearchParams({ serial: serial });
+        if (action === 'edit' && supId) params.set('exclude_id', supId);
+
+        return fetch('{% url "validate_supplier_serial" %}?' + params.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (seq !== serialCheckSeq) return !data.exists;
+                serialCheckState = { value: serial, exists: !!data.exists };
+                if (data.exists) {
+                    setSerialFeedback(`Check No. ${serial} is already used.`, 'error');
+                    return false;
+                }
+                setSerialFeedback(`Check No. ${serial} is available.`, 'ok');
+                return true;
+            })
+            .catch(() => {
+                if (seq !== serialCheckSeq) return true;
+                serialCheckState = { value: '', exists: false };
+                setSerialFeedback('', '');
+                return true;
+            });
+    }
+
+    function scheduleSerialValidation() {
+        clearTimeout(serialCheckTimer);
+        serialCheckTimer = setTimeout(() => validateCheckSerial(false), 350);
+    }
+
+    document.getElementById('fieldCheckSerial')?.addEventListener('input', scheduleSerialValidation);
+    document.getElementById('fieldCheckSerial')?.addEventListener('blur', () => {
+        clearTimeout(serialCheckTimer);
+        validateCheckSerial(true);
+    });
+
     document.getElementById('supplierForm')?.addEventListener('submit', function (e) {
         datalistInputs.forEach(id => {
             const input = document.getElementById(id);
@@ -1051,10 +1707,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Duplicate validation for create action
+        // Duplicate validation for create (and serial conflict on edit)
         const action = document.getElementById('supplierAction')?.value;
+        const serialNow = document.getElementById('fieldCheckSerial')?.value.trim();
+        if (serialNow && serialCheckState.value === serialNow && serialCheckState.exists) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            setSerialFeedback(`Check No. ${serialNow} is already used.`, 'error');
+            document.getElementById('fieldCheckSerial')?.focus();
+            return false;
+        }
+
         if (action === 'create') {
-            const serial = document.getElementById('fieldCheckSerial')?.value.trim();
+            const serial = serialNow;
             const dvPayroll = document.getElementById('fieldDvPayroll')?.value.trim();
             const orsBurs = document.getElementById('fieldOrsBurs')?.value.trim();
 
@@ -1069,17 +1734,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         if (serial && existingSerial && existingSerial === serial) {
                             e.preventDefault();
-                            showDuplicateModal('Serial Number', serial);
+                            e.stopImmediatePropagation();
+                            setSerialFeedback(`Check No. ${serial} is already used.`, 'error');
+                            document.getElementById('fieldCheckSerial')?.focus();
                             return false;
                         }
                         if (dvPayroll && existingDv && existingDv === dvPayroll) {
                             e.preventDefault();
-                            showDuplicateModal('DV/Payroll No.', dvPayroll);
+                            e.stopImmediatePropagation();
+                            if (typeof showToast === 'function') {
+                                showToast('error', 'Duplicate', `DV/Payroll No. ${dvPayroll} already exists.`);
+                            }
+                            document.getElementById('fieldDvPayroll')?.focus();
                             return false;
                         }
                         if (orsBurs && existingOrs && existingOrs === orsBurs) {
                             e.preventDefault();
-                            showDuplicateModal('ORS/BURS No.', orsBurs);
+                            e.stopImmediatePropagation();
+                            if (typeof showToast === 'function') {
+                                showToast('error', 'Duplicate', `ORS/BURS No. ${orsBurs} already exists.`);
+                            }
+                            document.getElementById('fieldOrsBurs')?.focus();
                             return false;
                         }
                     }
@@ -1088,39 +1763,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function showDuplicateModal(fieldName, value) {
-        let modal = document.getElementById('duplicateSerialModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'duplicateSerialModal';
-            modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;';
-            modal.innerHTML = `
-                <div style="background:#fff;border-radius:16px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
-                    <div style="padding:28px 32px;text-align:center;">
-                        <div style="width:64px;height:64px;border-radius:50%;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
-                            <i class="fas fa-exclamation-triangle" style="font-size:28px;color:#dc2626;"></i>
-                        </div>
-                        <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111827;">Duplicate Entry Found</h3>
-                        <p style="margin:0 0 6px;font-size:14px;color:#6b7280;">The <strong style="color:#111827;" id="dupFieldName"></strong> <strong style="color:#111827;" id="dupFieldValue"></strong> already exists in the system.</p>
-                        <p style="margin:0;font-size:13px;color:#9ca3af;">Please use a different value before saving.</p>
-                    </div>
-                    <div style="padding:0 32px 24px;text-align:center;">
-                        <button onclick="document.getElementById('duplicateSerialModal').style.display='none'" style="background:var(--nav);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;">OK, Got it</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-        }
-        document.getElementById('dupFieldName').textContent = fieldName;
-        document.getElementById('dupFieldValue').textContent = value;
-        modal.style.display = 'flex';
-    }
     function updateGrossLayout() {
         const gross = document.getElementById('grossWrapper');
         if (!gross) return;
         gross.classList.add('gross-center');
         gross.classList.remove('gross-normal');
-        gross.style.gridColumn = '2 / span 2';
         gross.style.textAlign = 'center';
     }
 </script>

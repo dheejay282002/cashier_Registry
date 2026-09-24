@@ -141,7 +141,7 @@ class RegistrySheetTests(TestCase):
 		response = self.client.get(reverse('suppliers'))
 
 		self.assertEqual(response.status_code, 200)
-		page_suppliers = list(response.context['page_obj'].object_list)
+		page_suppliers = list(response.context['supplier_list'])
 		self.assertTrue(any(s.pk == old_supplier.pk and s.is_old_or for s in page_suppliers))
 		self.assertTrue(any(s.pk == current_supplier.pk and not s.is_old_or for s in page_suppliers))
 
@@ -454,15 +454,13 @@ class RegistrySheetTests(TestCase):
 		)
 
 		self.client.force_login(self.admin)
-		response = self.client.post(
-			reverse('reports'),
-			data={
-				'report_type': 'cheque_summary',
-				'date_from': '2026-05-01',
-				'date_to': '2026-05-31',
-				'selected_rows': str(cheque_one.pk),
-			},
-		)
+		response = self.client.post(reverse('reports'), data={
+			'report_type': 'cheque_summary',
+			'cheque_status': 'released',
+			'date_from': '2026-05-01',
+			'date_to': '2026-05-31',
+			'selected_rows': str(cheque_one.pk),
+		})
 
 		self.assertEqual(response.status_code, 302)
 		report = Report.objects.latest('generated_at')
@@ -491,15 +489,13 @@ class RegistrySheetTests(TestCase):
 		)
 
 		self.client.force_login(self.admin)
-		create_response = self.client.post(
-			reverse('reports'),
-			data={
-				'report_type': 'cheque_summary',
-				'date_from': '2026-05-01',
-				'date_to': '2026-05-31',
-				'selected_rows': str(first_cheque.pk),
-			},
-		)
+		create_response = self.client.post(reverse('reports'), data={
+			'report_type': 'cheque_summary',
+			'cheque_status': 'released',
+			'date_from': '2026-05-01',
+			'date_to': '2026-05-31',
+			'selected_rows': str(first_cheque.pk),
+		})
 		self.assertEqual(create_response.status_code, 302)
 		report = Report.objects.latest('generated_at')
 		original_report_id = report.pk
@@ -546,19 +542,49 @@ class SupplierGrossCalculationTests(TestCase):
 				'action': 'create',
 				'payee': 'VAT Supplier Test',
 				'amount': '8640.00',
+				'gross_amount': '8640.00',
 				'is_vat': 'on',
-				'professional_tax_rate': '3.00',
+				'goods_service_type': 'services',
 				'other_deductions': '150.00',
-			}
+				'enable_professional_tax': 'on',
+			},
+			follow=True,
 		)
 		self.assertEqual(response.status_code, 200)
-		self.assertIn("added", response.context.get('success', ''))
+		self.assertIn("added", str(response.context.get('success', '') or ''))
 		supplier = Supplier.objects.get(account_name='VAT Supplier Test')
 		extras = supplier.raw_import.get('supplier_extras') or {}
-		self.assertEqual(extras.get('tax_5'), '430.88')
-		self.assertEqual(extras.get('tax_2'), '172.35')
-		self.assertEqual(extras.get('professional_tax'), '258.53')
-		self.assertEqual(extras.get('gross_amount'), '9651.76')
+		# base = 8640/1.12 = 7714.29; tax_5 = 5% → 385.71; services 2% → 154.29; prof 5% → 432.00
+		self.assertEqual(extras.get('tax_5'), '385.71')
+		self.assertEqual(extras.get('tax_2'), '154.29')
+		self.assertEqual(extras.get('goods_service_type'), 'services')
+		self.assertEqual(extras.get('professional_tax'), '432.00')
+		self.assertEqual(extras.get('gross_amount'), '8640.00')
+		self.assertEqual(extras.get('net_amount'), '7518.00')
+
+	def test_supplier_creation_professional_tax_disabled(self):
+		self.client.force_login(self.admin)
+		response = self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'No Prof Tax Supplier',
+				'amount': '8640.00',
+				'gross_amount': '8640.00',
+				'is_vat': 'on',
+				'goods_service_type': 'services',
+				'other_deductions': '150.00',
+			},
+			follow=True,
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertIn("added", str(response.context.get('success', '') or ''))
+		supplier = Supplier.objects.get(account_name='No Prof Tax Supplier')
+		extras = supplier.raw_import.get('supplier_extras') or {}
+		# Enable unchecked → prof tax 0; net = 8640 - 385.71 - 154.29 - 150 = 7950.00
+		self.assertEqual(extras.get('professional_tax'), '0.00')
+		self.assertEqual(extras.get('professional_tax_rate'), '0.00')
+		self.assertEqual(extras.get('net_amount'), '7950.00')
 
 	def test_supplier_creation_gross_calculation_non_vat(self):
 		self.client.force_login(self.admin)
@@ -568,19 +594,25 @@ class SupplierGrossCalculationTests(TestCase):
 				'action': 'create',
 				'payee': 'Non-VAT Supplier Test',
 				'amount': '8640.00',
+				'gross_amount': '8640.00',
 				'is_vat': '',
-				'professional_tax_rate': '3.00',
+				'goods_service_type': 'goods',
 				'other_deductions': '150.00',
-			}
+				'enable_professional_tax': 'on',
+			},
+			follow=True,
 		)
 		self.assertEqual(response.status_code, 200)
-		self.assertIn("added", response.context.get('success', ''))
+		self.assertIn("added", str(response.context.get('success', '') or ''))
 		supplier = Supplier.objects.get(account_name='Non-VAT Supplier Test')
 		extras = supplier.raw_import.get('supplier_extras') or {}
-		self.assertEqual(extras.get('tax_5'), '0.00')
-		self.assertEqual(extras.get('tax_2'), '0.00')
-		self.assertEqual(extras.get('professional_tax'), '271.86')
-		self.assertEqual(extras.get('gross_amount'), '9061.86')
+		# Non-VAT base = gross; tax_5 = 3% → 259.20; goods 1% → 86.40; prof 5% → 432.00; other 150 → net 7712.40
+		self.assertEqual(extras.get('tax_5'), '259.20')
+		self.assertEqual(extras.get('tax_2'), '86.40')
+		self.assertEqual(extras.get('goods_service_type'), 'goods')
+		self.assertEqual(extras.get('professional_tax'), '432.00')
+		self.assertEqual(extras.get('gross_amount'), '8640.00')
+		self.assertEqual(extras.get('net_amount'), '7712.40')
 
 	def test_supplier_creation_with_percent_sign_in_rate(self):
 		self.client.force_login(self.admin)
@@ -590,19 +622,129 @@ class SupplierGrossCalculationTests(TestCase):
 				'action': 'create',
 				'payee': 'Percent Sign Supplier Test',
 				'amount': '8640.00',
+				'gross_amount': '8640.00',
 				'is_vat': '',
-				'professional_tax_rate': '3.00%',
+				'goods_service_type': 'services',
 				'other_deductions': '150.00',
-			}
+				'enable_professional_tax': 'on',
+			},
+			follow=True,
 		)
 		self.assertEqual(response.status_code, 200)
-		self.assertIn("added", response.context.get('success', ''))
+		self.assertIn("added", str(response.context.get('success', '') or ''))
 		supplier = Supplier.objects.get(account_name='Percent Sign Supplier Test')
 		extras = supplier.raw_import.get('supplier_extras') or {}
+		# Non-VAT + services 2% → 172.80; prof still forced 5% of gross
+		self.assertEqual(extras.get('tax_5'), '259.20')
+		self.assertEqual(extras.get('tax_2'), '172.80')
+		self.assertEqual(extras.get('goods_service_type'), 'services')
+		self.assertEqual(extras.get('professional_tax'), '432.00')
+		self.assertEqual(extras.get('gross_amount'), '8640.00')
+
+	def test_supplier_creation_with_extra_tax_slot(self):
+		self.client.force_login(self.admin)
+		response = self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'Extra Tax Slot Supplier',
+				'amount': '10000.00',
+				'gross_amount': '10000.00',
+				'is_vat': '',
+				'goods_service_type': '',
+				'other_deductions': '0.00',
+				'tax_1_option': '3',
+				'tax_3_option': '7',
+			},
+			follow=True,
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertIn("added", str(response.context.get('success', '') or ''))
+		supplier = Supplier.objects.get(account_name='Extra Tax Slot Supplier')
+		extras = supplier.raw_import.get('supplier_extras') or {}
+		# Non-VAT: tax_5 = 3% of 10000 = 300.00; tax_3 = 7% of 10000 = 700.00
+		self.assertEqual(extras.get('tax_5'), '300.00')
+		self.assertEqual(extras.get('tax_3'), '700.00')
+		self.assertEqual(extras.get('tax_3_option'), '7.00')
+		# net = 10000 - 300 - 700 = 9000.00
+		self.assertEqual(extras.get('net_amount'), '9000.00')
+
+	def test_supplier_creation_tax_exempt(self):
+		self.client.force_login(self.admin)
+		response = self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'Tax Exempt Supplier',
+				'amount': '10000.00',
+				'gross_amount': '10000.00',
+				'is_vat': 'on',
+				'goods_service_type': 'services',
+				'other_deductions': '50.00',
+				'enable_professional_tax': 'on',
+				'tax_1_option': '5',
+				'tax_3_option': '7',
+				'tax_exempt': 'on',
+			},
+			follow=True,
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertIn("added", str(response.context.get('success', '') or ''))
+		supplier = Supplier.objects.get(account_name='Tax Exempt Supplier')
+		extras = supplier.raw_import.get('supplier_extras') or {}
+		self.assertEqual(extras.get('tax_exempt'), 'true')
 		self.assertEqual(extras.get('tax_5'), '0.00')
 		self.assertEqual(extras.get('tax_2'), '0.00')
-		self.assertEqual(extras.get('professional_tax'), '271.86')
-		self.assertEqual(extras.get('gross_amount'), '9061.86')
+		self.assertEqual(extras.get('tax_3'), '0.00')
+		self.assertEqual(extras.get('professional_tax'), '0.00')
+		self.assertEqual(extras.get('professional_tax_rate'), '0.00')
+		self.assertEqual(extras.get('goods_service_type'), '')
+		# net = 10000 - 0 - 0 - 0 - 0 - 50 = 9950.00
+		self.assertEqual(extras.get('net_amount'), '9950.00')
+
+	def test_tax_1_option_follows_vat_mode(self):
+		"""VAT posts 5% · Non-VAT posts 3% even if the other side is sent (dual rate)."""
+		self.client.force_login(self.admin)
+		# Non-VAT but stale 5% option → backend should use 3%
+		self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'Dual Rate NonVat',
+				'amount': '10000.00',
+				'gross_amount': '10000.00',
+				'is_vat': '',
+				'goods_service_type': '',
+				'other_deductions': '0.00',
+				'tax_1_option': '5',
+			},
+			follow=True,
+		)
+		sup_nv = Supplier.objects.get(account_name='Dual Rate NonVat')
+		ex_nv = sup_nv.raw_import.get('supplier_extras') or {}
+		self.assertEqual(ex_nv.get('tax_1_option'), '3.00')
+		self.assertEqual(ex_nv.get('tax_5'), '300.00')
+
+		# VAT but stale 3% option → backend should use 5%
+		self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'Dual Rate Vat',
+				'amount': '11200.00',
+				'gross_amount': '11200.00',
+				'is_vat': 'on',
+				'goods_service_type': '',
+				'other_deductions': '0.00',
+				'tax_1_option': '3',
+			},
+			follow=True,
+		)
+		sup_v = Supplier.objects.get(account_name='Dual Rate Vat')
+		ex_v = sup_v.raw_import.get('supplier_extras') or {}
+		self.assertEqual(ex_v.get('tax_1_option'), '5.00')
+		# base = 11200/1.12 = 10000; 5% → 500.00
+		self.assertEqual(ex_v.get('tax_5'), '500.00')
 
 	def test_supplier_import_auto_vat_detection(self):
 		from cashier.models import FundCluster
@@ -901,7 +1043,7 @@ class DisbursingOfficerTests(TestCase):
 		self.profile1.is_disbursing_officer = False
 		self.profile1.save()
 
-		post_data = {
+		response = self.client.post(reverse('user_management'), data={
 			'action': 'create',
 			'admin_password': 'pass12345',
 			'first_name': 'Alice',
@@ -912,12 +1054,14 @@ class DisbursingOfficerTests(TestCase):
 			'password': 'Password123!',
 			'role': 'cashier',
 			'is_disbursing_officer': 'on',
-		}
-		response = self.client.post(reverse('user_management'), data=post_data)
+		})
 		self.assertEqual(response.status_code, 302)
 
+		import hashlib
 		from cashier.models import Profile
-		alice_profile = Profile.objects.get(user__username='alice1')
+		alice_profile = Profile.objects.get(
+			email_hash=hashlib.sha256(b'alice@example.com').hexdigest()
+		)
 		self.assertTrue(alice_profile.is_disbursing_officer)
 
 	def test_edit_user_with_disbursing_officer_fails_if_already_set(self):
@@ -1090,7 +1234,9 @@ class SystemResetTests(TestCase):
 		# Clear existing SystemSetting and create custom
 		SystemSetting.objects.all().delete()
 		self.system_setting = SystemSetting.objects.create(pk=1, system_name="registry_custom")
-		
+
+		# Clear leftover AuditLog rows (keepdb can retain committed rows across runs)
+		AuditLog.objects.all().delete()
 		AuditLog.objects.create(admin=self.admin, action="Initial Setup")
 
 	def test_system_reset_success_with_correct_password(self):
@@ -1197,8 +1343,9 @@ class CashierPermissionsTests(TestCase):
 			'account_name': 'New Supplier Ltd',
 			'amount': '150.00',
 			'status': 'active'
-		})
-		self.assertEqual(response.status_code, 200) # view renders 200 with success
+		}, follow=True)
+		self.assertEqual(response.status_code, 200)
+		self.assertIn("added", str(response.context.get('success', '') or ''))
 		from cashier.models import Supplier
 		self.assertTrue(Supplier.objects.filter(account_name='New Supplier Ltd').exists())
 
@@ -1211,8 +1358,9 @@ class CashierPermissionsTests(TestCase):
 			'account_name': 'Updated Name',
 			'amount': '250.00',
 			'status': 'active'
-		})
+		}, follow=True)
 		self.assertEqual(response.status_code, 200)
+		self.assertIn("updated", str(response.context.get('success', '') or ''))
 		sup.refresh_from_db()
 		self.assertEqual(sup.account_name, 'Updated Name')
 

@@ -30,7 +30,7 @@
             --brand: #2f80ed;
             --brand-deep: #1f67c2;
             --nav: #0e2d0a;
-            --nav-soft: #0e2d0a;
+            --nav-soft: #031201;
             --success: #16a34a;
             --warning: #d97706;
             --danger: #dc2626;
@@ -2160,9 +2160,9 @@
         {% endif %}
 
         {% if is_admin and 'audit_log' in role_permissions.navigation %}
-            <a class="settings-drawer-link {% block nav_audit %}{% endblock %}" href="{% url 'audit_log' %}" title="Audit Log">
+            <a class="settings-drawer-link {% block nav_audit %}{% endblock %}" href="{% url 'audit_log' %}" title="Activity Log">
                 <i class="fas fa-shield-halved"></i>
-                <span class="settings-drawer-label">Audit Log</span>
+                <span class="settings-drawer-label">Activity Log</span>
             </a>
         {% endif %}
 
@@ -2311,7 +2311,7 @@
         {% endif %}
 
         {% if is_admin and 'audit_log' in role_permissions.navigation %}
-            <a href="{% url 'audit_log' %}" onclick="closeMenu()"><i class="fas fa-shield-halved"></i> Audit Log</a>
+            <a href="{% url 'audit_log' %}" onclick="closeMenu()"><i class="fas fa-shield-halved"></i> Activity Log</a>
         {% endif %}
 
         {% if is_admin and 'manage_devices' in role_permissions.navigation %}
@@ -3921,10 +3921,9 @@
     function checkIdle() {
         if (isWarning) return;
         const idle = getIdleMs();
+        // Lock screen removed — only auto-logout remains
         if (idle >= LOGOUT_IDLE) {
             window.location.replace('{% url "logout" %}');
-        } else if (idle >= SOFT_IDLE) {
-            startWarning(false);
         }
     }
 
@@ -5902,9 +5901,6 @@ function attachPasswordValidation(inputId) {
     <div class="search-section">
       <div class="search-box">
         <input type="text" id="checkInput" placeholder="Enter Check No., Payee, or scan barcode..." autofocus />
-        <button class="btn btn-primary" id="kioskValidateBtn" onclick="verifyCheck()" style="gap:8px;">
-          <i class="fas fa-bolt" style="color:#f59e0b;"></i> Auto-Validating
-        </button>
       </div>
     </div>
 
@@ -6677,7 +6673,8 @@ function attachPasswordValidation(inputId) {
           if (bar) {
             let html = '<span>Database cheques:</span>';
             res.recent.forEach(item => {
-              html += `<button class="quick-btn" onclick="quickFill('${item.checkNo}', ${item.pk})" title="${item.payee} - ₱${item.amount}">${item.label}</button>`;
+              const st = (item.status || '').toUpperCase();
+              html += `<button class="quick-btn" onclick="quickFill('${item.checkNo}', ${item.pk})" title="${item.payee} - ₱${item.amount}${st ? ' - ' + st : ''}">${item.label}</button>`;
             });
             bar.innerHTML = html;
           }
@@ -8022,11 +8019,10 @@ function attachPasswordValidation(inputId) {
   }
 
   window.openGlobalSupplierModal = function() {
-    fetchSupplierContext(function(){
-      if (typeof openSupplierModal === 'function') {
-        openSupplierModal('create');
-      }
-    });
+    if (typeof openSupplierModal === 'function') {
+      openSupplierModal('create');
+    }
+    fetchSupplierContext(function(){});
   };
 
   var origSupplierFormSubmit = null;
@@ -8067,10 +8063,25 @@ function attachPasswordValidation(inputId) {
                 setFieldValue('fieldDvPayroll', DEFAULT_SUPPLIER_VALUES.dv_payroll);
                 setFieldValue('fieldOrsBurs', DEFAULT_SUPPLIER_VALUES.ors_burs);
                 setFieldValue('fieldResponsibilityCenter', DEFAULT_SUPPLIER_VALUES.responsibility_center);
+                if (typeof scheduleSerialValidation === 'function') scheduleSerialValidation();
               }
             }
           }
         } else {
+          if (resp.serial_exists && resp.field === 'fieldCheckSerial') {
+            var serialInput = document.getElementById(resp.field);
+            var serialFb = document.getElementById('fieldCheckSerialFeedback');
+            if (serialInput) {
+              serialInput.classList.remove('serial-valid');
+              serialInput.classList.add('serial-invalid');
+            }
+            if (serialFb) {
+              serialFb.textContent = resp.error || 'Check Serial is already used.';
+              serialFb.classList.add('show', 'is-error');
+              serialFb.classList.remove('is-ok');
+            }
+            serialInput?.focus();
+          }
           showToast('error', 'Error', resp.error || 'Failed to add supplier.');
         }
       })
@@ -8143,6 +8154,15 @@ function attachPasswordValidation(inputId) {
     if (action) action.value = 'create';
     if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Supplier';
     if (title) title.innerHTML = '<i class="fas fa-plus"></i> Add Supplier';
+
+    var serialFb = document.getElementById('fieldCheckSerialFeedback');
+    if (serialFb) {
+      serialFb.textContent = '';
+      serialFb.classList.remove('show', 'is-error', 'is-ok');
+    }
+    var serialInput = document.getElementById('fieldCheckSerial');
+    if (serialInput) serialInput.classList.remove('serial-invalid', 'serial-valid');
+    if (typeof clearSerialFeedback === 'function') clearSerialFeedback();
 
     var fieldsToClear = [
       'fieldPayee', 'fieldAccountTitle', 'fieldUacsObjectCode',

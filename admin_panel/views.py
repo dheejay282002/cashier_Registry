@@ -9,7 +9,7 @@ import shutil
 import sqlite3
 import tempfile
 import zipfile
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from pathlib import Path
 from urllib.parse import quote
@@ -52,6 +52,7 @@ import re
 from cashier.models import Profile, Transaction, FundCluster, Supplier, Cheque, Report, Radai, RadaiSetting
 from .models import SystemSetting, AuditLog, ManagementOption, AccountTitleGroup
 from admin_panel.fields import decrypt_value
+from .utils import _email_setup_configured
 
 
 def _validate_password(password):
@@ -97,6 +98,70 @@ def _get_tax_rates(rate_str):
             pass
     return vat_rate, nv_rate
 
+
+def _sort_tax_options(taxes):
+    """Order taxes for supplier modal slots: 5%/3% first, 2%/1% second, then others by name."""
+    def sort_key(o):
+        rate = (o.uacs or '').replace(' ', '')
+        name = (o.value or '')
+        try:
+            first = float((rate.split('/')[0] or '').replace('%', ''))
+        except ValueError:
+            first = None
+        if first == 5:
+            prio = 0
+        elif first == 2:
+            prio = 1
+        else:
+            prio = 2
+        return (prio, name.lower())
+    return sorted(taxes, key=sort_key)
+
+
+def _active_tax_options():
+    """Active non-Professional taxes ordered for the Tax 1 modal slot."""
+    taxes = list(ManagementOption.objects.filter(
+        category=ManagementOption.CATEGORY_TAX,
+        is_active=True,
+    ).exclude(value__iexact='Professional Tax'))
+    return _sort_tax_options(taxes)
+
+
+def _ensure_goods_service_rates():
+    """Seed Goods 1% / Services 2% once (Taxes → Goods / Services tab)."""
+    for name, default_rate in (('Goods', '1.00'), ('Services', '2.00')):
+        ManagementOption.objects.get_or_create(
+            category=ManagementOption.CATEGORY_GOODS_SERVICE,
+            value=name,
+            defaults={'uacs': default_rate, 'is_active': True},
+        )
+
+
+def _goods_service_rate_map():
+    """Return {'goods': Decimal, 'services': Decimal} as percent rates (e.g. 1, 2)."""
+    _ensure_goods_service_rates()
+    rates = {'goods': Decimal('1'), 'services': Decimal('2')}
+    for opt in ManagementOption.objects.filter(
+        category=ManagementOption.CATEGORY_GOODS_SERVICE,
+        is_active=True,
+    ):
+        key = (opt.value or '').strip().lower()
+        if key in rates:
+            try:
+                rates[key] = Decimal(str(opt.uacs or '0').replace('%', '').strip() or '0')
+            except (InvalidOperation, ValueError):
+                pass
+    return rates
+
+
+def _goods_service_rate_pcts():
+    rates = _goods_service_rate_map()
+    return {
+        'goods': str(rates['goods'].quantize(Decimal('0.01'))),
+        'services': str(rates['services'].quantize(Decimal('0.01'))),
+    }
+
+
 def compute_bucket_taxes(net_amount, pro_rate=Decimal('0')):
     """
     Given the entered amount (treated as NET), derive GROSS for VAT so that:
@@ -107,7 +172,7 @@ def compute_bucket_taxes(net_amount, pro_rate=Decimal('0')):
     pro_rate = Decimal(pro_rate or '0')
 
     try:
-        active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
+        active_taxes = _active_tax_options()
         t1 = active_taxes[0] if len(active_taxes) > 0 else None
         t2 = active_taxes[1] if len(active_taxes) > 1 else None
         t1_rate = t1.uacs if t1 else '5%/3%'
@@ -292,8 +357,9 @@ def _is_session_active(profile):
 
 def logout_view(request):
     if request.user.is_authenticated:
+        user = request.user
         try:
-            profile = request.user.profile
+            profile = user.profile
             if profile.status == 'active':
                 profile.status = 'resting'
                 profile.save(update_fields=['status'])
@@ -301,11 +367,11 @@ def logout_view(request):
             pass
         try:
             from .models import ChatMessage
-            ChatMessage.objects.filter(user=request.user).delete()
+            ChatMessage.objects.filter(user=user).delete()
         except Exception:
             pass
         try:
-            profile = request.user.profile
+            profile = user.profile
             from cashier.models import UserDevice
             UserDevice.objects.filter(session_key=request.session.session_key).update(is_terminated=True)
             if profile.active_session_key == request.session.session_key:
@@ -313,6 +379,13 @@ def logout_view(request):
                 profile.save(update_fields=['active_session_key'])
         except Exception:
             pass
+        _audit(user, "Logged out", {
+            "ip": _get_client_ip(request),
+            "method": "manual",
+            "note": "User clicked logout",
+        })
+        request.session.pop("backup_restore_token", None)
+        request.session.pop("backup_restore_path", None)
     logout(request)
     return render(request, "logout_loading.html")
 
@@ -410,11 +483,31 @@ def login_view(request):
                             profile.must_change_password = False
                             profile.save(update_fields=["must_change_password"])
                             request.session.pop("change_pw_user_id", None)
+                            _audit(cp_user, "Changed temporary password", {
+                                "ip": _get_client_ip(request),
+                                "forced": True,
+                            })
                             # If user has MFA enabled, proceed to MFA flow
-                            if profile.totp_enabled or profile.email_otp_enabled:
+                            totp_ok, email_ok = _available_mfa_methods(profile)
+                            if totp_ok or email_ok:
                                 request.session["mfa_user_id"] = cp_user.pk
                                 request.session["mfa_after_change_pw"] = True
-                                mfa_pick = True
+                                if totp_ok and not email_ok:
+                                    request.session["mfa_method"] = "totp"
+                                    mfa_method = "totp"
+                                    mfa_step = True
+                                elif email_ok and not totp_ok:
+                                    try:
+                                        _start_email_otp_for_mfa(request, cp_user.pk)
+                                        request.session["mfa_method"] = "email"
+                                        mfa_method = "email"
+                                        email_otp_sent = True
+                                        mfa_step = True
+                                    except Exception:
+                                        error = "Failed to send OTP email. Try again."
+                                        mfa_pick = True
+                                else:
+                                    mfa_pick = True
                             else:
                                 cp_user.backend = 'django.contrib.auth.backends.ModelBackend'
                                 login(request, cp_user)
@@ -436,17 +529,10 @@ def login_view(request):
             request.session["mfa_method"] = pick
             profile = Profile.objects.get(user_id=mfa_user_id)
 
-            if pick == "email" and profile.email_otp_enabled:
-                from .mfa_utils import generate_email_otp, send_otp_email
-                from .models import SystemSetting
+            if pick == "email" and profile.email_otp_enabled and _email_setup_configured():
                 from django.utils import timezone as _tz
-                sys_set = SystemSetting.get_settings()
-                otp = generate_email_otp()
-                request.session["email_otp_code"] = otp
-                request.session["email_otp_created"] = _tz.now().isoformat()
                 try:
-                    user_email = User.objects.get(pk=mfa_user_id).email
-                    send_otp_email(user_email, otp, system_name=sys_set.system_name, system_logo=sys_set.system_logo)
+                    _start_email_otp_for_mfa(request, mfa_user_id)
                     email_otp_sent = True
                 except Exception:
                     error = "Failed to send OTP email. Try again."
@@ -454,6 +540,11 @@ def login_view(request):
                 else:
                     mfa_step = True
             elif pick == "totp" and profile.totp_enabled:
+                mfa_step = True
+            elif pick == "email" and profile.totp_enabled and not _email_setup_configured():
+                # Email OTP auto-disabled (SMTP not configured) — fall back to authenticator
+                request.session["mfa_method"] = "totp"
+                mfa_method = "totp"
                 mfa_step = True
             else:
                 error = "Selected MFA method not available."
@@ -514,6 +605,10 @@ def login_view(request):
                             mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                             login(request, mfa_user)
                             _register_session(request, mfa_user)
+                            _audit(mfa_user, "Entered recovery code - successfully logged in", {
+                                "ip": _get_client_ip(request),
+                                "method": "recovery_code",
+                            })
                             after_change_pw = request.session.pop("mfa_after_change_pw", None)
                             request.session.pop("mfa_user_id", None)
                             request.session.pop("mfa_method", None)
@@ -525,6 +620,10 @@ def login_view(request):
                             return _mfa_redirect(mfa_user)
                     else:
                         error = "Invalid recovery code. Please check your code and try again."
+                        _audit(mfa_user, "Entered recovery code - failed", {
+                            "method": "recovery_code",
+                            "ip": _get_client_ip(request),
+                        })
                         mfa_step = True
                         mfa_method = method
                 elif method == "totp" and profile.totp_enabled:
@@ -542,6 +641,10 @@ def login_view(request):
                             mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                             login(request, mfa_user)
                             _register_session(request, mfa_user)
+                            _audit(mfa_user, "Entered authenticator code - successfully logged in", {
+                                "ip": _get_client_ip(request),
+                                "method": "totp",
+                            })
                             after_change_pw = request.session.pop("mfa_after_change_pw", None)
                             request.session.pop("mfa_user_id", None)
                             request.session.pop("mfa_method", None)
@@ -571,6 +674,10 @@ def login_view(request):
                                 mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                                 login(request, mfa_user)
                                 _register_session(request, mfa_user)
+                                _audit(mfa_user, "Logged in", {
+                                    "ip": _get_client_ip(request),
+                                    "method": "recovery_code",
+                                })
                                 after_change_pw = request.session.pop("mfa_after_change_pw", None)
                                 request.session.pop("mfa_user_id", None)
                                 request.session.pop("mfa_method", None)
@@ -582,6 +689,10 @@ def login_view(request):
                                 return _mfa_redirect(mfa_user)
                         else:
                             error = "Invalid authenticator code."
+                            _audit(mfa_user, "Failed MFA attempt", {
+                                "method": method,
+                                "ip": _get_client_ip(request),
+                            })
                             mfa_step = True
                             mfa_method = method
                             # Track failed MFA attempts
@@ -617,7 +728,7 @@ def login_view(request):
                                 except Exception:
                                     pass
                                 request.session["mfa_failed_attempts"] = 0
-                elif method == "email" and profile.email_otp_enabled:
+                elif method == "email" and profile.email_otp_enabled and _email_setup_configured():
                     from django.utils import timezone as _tz
                     from datetime import timedelta
                     expected = request.session.get("email_otp_code")
@@ -651,6 +762,10 @@ def login_view(request):
                             mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                             login(request, mfa_user)
                             _register_session(request, mfa_user)
+                            _audit(mfa_user, "Entered MFA OTP - successfully logged in", {
+                                "ip": _get_client_ip(request),
+                                "method": "email_otp",
+                            })
                             after_change_pw = request.session.pop("mfa_after_change_pw", None)
                             request.session.pop("mfa_user_id", None)
                             request.session.pop("mfa_method", None)
@@ -660,16 +775,27 @@ def login_view(request):
                             return _mfa_redirect(mfa_user)
                     else:
                         error = "Invalid OTP code. Please try again."
+                        _audit(mfa_user, "Entered MFA OTP - failed (invalid code)", {
+                            "method": "email_otp",
+                            "ip": _get_client_ip(request),
+                        })
                         mfa_step = True
                         mfa_method = method
                 else:
-                    error = "MFA method not available."
-                    request.session.pop("mfa_user_id", None)
-                    request.session.pop("mfa_method", None)
-                    request.session.pop("email_otp_code", None)
-                    request.session.pop("mfa_after_change_pw", None)
-                    mfa_step = True
-                    mfa_method = method
+                    # Email OTP auto-disabled if SMTP not configured — fall back to authenticator when possible
+                    if method == "email" and not _email_setup_configured() and profile.totp_enabled:
+                        request.session["mfa_method"] = "totp"
+                        mfa_method = "totp"
+                        mfa_step = True
+                        error = "Email Setup is not configured. Use your authenticator app instead."
+                    else:
+                        error = "MFA method not available."
+                        request.session.pop("mfa_user_id", None)
+                        request.session.pop("mfa_method", None)
+                        request.session.pop("email_otp_code", None)
+                        request.session.pop("mfa_after_change_pw", None)
+                        mfa_step = True
+                        mfa_method = method
 
     # ── Step 1: Username / password ──────────────────────────────────
     elif request.method == "POST":
@@ -697,22 +823,50 @@ def login_view(request):
                     profile.save(update_fields=['login_attempt_blocked', 'blocked_login_time', 'blocked_login_ip'])
                     error = "This account is already logged in on another device. Concurrent logins are not allowed. The active session has been notified."
                 else:
-                    needs_mfa = profile.totp_enabled or profile.email_otp_enabled
+                    totp_ok, email_ok = _available_mfa_methods(profile)
+                    needs_mfa = totp_ok or email_ok
                     if profile.must_change_password:
                         request.session["change_pw_user_id"] = user.pk
                         change_pw = True
                     elif needs_mfa:
                         request.session["mfa_user_id"] = user.pk
-                        mfa_pick = True
+                        # Skip pick screen when only one method is usable
+                        # (email OTP auto-off if SMTP not configured → authenticator only)
+                        if totp_ok and not email_ok:
+                            request.session["mfa_method"] = "totp"
+                            mfa_method = "totp"
+                            mfa_step = True
+                        elif email_ok and not totp_ok:
+                            try:
+                                _start_email_otp_for_mfa(request, user.pk)
+                                request.session["mfa_method"] = "email"
+                                mfa_method = "email"
+                                email_otp_sent = True
+                                mfa_step = True
+                            except Exception:
+                                error = "Failed to send OTP email. Try again."
+                                mfa_pick = True
+                        else:
+                            mfa_pick = True
                     else:
+                        # No usable MFA (email OTP disabled because Email Setup is incomplete)
                         user.backend = 'django.contrib.auth.backends.ModelBackend'
                         login(request, user)
                         _register_session(request, user)
+                        _audit(user, "Entered password - successfully logged in", {
+                            "ip": _get_client_ip(request),
+                            "method": "password",
+                        })
                         if next_url:
                             return redirect(next_url)
                         return _mfa_redirect(user)
         else:
             error = "Invalid username or password"
+            _audit(None, "Entered password - failed login", {
+                "username": last_username,
+                "ip": _get_client_ip(request),
+                "reason": "invalid_credentials",
+            })
 
     mfa_has_totp = False
     mfa_has_email = False
@@ -723,8 +877,7 @@ def login_view(request):
             mfa_user_obj = User.objects.get(pk=mfa_user_id)
             user_email = mfa_user_obj.email
             mfa_profile = mfa_user_obj.profile
-            mfa_has_totp = mfa_profile.totp_enabled
-            mfa_has_email = mfa_profile.email_otp_enabled
+            mfa_has_totp, mfa_has_email = _available_mfa_methods(mfa_profile)
         except User.DoesNotExist:
             pass
 
@@ -753,6 +906,24 @@ def _mfa_redirect(user):
     if role == "admin":
         return redirect(reverse("admin_dashboard") + "?welcome=1")
     return redirect(reverse("cashier_dashboard") + "?welcome=1")
+
+
+def _available_mfa_methods(profile):
+    """Return (totp_ok, email_ok). Email OTP is off unless SMTP is fully configured."""
+    totp_ok = bool(getattr(profile, "totp_enabled", False))
+    email_ok = bool(getattr(profile, "email_otp_enabled", False)) and _email_setup_configured()
+    return totp_ok, email_ok
+
+
+def _start_email_otp_for_mfa(request, mfa_user_id):
+    from .mfa_utils import generate_email_otp, send_otp_email
+    from django.utils import timezone as _tz
+    sys_set = SystemSetting.get_settings()
+    otp = generate_email_otp()
+    request.session["email_otp_code"] = otp
+    request.session["email_otp_created"] = _tz.now().isoformat()
+    user_email = User.objects.get(pk=mfa_user_id).email
+    send_otp_email(user_email, otp, system_name=sys_set.system_name, system_logo=sys_set.system_logo)
 
 
 @csrf_exempt
@@ -804,6 +975,8 @@ def forgot_password(request):
             identifier = request.POST.get('identifier', '').strip()
             if not identifier:
                 error = 'Please enter your email or username.'
+            elif not _email_setup_configured():
+                error = 'Email Setup is not configured yet. Password reset via email is unavailable.'
             else:
                 user = None
                 if '@' in identifier:
@@ -817,11 +990,16 @@ def forgot_password(request):
 
                 if user is None:
                     error = 'No account found with that email or username.'
+                    _audit(None, "Forgot password - account not found", {
+                        "identifier": identifier,
+                        "ip": _get_client_ip(request),
+                    })
                 else:
                     profile, _ = Profile.objects.get_or_create(user=user, defaults={'role': 'cashier'})
                     email = decrypt_value(profile.email_encrypted) if profile.email_encrypted else (user.email or '')
                     if not email:
                         error = 'No email address is associated with this account. Please contact your administrator.'
+                        _audit(user, "Forgot password - no email on account", {"ip": _get_client_ip(request)})
                     else:
                         from .mfa_utils import generate_email_otp, send_otp_email
                         from .models import SystemSetting
@@ -840,8 +1018,13 @@ def forgot_password(request):
                             parts = email.split('@')
                             masked_email = parts[0][:2] + '***@' + parts[1] if len(parts) == 2 else '***@***'
                             identifier = identifier
+                            _audit(user, "Forgot password - reset code sent", {
+                                "ip": _get_client_ip(request),
+                                "email_masked": masked_email,
+                            })
                         except Exception as e:
                             error = f'Failed to send reset code. Please try again.'
+                            _audit(user, "Forgot password - failed to send code", {"ip": _get_client_ip(request)})
 
         elif post_step == 'resend_otp':
             is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -923,6 +1106,11 @@ def forgot_password(request):
                     step = 2
                     parts = saved_email.split('@')
                     masked_email = parts[0][:2] + '***@' + parts[1] if len(parts) == 2 else '***@***'
+                    try:
+                        fu = User.objects.get(pk=user_id)
+                        _audit(fu, "Forgot password - invalid reset code entered", {"ip": _get_client_ip(request)})
+                    except Exception:
+                        pass
                 else:
                     request.session['forgot_pw_code_verified'] = True
                     if is_ajax:
@@ -932,6 +1120,11 @@ def forgot_password(request):
                     step = 2
                     parts = saved_email.split('@')
                     masked_email = parts[0][:2] + '***@' + parts[1] if len(parts) == 2 else '***@***'
+                    try:
+                        fu = User.objects.get(pk=user_id)
+                        _audit(fu, "Forgot password - reset code verified", {"ip": _get_client_ip(request)})
+                    except Exception:
+                        pass
 
         elif post_step == '2':
             identifier = request.POST.get('identifier', '').strip()
@@ -972,6 +1165,7 @@ def forgot_password(request):
                     request.session.pop('forgot_pw_email', None)
                     request.session.pop('forgot_pw_code_verified', None)
                     step = 3
+                    _audit(user, "Reset password via forgot password", {"ip": _get_client_ip(request)})
                 except (User.DoesNotExist, AttributeError):
                     error = 'User not found.'
                     step = 1
@@ -1046,6 +1240,13 @@ def email_settings(request):
                 sys_set.email_host_password = pw
             sys_set.default_from_email = request.POST.get('default_from_email', '').strip()
             sys_set.save()
+            _audit(request.user, "Updated email settings", {
+                "host": sys_set.email_host,
+                "port": sys_set.email_port,
+                "tls": sys_set.email_use_tls,
+                "user": sys_set.email_host_user,
+                "password_changed": bool(pw),
+            })
         except Exception as e:
             error = f'Failed to save settings: {str(e)}'
 
@@ -2293,14 +2494,21 @@ def _compute_auto_supplier_defaults(user, global_scope=False):
 
     # Auto-migrate any old Tax (3%/1%) to Tax (2%/1%)
     ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, value='Tax (3%/1%)').update(value='Tax (2%/1%)', uacs='2%/1%')
-    active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
+    # Same order as Taxes page (by value) so labels/rates always match
+    active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('value'))
     t1 = active_taxes[0] if len(active_taxes) > 0 else None
     t2 = active_taxes[1] if len(active_taxes) > 1 else None
-
     tax_1_rate = t1.uacs if t1 else '5%/3%'
     tax_2_rate = t2.uacs if t2 else '2%/1%'
     tax_1_label = t1.value if t1 else 'Tax (5%/3%)'
     tax_2_label = t2.value if t2 else 'Tax (2%/1%)'
+    tax_choices = [
+        {'label': o.value, 'rate': o.uacs or ''}
+        for o in ManagementOption.objects.filter(
+            category=ManagementOption.CATEGORY_TAX, is_active=True
+        ).exclude(value__iexact='Professional Tax').order_by('value')
+    ]
+    goods_service_rates = _goods_service_rate_pcts()
 
     return {
         'auto_supplier_series_month': auto_supplier_series_month,
@@ -2311,6 +2519,8 @@ def _compute_auto_supplier_defaults(user, global_scope=False):
         'tax_2_rate': tax_2_rate,
         'tax_1_label': tax_1_label,
         'tax_2_label': tax_2_label,
+        'tax_choices': tax_choices,
+        'goods_service_rates': goods_service_rates,
     }
 
 
@@ -2490,7 +2700,178 @@ def _write_sqlite_snapshot(source_db_path: Path, dest_db_path: Path):
         source_conn.close()
 
 
-def _pack_backup_archive(created_by):
+def _serialize_restore_objects():
+    from django.core import serializers
+
+    restore_models = _get_backup_restore_models()
+    objects = []
+    for model in restore_models:
+        manager = getattr(model, 'all_objects', model.objects)
+        objects.extend(list(manager.all()))
+    return objects
+
+
+def _base_backup_manifest(created_by, backup_type, fmt, has_sqlite=False):
+    db_path = _db_path()
+    return {
+        "version": 3,
+        "backup_type": backup_type,
+        "format": fmt,
+        "created_at": timezone.now().isoformat(),
+        "created_by": getattr(created_by, "id", None),
+        "created_by_username": getattr(created_by, "username", ""),
+        "database": str(db_path.name) if db_path else connection.vendor,
+        "counts": _count_backup_stats(),
+        "has_sqlite": has_sqlite,
+        "sections": [
+            "database",
+            "config",
+            "auth",
+            "financial",
+            "system",
+            "audit",
+            "activity_log",
+            "radai",
+            "messages",
+        ],
+    }
+
+
+def _quote_sql_ident(name):
+    if connection.vendor == "mysql":
+        return f"`{name}`"
+    return f'"{name}"'
+
+
+def _sql_literal(value):
+    if value is None:
+        return "NULL"
+    if isinstance(value, bool):
+        return "1" if value else "0"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return repr(value)
+    if isinstance(value, (bytes, bytearray)):
+        return "x'" + bytes(value).hex() + "'"
+    if isinstance(value, datetime):
+        if value.microsecond:
+            return "'" + value.strftime("%Y-%m-%d %H:%M:%S.%f") + "'"
+        return "'" + value.strftime("%Y-%m-%d %H:%M:%S") + "'"
+    if isinstance(value, date):
+        return "'" + value.strftime("%Y-%m-%d") + "'"
+    if isinstance(value, time):
+        return "'" + value.strftime("%H:%M:%S") + "'"
+    s = str(value)
+    s = (
+        s.replace("\\", "\\\\")
+        .replace("'", "''")
+        .replace("\0", "\\0")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\x1a", "\\Z")
+    )
+    return "'" + s + "'"
+
+
+def _sql_insert_stmt(table, columns, values):
+    cols = ", ".join(_quote_sql_ident(c) for c in columns)
+    vals = ", ".join(_sql_literal(v) for v in values)
+    base = f"INSERT INTO {_quote_sql_ident(table)} ({cols}) VALUES ({vals})"
+    if connection.vendor == "mysql":
+        updates = ", ".join(
+            f"{_quote_sql_ident(c)}=VALUES({_quote_sql_ident(c)})"
+            for c in columns
+            if c not in ("id",)
+        )
+        if updates:
+            return f"{base} ON DUPLICATE KEY UPDATE {updates};"
+        return f"{base};"
+    if connection.vendor == "sqlite":
+        return f"INSERT OR REPLACE INTO {_quote_sql_ident(table)} ({cols}) VALUES ({vals});"
+    return f"{base};"
+
+
+def _generate_sql_dump(created_by):
+    """Build a portable SQL dump of every restore model (raw DB values)."""
+    timestamp = timezone.now().strftime("%Y_%m_%d_%H%M%S")
+    backup_name = f"system_backup_{timestamp}_DATA.sql"
+    temp_dir = Path(tempfile.mkdtemp(prefix="finalproject_backup_"))
+    sql_path = temp_dir / backup_name
+
+    restore_models = _get_backup_restore_models()
+    manifest = _base_backup_manifest(created_by, "SQL", "sql", has_sqlite=False)
+    meta_line = "-- META " + json.dumps(manifest, default=str)
+
+    lines = [
+        "-- Registry System Backup (SQL)",
+        meta_line,
+        f"-- created_at: {manifest['created_at']}",
+        f"-- created_by: {manifest['created_by_username']}",
+        "SET FOREIGN_KEY_CHECKS=0;",
+        "SET UNIQUE_CHECKS=0;",
+        "",
+    ]
+
+    # Deletes in reverse dependency order (children first)
+    for model in reversed(restore_models):
+        table = model._meta.db_table
+        lines.append(f"DELETE FROM {_quote_sql_ident(table)};")
+
+    lines.append("")
+
+    with connection.cursor() as cursor:
+        for model in restore_models:
+            table = model._meta.db_table
+            cursor.execute(f"SELECT * FROM {_quote_sql_ident(table)}")
+            rows = cursor.fetchall()
+            if not rows:
+                continue
+            columns = [col[0] for col in cursor.description]
+            lines.append(f"-- table: {table} ({len(rows)} rows)")
+            for row in rows:
+                lines.append(_sql_insert_stmt(table, columns, list(row)))
+            lines.append("")
+
+    lines.extend([
+        "SET UNIQUE_CHECKS=1;",
+        "SET FOREIGN_KEY_CHECKS=1;",
+        "",
+    ])
+
+    sql_path.write_text("\n".join(lines), encoding="utf-8")
+    return sql_path, backup_name, manifest
+
+
+def _pack_json_backup(created_by):
+    """Standalone .json backup of every model, including Activity Log (AuditLog)."""
+    timestamp = timezone.now().strftime("%Y_%m_%d_%H%M%S")
+    backup_name = f"system_backup_{timestamp}_DATA.json"
+    temp_dir = Path(tempfile.mkdtemp(prefix="finalproject_backup_"))
+    json_path = temp_dir / backup_name
+
+    from django.core import serializers
+
+    objects = _serialize_restore_objects()
+    payload_objects = json.loads(serializers.serialize("json", objects))
+    manifest = _base_backup_manifest(created_by, "JSON", "json")
+    payload = {
+        "format": "registry-backup-json",
+        "version": 1,
+        "meta": manifest,
+        "objects": payload_objects,
+    }
+    json_path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    return json_path, backup_name, manifest
+
+
+def _pack_backup_archive(created_by, fmt="bak"):
+    fmt = (fmt or "bak").lower()
+    if fmt == "json":
+        return _pack_json_backup(created_by)
+    if fmt == "sql":
+        return _generate_sql_dump(created_by)
+
     timestamp = timezone.now().strftime("%Y_%m_%d_%H%M%S")
     backup_name = f"system_backup_{timestamp}_FULL.bak"
     temp_dir = Path(tempfile.mkdtemp(prefix="finalproject_backup_"))
@@ -2508,36 +2889,11 @@ def _pack_backup_archive(created_by):
 
         from django.core import serializers
 
-        restore_models = _get_backup_restore_models()
-
-        objects = []
-        for model in restore_models:
-            manager = getattr(model, 'all_objects', model.objects)
-            objects.extend(list(manager.all()))
-
+        objects = _serialize_restore_objects()
         json_data = serializers.serialize("json", objects, indent=2)
         db_json_path.write_text(json_data, encoding="utf-8")
 
-        manifest = {
-            "version": 2,
-            "backup_type": "FULL",
-            "created_at": timezone.now().isoformat(),
-            "created_by": getattr(created_by, "id", None),
-            "created_by_username": getattr(created_by, "username", ""),
-            "database": str(db_path.name) if db_path else "mysql",
-            "counts": _count_backup_stats(),
-            "has_sqlite": has_sqlite,
-            "sections": [
-                "database",
-                "config",
-                "auth",
-                "financial",
-                "system",
-                "audit",
-                "radai",
-                "messages",
-            ],
-        }
+        manifest = _base_backup_manifest(created_by, "FULL", "bak", has_sqlite=has_sqlite)
         manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
         with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -2584,6 +2940,13 @@ def _store_backup(archive_path, backup_name):
     return dest
 
 
+_BACKUP_FILE_SUFFIXES = (".bak", ".json", ".sql")
+
+
+def _is_backup_filename(name):
+    return bool(name) and Path(name).suffix.lower() in _BACKUP_FILE_SUFFIXES
+
+
 def _enforce_backup_retention():
     """Delete old backups based on retention policy. Returns number of backups deleted."""
     settings_obj = SystemSetting.get_settings()
@@ -2596,7 +2959,7 @@ def _enforce_backup_retention():
 
     # Get all backup files sorted by modification time (newest first)
     backup_files = sorted(
-        [f for f in backup_dir.iterdir() if f.is_file() and f.suffix == '.bak'],
+        [f for f in backup_dir.iterdir() if f.is_file() and f.suffix.lower() in _BACKUP_FILE_SUFFIXES],
         key=lambda f: f.stat().st_mtime,
         reverse=True
     )
@@ -2615,7 +2978,7 @@ def _enforce_backup_retention():
 
     # Re-list after count enforcement
     if settings_obj.retention_max_age_days > 0:
-        backup_files = [f for f in backup_dir.iterdir() if f.is_file() and f.suffix == '.bak']
+        backup_files = [f for f in backup_dir.iterdir() if f.is_file() and f.suffix.lower() in _BACKUP_FILE_SUFFIXES]
         max_age_seconds = settings_obj.retention_max_age_days * 86400
         for backup_file in backup_files:
             try:
@@ -2648,7 +3011,7 @@ def _get_server_backups_list():
     settings_obj = SystemSetting.get_settings()
     backups = []
     for f in backup_dir.iterdir():
-        if f.is_file() and f.suffix == '.bak':
+        if f.is_file() and f.suffix.lower() in _BACKUP_FILE_SUFFIXES:
             try:
                 st = f.stat()
                 size_bytes = st.st_size
@@ -2728,6 +3091,7 @@ def _run_auto_backup(user=None, force=False):
         "server_path": str(server_dest),
         "downloads_path": str(downloads_dest) if downloads_dest else None,
         "forced": force,
+        "format": "bak",
     })
 
     return {
@@ -2739,9 +3103,389 @@ def _run_auto_backup(user=None, force=False):
     }
 
 
+def _empty_data_preview():
+    return {
+        "fund_clusters": [],
+        "suppliers": [],
+        "users": [],
+        "profiles": [],
+        "account_titles": [],
+        "account_title_groups": [],
+        "reports": [],
+        "cheques": [],
+        "radai": [],
+    }
+
+
+def _build_data_preview_from_serialized(raw):
+    data_preview = _empty_data_preview()
+    model_map = {
+        "admin_panel.fundcluster": "fund_clusters",
+        "cashier.fundcluster": "fund_clusters",
+        "admin_panel.supplier": "suppliers",
+        "cashier.supplier": "suppliers",
+        "auth.user": "users",
+        "cashier.profile": "profiles",
+        "admin_panel.accounttitlegroup": "account_title_groups",
+        "cashier.accounttitlegroup": "account_title_groups",
+        "admin_panel.managementoption": "account_titles",
+        "cashier.managementoption": "account_titles",
+        "admin_panel.report": "reports",
+        "cashier.report": "reports",
+        "admin_panel.cheque": "cheques",
+        "cashier.cheque": "cheques",
+        "admin_panel.radai": "radai",
+        "cashier.radai": "radai",
+    }
+    group_names = {}
+    for item in raw:
+        pk = item.get("pk")
+        model = (item.get("model") or "").lower()
+        fields = item.get("fields", {})
+        target = model_map.get(model)
+        if not target or pk is None:
+            continue
+        if target == "users":
+            data_preview[target].append({
+                "id": pk,
+                "username": fields.get("username", ""),
+                "email": fields.get("email", ""),
+                "first_name": fields.get("first_name", ""),
+                "last_name": fields.get("last_name", ""),
+                "is_staff": fields.get("is_staff", False),
+                "is_superuser": fields.get("is_superuser", False),
+            })
+        elif target == "profiles":
+            user_fk = fields.get("user")
+            profile_row = {
+                "id": pk,
+                "user": user_fk,
+                "employee_id": fields.get("employee_id", ""),
+                "role": fields.get("role", ""),
+                "department": fields.get("department", ""),
+                "position": fields.get("position", ""),
+                "status": fields.get("status", ""),
+            }
+            data_preview["profiles"].append(profile_row)
+            for u in data_preview["users"]:
+                if u["id"] == user_fk:
+                    u["employee_id"] = fields.get("employee_id", "")
+                    u["full_name"] = " ".join(filter(None, [
+                        fields.get("first_name", "") or "",
+                        fields.get("middle_initial", ""),
+                        fields.get("last_name", "") or "",
+                    ])).strip() or u["username"]
+                    u["role"] = fields.get("role", "")
+                    u["department"] = fields.get("department", "")
+                    u["position"] = fields.get("position", "")
+                    u["status"] = fields.get("status", "")
+                    break
+        elif target == "fund_clusters":
+            data_preview[target].append({
+                "id": pk,
+                "code": fields.get("code", ""),
+                "name": fields.get("name", ""),
+                "description": fields.get("description", ""),
+                "balance": fields.get("balance", "0"),
+                "bank_name": fields.get("bank_name", ""),
+                "is_active": fields.get("is_active", True),
+                "is_archived": fields.get("is_archived", False),
+            })
+        elif target == "suppliers":
+            extras = ((fields.get("raw_import") or {}).get("supplier_extras") or {})
+            data_preview[target].append({
+                "id": pk,
+                "mr_or": fields.get("mr_or", ""),
+                "date": str(fields.get("date", "") or ""),
+                "account_name": fields.get("account_name", ""),
+                "dv_payroll": str(extras.get("dv_payroll") or ""),
+                "ors_burs": str(extras.get("ors_burs") or ""),
+                "responsibility_center": str(extras.get("responsibility_center") or ""),
+                "uacs": str(extras.get("uacs") or ""),
+                "account_title": str(extras.get("account_title") or ""),
+                "nature_of_collections": fields.get("nature_of_collections", ""),
+                "gross_amount": str(extras.get("gross_amount") or ""),
+                "professional_tax": str(extras.get("professional_tax") or "0"),
+                "tax_5": str(extras.get("tax_5") or "0"),
+                "tax_2": str(extras.get("tax_2") or "0"),
+                "amount": fields.get("amount", "0"),
+                "other_deductions": str(extras.get("other_deductions") or "0"),
+                "fund_cluster": str(extras.get("fund_cluster") or ""),
+                "remarks": fields.get("remarks", ""),
+                "status": fields.get("status", "active"),
+                "is_archived": fields.get("is_archived", False),
+                "account_number": fields.get("account_number", ""),
+                "or_number": fields.get("or_number", ""),
+                "code_line": fields.get("code_line", ""),
+                "line": fields.get("line", ""),
+                "address": fields.get("address", ""),
+                "tin": fields.get("tin", ""),
+            })
+        elif target == "account_title_groups":
+            group_names[pk] = fields.get("name", "")
+            data_preview["account_title_groups"].append({
+                "id": pk,
+                "name": fields.get("name", ""),
+                "code": fields.get("code", ""),
+                "uacs": fields.get("uacs", ""),
+            })
+        elif target == "account_titles":
+            group_fk = fields.get("group")
+            data_preview["account_titles"].append({
+                "id": pk,
+                "value": fields.get("value", ""),
+                "uacs": fields.get("uacs", ""),
+                "group_name": group_names.get(group_fk, ""),
+                "is_active": fields.get("is_active", True),
+            })
+        elif target == "reports":
+            data_preview[target].append({
+                "id": pk,
+                "title": fields.get("title", ""),
+                "report_type": fields.get("report_type", ""),
+                "generated_by": fields.get("generated_by", ""),
+                "generated_at": str(fields.get("generated_at", "") or ""),
+                "date_from": str(fields.get("date_from", "") or ""),
+                "date_to": str(fields.get("date_to", "") or ""),
+                "is_archived": fields.get("is_archived", False),
+            })
+        elif target == "cheques":
+            data_preview[target].append({
+                "id": pk,
+                "cheque_number": fields.get("cheque_number", ""),
+                "payee": fields.get("payee", ""),
+                "payee_name": fields.get("payee_name", ""),
+                "fund_cluster": fields.get("fund_cluster", ""),
+                "amount": fields.get("amount", "0"),
+                "date": fields.get("date", ""),
+                "purpose": fields.get("purpose", ""),
+                "bank_name": fields.get("bank_name", ""),
+                "dv_payroll_no": fields.get("dv_payroll_no", ""),
+                "ors_burs_no": fields.get("ors_burs_no", ""),
+                "responsibility_center": fields.get("responsibility_center", ""),
+                "uacs_object_code": fields.get("uacs_object_code", ""),
+                "nature_of_payment": fields.get("nature_of_payment", ""),
+                "professional_tax": fields.get("professional_tax", "0"),
+                "tax_5_3": fields.get("tax_5_3", "0"),
+                "tax_3_1": fields.get("tax_3_1", "0"),
+                "status": fields.get("status", ""),
+                "is_archived": fields.get("is_archived", False),
+            })
+        elif target == "radai":
+            extras = ((fields.get("raw_import") or {}).get("radai_extras") or {})
+            serial = fields.get("mr_or", "") or fields.get("or_number", "")
+            payee = fields.get("account_name", "")
+            data_preview[target].append({
+                "id": pk,
+                "mr_or": serial,
+                "serial_no": serial,
+                "account_name": payee,
+                "payee_name": payee,
+                "date": str(fields.get("date", "") or ""),
+                "amount": fields.get("amount", "0"),
+                "nature_of_collections": fields.get("nature_of_collections", ""),
+                "reference_code": fields.get("reference_code", ""),
+                "dv_payroll": str(extras.get("dv_payroll") or ""),
+                "uacs": str(extras.get("uacs") or fields.get("uacs_code", "") or ""),
+                "uacs_code": str(extras.get("uacs") or fields.get("uacs_code", "") or ""),
+                "account_title": str(extras.get("account_title") or fields.get("account_title", "") or ""),
+                "professional_tax": str(extras.get("professional_tax") or extras.get("prof_tax") or "0"),
+                "prof_tax": str(extras.get("professional_tax") or extras.get("prof_tax") or "0"),
+                "gross_amount": str(extras.get("gross_amount") or extras.get("gross") or ""),
+                "total_ada": str(extras.get("total_ada") or ""),
+                "fund_cluster": fields.get("fund_cluster", ""),
+                "status": fields.get("status", "active"),
+                "is_archived": fields.get("is_archived", False),
+                "remarks": fields.get("remarks", ""),
+            })
+    for u in data_preview["users"]:
+        if "full_name" not in u:
+            u["full_name"] = " ".join(filter(None, [
+                u.get("first_name", ""),
+                u.get("last_name", ""),
+            ])).strip() or u["username"]
+        u.setdefault("employee_id", "")
+        u.setdefault("role", "")
+        u.setdefault("department", "")
+        u.setdefault("position", "")
+        u.setdefault("status", "")
+    return data_preview
+
+
+def _inspect_json_backup(path: Path):
+    raw_text = path.read_text(encoding="utf-8")
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON backup: {exc}")
+
+    if isinstance(payload, dict) and "objects" in payload:
+        objects = payload.get("objects") or []
+        meta = payload.get("meta") or payload
+    elif isinstance(payload, list):
+        objects = payload
+        meta = {}
+    else:
+        raise ValueError("Unrecognized JSON backup structure")
+
+    counts = meta.get("counts") or {}
+    if not counts:
+        by_model = {}
+        for item in objects:
+            m = (item.get("model") or "unknown").lower()
+            by_model[m] = by_model.get(m, 0) + 1
+        counts = by_model
+
+    return {
+        "backup_type": meta.get("backup_type", "JSON"),
+        "format": "json",
+        "created_at": meta.get("created_at"),
+        "created_by_username": meta.get("created_by_username", ""),
+        "counts": counts,
+        "sections": meta.get("sections", ["database", "audit", "activity_log"]),
+        "files": [path.name],
+        "data_preview": _build_data_preview_from_serialized(objects),
+    }
+
+
+def _parse_sql_meta(text):
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("-- META "):
+            try:
+                return json.loads(stripped[len("-- META "):])
+            except Exception:
+                return {}
+        if stripped and not stripped.startswith("--"):
+            break
+    return {}
+
+
+def _strip_sql_comments(stmt):
+    out_lines = []
+    for line in stmt.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("--"):
+            continue
+        out_lines.append(line)
+    return "\n".join(out_lines).strip()
+
+
+def _split_sql_statements(text):
+    # Drop full-line comments first so they never glue onto INSERT statements
+    cleaned_lines = []
+    for line in text.splitlines():
+        if line.lstrip().startswith("--"):
+            continue
+        cleaned_lines.append(line)
+    cleaned = "\n".join(cleaned_lines)
+
+    statements = []
+    buf = []
+    in_single = False
+    in_double = False
+    i = 0
+    n = len(cleaned)
+    while i < n:
+        ch = cleaned[i]
+        if in_single:
+            buf.append(ch)
+            if ch == "'":
+                if i + 1 < n and cleaned[i + 1] == "'":
+                    buf.append(cleaned[i + 1])
+                    i += 2
+                    continue
+                in_single = False
+            i += 1
+            continue
+        if in_double:
+            buf.append(ch)
+            if ch == '"':
+                in_double = False
+            i += 1
+            continue
+        if ch == "'":
+            in_single = True
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == '"':
+            in_double = True
+            buf.append(ch)
+            i += 1
+            continue
+        if ch == ";":
+            stmt = _strip_sql_comments("".join(buf))
+            if stmt:
+                statements.append(stmt)
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    tail = _strip_sql_comments("".join(buf))
+    if tail:
+        statements.append(tail)
+    return statements
+
+
+def _inspect_sql_backup(path: Path):
+    text = path.read_text(encoding="utf-8", errors="replace")
+    meta = _parse_sql_meta(text)
+    counts = meta.get("counts") or {}
+    if not counts:
+        table_counts = {}
+        for stmt in _split_sql_statements(text):
+            up = stmt.lstrip().upper()
+            if up.startswith("INSERT INTO"):
+                # crude table extract
+                try:
+                    rest = stmt.split("INSERT INTO", 1)[1]
+                    table = rest.split("(", 1)[0].strip().strip('`"[]')
+                    table_counts[table] = table_counts.get(table, 0) + 1
+                except Exception:
+                    pass
+        counts = table_counts
+    return {
+        "backup_type": meta.get("backup_type", "SQL"),
+        "format": "sql",
+        "created_at": meta.get("created_at"),
+        "created_by_username": meta.get("created_by_username", ""),
+        "counts": counts,
+        "sections": meta.get("sections", ["database", "audit", "activity_log"]),
+        "files": [path.name],
+        "data_preview": _empty_data_preview(),
+        "sql_note": "SQL restore applies table data only (no media files).",
+    }
+
+
 def _inspect_backup_archive(archive_path: Path):
     if not archive_path.exists():
         raise FileNotFoundError("Backup file not found")
+
+    suffix = archive_path.suffix.lower()
+    if suffix == ".json":
+        return _inspect_json_backup(archive_path)
+    if suffix == ".sql":
+        return _inspect_sql_backup(archive_path)
+
+    # Sniff content for json/sql saved without extension (or mislabeled)
+    try:
+        head = archive_path.read_bytes()[:4]
+    except Exception:
+        head = b""
+    if head.startswith(b"PK"):
+        pass  # zip / .bak
+    else:
+        try:
+            text_head = archive_path.read_text(encoding="utf-8", errors="strict")[:200].lstrip()
+            if text_head.startswith("{") or text_head.startswith("["):
+                return _inspect_json_backup(archive_path)
+            if text_head.startswith("--") or text_head.upper().startswith("INSERT") or text_head.upper().startswith("SET"):
+                return _inspect_sql_backup(archive_path)
+        except Exception:
+            pass
+
     try:
         with zipfile.ZipFile(archive_path, "r") as zf:
             names = zf.namelist()
@@ -2752,164 +3496,17 @@ def _inspect_backup_archive(archive_path: Path):
             manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
             result = {
                 "backup_type": manifest.get("backup_type", "FULL"),
+                "format": manifest.get("format", "bak"),
                 "created_at": manifest.get("created_at"),
                 "created_by_username": manifest.get("created_by_username", ""),
                 "counts": manifest.get("counts", {}),
                 "sections": manifest.get("sections", []),
                 "files": names[:40],
             }
-            data_preview = {
-                "fund_clusters": [],
-                "suppliers": [],
-                "users": [],
-                "account_titles": [],
-                "reports": [],
-                "cheques": [],
-                "radai": [],
-            }
-            profiles_by_user = {}
+            data_preview = _empty_data_preview()
             if "database/db_data.json" in names:
                 raw = json.loads(zf.read("database/db_data.json").decode("utf-8"))
-                model_map = {
-                    "admin_panel.fundcluster": "fund_clusters",
-                    "cashier.fundcluster": "fund_clusters",
-                    "admin_panel.supplier": "suppliers",
-                    "cashier.supplier": "suppliers",
-                    "auth.user": "users",
-                    "cashier.profile": "profiles",
-                    "admin_panel.accounttitlegroup": "account_title_groups",
-                    "cashier.accounttitlegroup": "account_title_groups",
-                    "admin_panel.managementoption": "account_titles",
-                    "cashier.managementoption": "account_titles",
-                    "admin_panel.report": "reports",
-                    "cashier.report": "reports",
-                    "admin_panel.cheque": "cheques",
-                    "cashier.cheque": "cheques",
-                    "admin_panel.radai": "radai",
-                    "cashier.radai": "radai",
-                }
-                for item in raw:
-                    pk = item.get("pk")
-                    model = (item.get("model") or "").lower()
-                    fields = item.get("fields", {})
-                    target = model_map.get(model)
-                    if not target or pk is None:
-                        continue
-                    if target == "users":
-                        data_preview[target].append({
-                            "id": pk,
-                            "username": fields.get("username", ""),
-                            "email": fields.get("email", ""),
-                            "first_name": fields.get("first_name", ""),
-                            "last_name": fields.get("last_name", ""),
-                            "is_staff": fields.get("is_staff", False),
-                            "is_superuser": fields.get("is_superuser", False),
-                        })
-                    elif target == "profiles":
-                        user_fk = fields.get("user")
-                        for u in data_preview["users"]:
-                            if u["id"] == user_fk:
-                                u["employee_id"] = fields.get("employee_id", "")
-                                u["full_name"] = " ".join(filter(None, [
-                                    fields.get("first_name", "") or "",
-                                    fields.get("middle_initial", ""),
-                                    fields.get("last_name", "") or "",
-                                ])).strip() or u["username"]
-                                u["role"] = fields.get("role", "")
-                                u["department"] = fields.get("department", "")
-                                u["position"] = fields.get("position", "")
-                                u["status"] = fields.get("status", "")
-                                break
-                    elif target == "fund_clusters":
-                        data_preview[target].append({
-                            "id": pk,
-                            "code": fields.get("code", ""),
-                            "name": fields.get("name", ""),
-                            "description": fields.get("description", ""),
-                            "balance": fields.get("balance", "0"),
-                            "bank_name": fields.get("bank_name", ""),
-                            "is_active": fields.get("is_active", True),
-                            "is_archived": fields.get("is_archived", False),
-                        })
-                    elif target == "suppliers":
-                        data_preview[target].append({
-                            "id": pk,
-                            "account_name": fields.get("account_name", ""),
-                            "account_number": fields.get("account_number", ""),
-                            "code_line": fields.get("code_line", ""),
-                            "line": fields.get("line", ""),
-                            "code_noc": fields.get("code_noc", ""),
-                            "nature_of_collections": fields.get("nature_of_collections", ""),
-                            "amount": fields.get("amount", "0"),
-                            "remarks": fields.get("remarks", ""),
-                            "address": fields.get("address", ""),
-                            "tin": fields.get("tin", ""),
-                            "status": fields.get("status", "active"),
-                            "mr_or": fields.get("mr_or", ""),
-                            "or_number": fields.get("or_number", ""),
-                            "date": fields.get("date", ""),
-                            "is_archived": fields.get("is_archived", False),
-                        })
-                    elif target == "account_title_groups":
-                        data_preview["account_titles"].append({
-                            "id": pk,
-                            "value": fields.get("name", ""),
-                            "uacs": fields.get("uacs", ""),
-                            "group_name": fields.get("name", ""),
-                            "is_active": True,
-                        })
-                    elif target == "reports":
-                        data_preview[target].append({
-                            "id": pk,
-                            "title": fields.get("title", ""),
-                            "report_type": fields.get("report_type", ""),
-                            "generated_by": fields.get("generated_by", ""),
-                            "is_archived": fields.get("is_archived", False),
-                        })
-                    elif target == "cheques":
-                        data_preview[target].append({
-                            "id": pk,
-                            "cheque_number": fields.get("cheque_number", ""),
-                            "payee": fields.get("payee", ""),
-                            "payee_name": fields.get("payee_name", ""),
-                            "fund_cluster": fields.get("fund_cluster", ""),
-                            "amount": fields.get("amount", "0"),
-                            "date": fields.get("date", ""),
-                            "purpose": fields.get("purpose", ""),
-                            "bank_name": fields.get("bank_name", ""),
-                            "dv_payroll_no": fields.get("dv_payroll_no", ""),
-                            "ors_burs_no": fields.get("ors_burs_no", ""),
-                            "responsibility_center": fields.get("responsibility_center", ""),
-                            "uacs_object_code": fields.get("uacs_object_code", ""),
-                            "nature_of_payment": fields.get("nature_of_payment", ""),
-                            "professional_tax": fields.get("professional_tax", "0"),
-                            "tax_5_3": fields.get("tax_5_3", "0"),
-                            "tax_3_1": fields.get("tax_3_1", "0"),
-                            "status": fields.get("status", ""),
-                            "is_archived": fields.get("is_archived", False),
-                        })
-                    elif target == "radai":
-                        data_preview[target].append({
-                            "id": pk,
-                            "mr_or": fields.get("mr_or", "") or fields.get("or_number", ""),
-                            "account_name": fields.get("account_name", ""),
-                            "date": fields.get("date", ""),
-                            "amount": fields.get("amount", "0"),
-                            "nature_of_collections": fields.get("nature_of_collections", ""),
-                            "status": fields.get("status", "active"),
-                            "is_archived": fields.get("is_archived", False),
-                        })
-                for u in data_preview["users"]:
-                    if "full_name" not in u:
-                        u["full_name"] = " ".join(filter(None, [
-                            u.get("first_name", ""),
-                            u.get("last_name", ""),
-                        ])).strip() or u["username"]
-                    u.setdefault("employee_id", "")
-                    u.setdefault("role", "")
-                    u.setdefault("department", "")
-                    u.setdefault("position", "")
-                    u.setdefault("status", "")
+                data_preview = _build_data_preview_from_serialized(raw)
             result["data_preview"] = data_preview
             return result
     except zipfile.BadZipFile:
@@ -2953,9 +3550,206 @@ def _restore_media_tree(extract_root: Path):
                 shutil.copy2(file_path, target)
 
 
+def _clear_all_restore_data(user):
+    from django.contrib.auth.models import User as _User
+    from cashier.models import Profile as _Profile
+
+    restore_models = _get_backup_restore_models()
+    for model in reversed(restore_models):
+        manager = getattr(model, 'all_objects', model.objects)
+        if model == _User:
+            manager.exclude(id=user.id).delete()
+        elif model == _Profile:
+            manager.exclude(user_id=user.id).delete()
+        else:
+            manager.all().delete()
+
+
+def _apply_deserialized_objects(iterable_objects, user):
+    from django.contrib.auth.models import User as _User
+    from cashier.models import Profile as _Profile
+
+    for deserialized_object in iterable_objects:
+        obj = deserialized_object.object
+        if isinstance(obj, _User) and obj.id == user.id:
+            user.username = obj.username
+            user.first_name = obj.first_name
+            user.last_name = obj.last_name
+            user.email = obj.email
+            user.password = obj.password
+            user.is_staff = obj.is_staff
+            user.is_active = obj.is_active
+            user.is_superuser = obj.is_superuser
+            user.save()
+        elif isinstance(obj, _Profile):
+            existing_p = _Profile.objects.filter(user_id=obj.user_id).first()
+            if existing_p:
+                for field in obj._meta.fields:
+                    if field.name not in ('id', 'user'):
+                        setattr(existing_p, field.name, getattr(obj, field.name))
+                existing_p.save()
+            else:
+                deserialized_object.save()
+        else:
+            deserialized_object.save()
+
+
+def _apply_sql_restore(sql_path: Path, user):
+    from django.core import serializers
+
+    text = sql_path.read_text(encoding="utf-8", errors="replace")
+    statements = _split_sql_statements(text)
+
+    emergency_backup_path, _, emergency_manifest = _pack_backup_archive(user, fmt="bak")
+
+    with transaction.atomic():
+        _clear_all_restore_data(user)
+
+        with connection.cursor() as cursor:
+            if connection.vendor == "mysql":
+                try:
+                    cursor.execute("SET FOREIGN_KEY_CHECKS=0")
+                except Exception:
+                    pass
+            elif connection.vendor == "sqlite":
+                try:
+                    cursor.execute("PRAGMA foreign_keys=OFF")
+                except Exception:
+                    pass
+
+            insert_payloads = []
+            for stmt in statements:
+                s = stmt.strip()
+                if not s:
+                    continue
+                up = s.upper()
+                if up.startswith("SET ") or up.startswith("PRAGMA "):
+                    try:
+                        cursor.execute(s)
+                    except Exception:
+                        pass
+                    continue
+                if up.startswith("DELETE FROM"):
+                    continue
+                if up.startswith("INSERT "):
+                    try:
+                        cursor.execute(s)
+                    except Exception as exc:
+                        raise RuntimeError(f"SQL restore failed on statement: {s[:180]}... ({exc})") from exc
+                    insert_payloads.append(s)
+                    continue
+
+            if connection.vendor == "mysql":
+                try:
+                    cursor.execute("SET FOREIGN_KEY_CHECKS=1")
+                except Exception:
+                    pass
+            elif connection.vendor == "sqlite":
+                try:
+                    cursor.execute("PRAGMA foreign_keys=ON")
+                except Exception:
+                    pass
+
+        # Best-effort activity log entry for SQL restore path
+        try:
+            AuditLog.objects.create(
+                admin=user if getattr(user, "is_authenticated", False) else None,
+                action="Backup restored (SQL)",
+                details={"format": "sql", "statements": len(insert_payloads)},
+            )
+        except Exception:
+            pass
+
+    try:
+        if emergency_backup_path and emergency_backup_path.exists():
+            emergency_backup_path.unlink(missing_ok=True)
+            try:
+                emergency_backup_path.parent.rmdir()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    return emergency_manifest or {
+        "created_at": timezone.now().isoformat(),
+        "backup_type": "SQL",
+        "format": "sql",
+    }
+
+
+def _apply_json_restore(json_path: Path, user):
+    from django.core import serializers
+
+    payload_text = json_path.read_text(encoding="utf-8")
+    payload = json.loads(payload_text)
+    if isinstance(payload, dict) and "objects" in payload:
+        meta = payload.get("meta") or {}
+        objects_raw = payload.get("objects") or []
+    elif isinstance(payload, list):
+        meta = {}
+        objects_raw = payload
+    else:
+        raise ValueError("Unrecognized JSON backup structure")
+
+    serialized_text = json.dumps(objects_raw)
+    emergency_backup_path, _, emergency_manifest = _pack_backup_archive(user, fmt="bak")
+
+    with transaction.atomic():
+        _clear_all_restore_data(user)
+        _apply_deserialized_objects(serializers.deserialize("json", serialized_text), user)
+
+    try:
+        if emergency_backup_path and emergency_backup_path.exists():
+            emergency_backup_path.unlink(missing_ok=True)
+            try:
+                emergency_backup_path.parent.rmdir()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    result_manifest = meta or emergency_manifest or {
+        "created_at": timezone.now().isoformat(),
+        "backup_type": "JSON",
+        "format": "json",
+    }
+    _audit(user, "Backup restored (JSON)", {
+        "created_at": result_manifest.get("created_at"),
+        "backup_type": result_manifest.get("backup_type", "JSON"),
+    })
+    return result_manifest
+
+
 def _apply_restore_archive(archive_path: Path, user):
     if not archive_path.exists():
         raise FileNotFoundError("Backup file not found")
+
+    suffix = archive_path.suffix.lower()
+    if suffix == ".json":
+        try:
+            return _apply_json_restore(archive_path, user)
+        except Exception as e:
+            raise e
+    if suffix == ".sql":
+        try:
+            return _apply_sql_restore(archive_path, user)
+        except Exception as e:
+            raise e
+
+    # Content sniff for non-standard suffixes
+    try:
+        head = archive_path.read_bytes()[:4]
+    except Exception:
+        head = b""
+    if not head.startswith(b"PK"):
+        try:
+            text_head = archive_path.read_text(encoding="utf-8", errors="strict")[:200].lstrip()
+            if text_head.startswith("{") or text_head.startswith("["):
+                return _apply_json_restore(archive_path, user)
+            if text_head.startswith("--") or text_head.upper().startswith("INSERT") or text_head.upper().startswith("SET"):
+                return _apply_sql_restore(archive_path, user)
+        except Exception:
+            pass
 
     temp_dir = Path(tempfile.mkdtemp(prefix="finalproject_restore_"))
     emergency_backup_path = None
@@ -2970,7 +3764,7 @@ def _apply_restore_archive(archive_path: Path, user):
         if not snapshot_db.exists() and not snapshot_json.exists():
             raise ValueError("Database snapshot missing in backup archive")
 
-        emergency_backup_path, _, _ = _pack_backup_archive(user)
+        emergency_backup_path, _, _ = _pack_backup_archive(user, fmt="bak")
 
         from django.db import transaction, models
         from django.contrib.auth.models import User
@@ -2992,30 +3786,7 @@ def _apply_restore_archive(archive_path: Path, user):
             if snapshot_json.exists():
                 from django.core import serializers
                 with open(snapshot_json, "r", encoding="utf-8") as f:
-                    for deserialized_object in serializers.deserialize("json", f):
-                        obj = deserialized_object.object
-                        if isinstance(obj, User) and obj.id == user.id:
-                            user.username = obj.username
-                            user.first_name = obj.first_name
-                            user.last_name = obj.last_name
-                            user.email = obj.email
-                            user.password = obj.password
-                            user.is_staff = obj.is_staff
-                            user.is_active = obj.is_active
-                            user.is_superuser = obj.is_superuser
-                            user.save()
-                        elif isinstance(obj, Profile):
-                            # Check if signal or previous step already created the profile row
-                            existing_p = Profile.objects.filter(user_id=obj.user_id).first()
-                            if existing_p:
-                                for field in obj._meta.fields:
-                                    if field.name not in ('id', 'user'):
-                                        setattr(existing_p, field.name, getattr(obj, field.name))
-                                existing_p.save()
-                            else:
-                                deserialized_object.save()
-                        else:
-                            deserialized_object.save()
+                    _apply_deserialized_objects(serializers.deserialize("json", f), user)
             else:
                 import sqlite3
                 conn = sqlite3.connect(str(snapshot_db))
@@ -3817,6 +4588,54 @@ def next_supplier_sequences(request):
 
 @login_required
 @require_GET
+def validate_supplier_serial(request):
+    """Return whether a Check Serial already exists on a supplier or cheque."""
+    from cashier.models import Supplier, Cheque
+
+    serial = (request.GET.get('serial') or '').strip()
+    if not serial:
+        return JsonResponse({'serial': '', 'exists': False, 'source': ''})
+
+    exclude_id = request.GET.get('exclude_id') or ''
+    supplier_qs = Supplier.objects.filter(mr_or=serial)
+    if exclude_id.isdigit():
+        supplier_qs = supplier_qs.exclude(pk=int(exclude_id))
+    if supplier_qs.exists():
+        return JsonResponse({'serial': serial, 'exists': True, 'source': 'supplier'})
+
+    # Cheque numbers may be zero-padded variants of the same serial
+    cheque = _find_cheque_by_number(serial)
+    if cheque is not None:
+        return JsonResponse({'serial': serial, 'exists': True, 'source': 'cheque'})
+
+    # Broader exact/padded scan so archived or non-normalized rows still hit
+    padded = serial.zfill(6) if serial.isdigit() and len(serial) < 6 else serial
+    if Cheque.all_objects.filter(cheque_number__in=[serial, padded]).exists():
+        return JsonResponse({'serial': serial, 'exists': True, 'source': 'cheque'})
+
+    return JsonResponse({'serial': serial, 'exists': False, 'source': ''})
+
+
+def validate_radai_serial(request):
+    """Return whether a RADAI Serial No. already exists on another RADAI record."""
+    from cashier.models import Radai
+
+    serial = (request.GET.get('serial') or '').strip()
+    if not serial:
+        return JsonResponse({'serial': '', 'exists': False, 'source': ''})
+
+    exclude_id = request.GET.get('exclude_id') or ''
+    qs = Radai.objects.filter(mr_or=serial)
+    if exclude_id.isdigit():
+        qs = qs.exclude(pk=int(exclude_id))
+    if qs.exists():
+        return JsonResponse({'serial': serial, 'exists': True, 'source': 'radai'})
+
+    return JsonResponse({'serial': serial, 'exists': False, 'source': ''})
+
+
+@login_required
+@require_GET
 def cashier_dashboard_chart_data(request):
     profile = _get_profile(request.user)
     is_guest = profile and profile.role in ('guest', 'budget_accounting')
@@ -4268,6 +5087,10 @@ def _supplier_import_row_values(row):
     if not values.get('other_deductions') and (not headers or len(headers) == len(SUPPLIER_IMPORT_COLUMNS)):
         values['other_deductions'] = ordered_values[15] if len(ordered_values) > 15 else ''
 
+    values['or_number'] = values.get('or_number') or _get_value(
+        row, 'or number', 'or_number', 'account_number', 'account number', 'or no', 'or no.', 'check number'
+    )
+
     return values
 
 
@@ -4615,8 +5438,8 @@ def _save_registry_sheet(payload, user):
 def suppliers(request):
     is_admin = _is_admin(request.user)
     profile = _get_profile(request.user)
-    error = None
-    success = None
+    error = request.GET.get('error') or None
+    success = request.GET.get('success') or None
     period_key = request.GET.get('period', 'all').strip()
     period_type = 'all'
     period_value = ''
@@ -4624,6 +5447,13 @@ def suppliers(request):
         period_type, period_value = period_key.split('|', 1)
         period_type = period_type.strip().lower()
         period_value = period_value.strip()
+    selected_year = None
+    year_raw = (request.GET.get('year') or '').strip()
+    if year_raw.isdigit():
+        try:
+            selected_year = int(year_raw)
+        except ValueError:
+            selected_year = None
 
     def _split_noc_pair(code_value, nature_value=''):
         code_text = str(code_value or '').strip()
@@ -4708,14 +5538,14 @@ def suppliers(request):
         }
 
     def _parse_supplier_extras(post):
-        deductions_raw = post.get('other_deductions', '').strip().replace(',', '').replace('₱', '').replace('\u20B1', '')
+        deductions_raw = post.get('other_deductions', '').strip().replace(',', '').replace('₱', '').replace('₱', '')
         try:
             deductions = str(Decimal(deductions_raw or '0').quantize(Decimal('0.01')))
         except (InvalidOperation, ValueError):
             deductions = '0.00'
 
         def _parse_optional_decimal(name):
-            raw_value = post.get(name, '').strip().replace(',', '').replace('₱', '').replace('\u20B1', '')
+            raw_value = post.get(name, '').strip().replace(',', '').replace('₱', '').replace('₱', '')
             if not raw_value:
                 return ''
             try:
@@ -4723,57 +5553,18 @@ def suppliers(request):
             except (InvalidOperation, ValueError):
                 return ''
 
-        amount_raw = post.get('amount', '').strip().replace(',', '').replace('₱', '').replace('\u20B1', '')
+        # Gross is the source of truth (modal field "Gross Amount"); fall back to amount for legacy posts
+        gross_raw = post.get('gross_amount', '').strip().replace(',', '').replace('₱', '').replace('₱', '')
+        amount_raw = post.get('amount', '').strip().replace(',', '').replace('₱', '').replace('₱', '')
         try:
-            base_amount = Decimal(amount_raw or '0').quantize(Decimal('0.01'))
+            if gross_raw:
+                gross_amount_dec = Decimal(gross_raw).quantize(Decimal('0.01'))
+            else:
+                gross_amount_dec = Decimal(amount_raw or '0').quantize(Decimal('0.01'))
         except (InvalidOperation, ValueError):
-            base_amount = Decimal('0.00')
+            gross_amount_dec = Decimal('0.00')
 
-        professional_tax_rate_raw = post.get('professional_tax_rate', '').strip().replace('%', '')
-        try:
-            professional_tax_rate = str(Decimal(professional_tax_rate_raw).quantize(Decimal('0.01'))) if professional_tax_rate_raw else ''
-        except (InvalidOperation, ValueError):
-            professional_tax_rate = ''
-
-        try:
-            pro_rate_decimal = (Decimal(professional_tax_rate) / Decimal('100')) if professional_tax_rate else Decimal('0')
-        except (InvalidOperation, ValueError):
-            pro_rate_decimal = Decimal('0')
-
-        professional_tax_fixed_raw = post.get('professional_tax', '').strip().replace(',', '').replace('₱', '').replace('\u20B1', '')
-        try:
-            professional_tax_fixed = Decimal(professional_tax_fixed_raw).quantize(Decimal('0.01')) if professional_tax_fixed_raw else Decimal('0.00')
-        except (InvalidOperation, ValueError):
-            professional_tax_fixed = Decimal('0.00')
-
-        if not professional_tax_rate:
-            net_plus_fixed = base_amount + Decimal(deductions) + professional_tax_fixed
-        else:
-            net_plus_fixed = base_amount + Decimal(deductions)
-
-
-
-        def _resolve_tax_rates(option_name, default_rates):
-            if not option_name:
-                return default_rates
-            opt = ManagementOption.objects.filter(
-                category=ManagementOption.CATEGORY_TAX,
-                value=option_name,
-                is_active=True
-            ).first()
-            if opt:
-                return _get_tax_rates(opt.uacs)
-            # Try to lookup by rate string itself
-            opt_by_rate = ManagementOption.objects.filter(
-                category=ManagementOption.CATEGORY_TAX,
-                uacs=option_name,
-                is_active=True
-            ).first()
-            if opt_by_rate:
-                return _get_tax_rates(opt_by_rate.uacs)
-            return _get_tax_rates(option_name)
-
-        active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
+        active_taxes = _active_tax_options()
         t1 = active_taxes[0] if len(active_taxes) > 0 else None
         t2 = active_taxes[1] if len(active_taxes) > 1 else None
 
@@ -4783,87 +5574,125 @@ def suppliers(request):
         t1_vat, t1_nv = _get_tax_rates(t1_rate)
         t2_vat, t2_nv = _get_tax_rates(t2_rate)
 
-        # Check for custom tax rates from POST
         is_vat = bool(post.get('is_vat'))
+
+        def _pct_to_dec(raw):
+            if not raw:
+                return None
+            try:
+                return Decimal(str(raw).strip().replace('%', '')) / Decimal('100')
+            except (InvalidOperation, ValueError):
+                return None
+
+        # Tax Exempt — skip all taxes for this supplier (Net = Gross − other deductions only)
+        tax_exempt = str(post.get('tax_exempt', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
+
+        # Tax 1: user-picked rate from modal dropdown (tax_1_option holds "5", …)
+        rate1 = _pct_to_dec(post.get('tax_1_option', ''))
+        custom1 = _pct_to_dec(post.get('tax_5_rate_vat' if is_vat else 'tax_5_rate_non_vat', ''))
+        if custom1 is not None:
+            rate1 = custom1
+        if rate1 is None:
+            rate1 = t1_vat if is_vat else t1_nv
+        elif '/' in (t1_rate or ''):
+            # Dual rate must follow VAT mode: VAT→first (5/2), Non-VAT→second (3/1)
+            expected = t1_vat if is_vat else t1_nv
+            other = t1_nv if is_vat else t1_vat
+            if expected is not None and other is not None and rate1 == other:
+                rate1 = expected
+        if tax_exempt:
+            rate1 = Decimal('0')
+
+        # Tax 2 = Goods / Services selection (dropdown replaces the old Tax 2 rate slot)
+        goods_service = str(post.get('goods_service_type', '') or '').strip().lower()
+        if goods_service not in ('goods', 'services'):
+            # Legacy posts that still send tax_2_option without the type dropdown
+            legacy_gs = str(post.get('tax_2_option', '') or '').strip().lower()
+            if legacy_gs in ('goods', 'services'):
+                goods_service = legacy_gs
+            else:
+                goods_service = ''
+        gs_rates = _goods_service_rate_map()
+        if tax_exempt:
+            goods_service = ''
+            rate2 = Decimal('0')
+        elif goods_service == 'goods':
+            rate2 = gs_rates['goods'] / Decimal('100')
+        elif goods_service == 'services':
+            rate2 = gs_rates['services'] / Decimal('100')
+        else:
+            rate2 = Decimal('0')
+
+        # VAT: (Gross/1.12)×rate · Non-VAT: Gross×rate
         if is_vat:
-            custom_tax5_rate = post.get('tax_5_rate_vat', '').strip().replace('%', '')
-            custom_tax2_rate = post.get('tax_2_rate_vat', '').strip().replace('%', '')
+            tax_base = (gross_amount_dec / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         else:
-            custom_tax5_rate = post.get('tax_5_rate_non_vat', '').strip().replace('%', '')
-            custom_tax2_rate = post.get('tax_2_rate_non_vat', '').strip().replace('%', '')
+            tax_base = gross_amount_dec
+        if tax_exempt:
+            tax_base = Decimal('0.00')
+        tax_5 = str((tax_base * rate1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        tax_2 = str((tax_base * rate2).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        tax_base_5_3 = str(tax_base)
+        tax_base_3_1 = str(tax_base)
 
-        if custom_tax5_rate:
-            try:
-                rate_val = Decimal(custom_tax5_rate) / Decimal('100')
-                if is_vat:
-                    t1_vat = rate_val
-                else:
-                    t1_nv = rate_val
-            except (InvalidOperation, ValueError):
-                pass
-        if custom_tax2_rate:
-            try:
-                rate_val = Decimal(custom_tax2_rate) / Decimal('100')
-                if is_vat:
-                    t2_vat = rate_val
-                else:
-                    t2_nv = rate_val
-            except (InvalidOperation, ValueError):
-                pass
-
-        if not post.get('is_vat'):
-            # Non-VAT mode: dynamic taxes are NOT calculated!
-            denom = Decimal('1.0') - pro_rate_decimal
-            if denom <= 0:
-                denom = Decimal('1.0')
-            base = (net_plus_fixed / denom).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-            tax_5 = '0.00'
-            tax_2 = '0.00'
-            tax_base_5_3 = '0.00'
-            tax_base_3_1 = '0.00'
-            if pro_rate_decimal > 0:
-                professional_tax_amount = str((base * pro_rate_decimal).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
-            else:
-                professional_tax_amount = str(professional_tax_fixed)
+        # Professional tax optional — 5% of Gross only when Enable is checked
+        enable_prof_tax = str(post.get('enable_professional_tax', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
+        if tax_exempt:
+            enable_prof_tax = False
+        if enable_prof_tax:
+            professional_tax_rate = '5.00'
+            professional_tax_amount = str((gross_amount_dec * Decimal('0.05')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
         else:
-            # VAT mode: Factors in 1.12 Gross addition, subtracts all tax rates
-            denom = Decimal('1.12') - (t1_vat + t2_vat + pro_rate_decimal)
-            if denom <= 0:
-                denom = Decimal('1.12')
-            base = (net_plus_fixed / denom).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            gross = (base * Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            professional_tax_rate = '0.00'
+            professional_tax_amount = '0.00'
 
-            # Use submitted tax_5 and tax_2 if present, otherwise recalculate
-            tax_5_submitted = post.get('tax_5', '').strip()
-            if tax_5_submitted:
-                tax_5 = str(_parse_money(tax_5_submitted))
-            else:
-                tax_5 = str((base * t1_vat).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        # Extra tax slots from Taxes page (Tax 2, Tax 3, …) posted as tax_3_option/tax_4_option/…
+        # Slot map matches modal: choice 0 → tax_1_option/tax_5 · choice 1 → tax_3 · choice 2 → tax_4 · …
+        extra_tax_result = {}
+        extra_tax_total = Decimal('0.00')
+        for key, val in post.items():
+            if not key.startswith('tax_') or not key.endswith('_option'):
+                continue
+            if key in ('tax_1_option', 'tax_2_option'):
+                continue  # tax_1 already handled; tax_2_option is Goods/Service legacy
+            rate_dec = _pct_to_dec(str(val or ''))
+            if rate_dec is None:
+                continue
+            slot_name = key[:-7]  # 'tax_3_option' → 'tax_3'
+            if tax_exempt:
+                extra_tax_result[slot_name] = '0.00'
+                extra_tax_result[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
+                continue
+            amount_dec = (tax_base * rate_dec).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            extra_tax_result[slot_name] = str(amount_dec)
+            extra_tax_result[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
+            extra_tax_total += amount_dec
 
-            tax_2_submitted = post.get('tax_2', '').strip()
-            if tax_2_submitted:
-                tax_2 = str(_parse_money(tax_2_submitted))
-            else:
-                tax_2 = str((base * t2_vat).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        # Net = Gross − Tax1 − Goods/Services − Extra taxes − ProfTax − OtherDeductions
+        net_amount = (
+            gross_amount_dec
+            - Decimal(tax_5)
+            - Decimal(tax_2)
+            - extra_tax_total
+            - Decimal(professional_tax_amount)
+            - Decimal(deductions)
+        ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-            tax_base_5_3 = str(base)
-            tax_base_3_1 = str(base)
-            if pro_rate_decimal > 0:
-                professional_tax_amount = str((base * pro_rate_decimal).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
-            else:
-                professional_tax_amount = str(professional_tax_fixed)
+        rate1_pct = str((rate1 * 100).quantize(Decimal('0.01')))
+        rate2_pct = str((rate2 * 100).quantize(Decimal('0.01')))
+        tax_5_rate_vat = rate1_pct if is_vat else (post.get('tax_5_rate_vat', '').strip() or str((t1_vat * 100).quantize(Decimal('0.01'))))
+        tax_5_rate_non_vat = rate1_pct if not is_vat else (post.get('tax_5_rate_non_vat', '').strip() or str((t1_nv * 100).quantize(Decimal('0.01'))))
+        tax_2_rate_vat = rate2_pct if is_vat else (post.get('tax_2_rate_vat', '').strip() or rate2_pct)
+        tax_2_rate_non_vat = rate2_pct if not is_vat else (post.get('tax_2_rate_non_vat', '').strip() or rate2_pct)
 
-        gross_amount = str((base_amount + Decimal(tax_5) + Decimal(tax_2) + Decimal(professional_tax_amount) + Decimal(deductions)).quantize(Decimal('0.01')))
-
-        return {
+        result = {
             'account_title': post.get('account_title', '').strip(),
             'fund_cluster': post.get('fund_cluster', '').strip(),
             'fund_cluster_id': post.get('fund_cluster_id', '').strip(),
             'cashier_name': post.get('cashier_name', '').strip() or _full_name_or_username(request.user),
             'approval': post.get('approval', '').strip(),
             'other_deductions': deductions,
-            'is_vat': 'true' if post.get('is_vat') else 'false',
+            'is_vat': 'true' if is_vat else 'false',
             'remarks_text': post.get('remarks_text', '').strip() or post.get('remarks', '').strip(),
             'dv_payroll': post.get('dv_payroll', '').strip(),
             'ors_burs': post.get('ors_burs', '').strip(),
@@ -4873,14 +5702,21 @@ def suppliers(request):
             'professional_tax': professional_tax_amount,
             'tax_5': tax_5,
             'tax_2': tax_2,
+            'goods_service_type': goods_service,
+            'tax_1_option': str((rate1 * 100).quantize(Decimal('0.01'))),
+            'tax_2_option': goods_service,
             'tax_base_5_3': tax_base_5_3,
             'tax_base_3_1': tax_base_3_1,
-            'tax_5_rate_vat': post.get('tax_5_rate_vat', '').strip(),
-            'tax_5_rate_non_vat': post.get('tax_5_rate_non_vat', '').strip(),
-            'tax_2_rate_vat': post.get('tax_2_rate_vat', '').strip(),
-            'tax_2_rate_non_vat': post.get('tax_2_rate_non_vat', '').strip(),
-            'gross_amount': gross_amount,
+            'tax_5_rate_vat': tax_5_rate_vat,
+            'tax_5_rate_non_vat': tax_5_rate_non_vat,
+            'tax_2_rate_vat': tax_2_rate_vat,
+            'tax_2_rate_non_vat': tax_2_rate_non_vat,
+            'gross_amount': str(gross_amount_dec),
+            'net_amount': str(net_amount),
+            'tax_exempt': 'true' if tax_exempt else 'false',
         }
+        result.update(extra_tax_result)
+        return result
 
     def _parse_custom_columns(post):
         raw_value = post.get('custom_columns_json', '').strip()
@@ -4960,8 +5796,8 @@ def suppliers(request):
                 else:
                     sup.save()
                     _audit(request.user, "Edited supplier", {"id": sup_id})
-                    success = f"Supplier '{sup.account_name}' updated."
-                    return redirect('suppliers')
+                    msg = f"Supplier '{sup.account_name}' updated."
+                    return redirect(f"{reverse('suppliers')}?success={quote(msg)}")
         else:
             data = _parse_supplier_form(request.POST)
             custom_columns = _parse_custom_columns(request.POST)
@@ -4987,8 +5823,8 @@ def suppliers(request):
                     **data,
                 )
                 _audit(request.user, "Created supplier", {"id": sup.pk, "name": data['account_name']})
-                success = f"Supplier '{data['account_name']}' added."
-                return redirect('suppliers')
+                msg = f"Supplier '{data['account_name']}' added."
+                return redirect(f"{reverse('suppliers')}?success={quote(msg)}")
 
     def _supplier_sort_value(value):
         text = str(value or '').strip()
@@ -5003,6 +5839,9 @@ def suppliers(request):
         return (0, text.lower(), text)
 
     supplier_qs = Supplier.objects.select_related('created_by')
+
+    if selected_year:
+        supplier_qs = supplier_qs.filter(date__year=selected_year)
 
     if period_type == 'date' and period_value:
         try:
@@ -5083,14 +5922,22 @@ def suppliers(request):
         supplier.is_old_or = bool(reference_year and reference_year < today.year)
         supplier.or_number_label = 'Old OR' if supplier.is_old_or else 'OR Number'
 
+    supplier_years = []
     supplier_dates = []
     supplier_months = []
+    seen_years = set()
     seen_dates = set()
     seen_months = set()
-    # Use the current user's supplier records when building the dates/months lists
+    # Use the current user's supplier records when building the years/dates/months lists
     for supplier in Supplier.objects.filter(created_by=request.user):
         record_date = supplier.date
         if not record_date:
+            continue
+        year_value = record_date.year
+        if year_value not in seen_years:
+            seen_years.add(year_value)
+            supplier_years.append(year_value)
+        if selected_year and year_value != selected_year:
             continue
         month_value = record_date.strftime('%Y-%m')
         if record_date.isoformat() not in seen_dates:
@@ -5100,6 +5947,7 @@ def suppliers(request):
             seen_months.add(month_value)
             supplier_months.append(record_date.replace(day=1))
 
+    supplier_years.sort(reverse=True)
     supplier_dates.sort(reverse=True)
     supplier_months = sorted(supplier_months, reverse=True)
 
@@ -5333,30 +6181,20 @@ def suppliers(request):
     auto_supplier_defaults['line'] = next_line
 
     tax_options = ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).order_by('value')
-    if not tax_options.exists():
-        defaults = [
-            {'name': 'Tax (5%/3%)', 'value': '5%/3%'},
-            {'name': 'Tax (2%/1%)', 'value': '2%/1%'},
-            {'name': 'Professional Tax', 'value': '0%'},
-        ]
-        for item in defaults:
-            ManagementOption.objects.get_or_create(
-                category=ManagementOption.CATEGORY_TAX,
-                value=item['name'],
-                defaults={'uacs': item['value'], 'is_active': True},
-            )
-        tax_options = ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).order_by('value')
+    # Do NOT re-seed defaults here — deleting taxes on the Taxes page must stick.
 
     # Auto-migrate any old Tax (3%/1%) to Tax (2%/1%)
     ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, value='Tax (3%/1%)').update(value='Tax (2%/1%)', uacs='2%/1%')
-    active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
+    # Same order as modal slots (5%/3% first, 2%/1% second) so labels/rates always match
+    active_taxes = _active_tax_options()
     t1 = active_taxes[0] if len(active_taxes) > 0 else None
     t2 = active_taxes[1] if len(active_taxes) > 1 else None
 
-    tax_1_rate = t1.uacs if t1 else '5%/3%'
-    tax_2_rate = t2.uacs if t2 else '2%/1%'
-    tax_1_label = t1.value if t1 else 'Tax (5%/3%)'
-    tax_2_label = t2.value if t2 else 'Tax (2%/1%)'
+    # Empty when no taxes — never invent Tax (5%/3%) / Tax (2%/1%) after deletes
+    tax_1_rate = t1.uacs if t1 else ''
+    tax_2_rate = t2.uacs if t2 else ''
+    tax_1_label = t1.value if t1 else ''
+    tax_2_label = t2.value if t2 else ''
 
     context = _page_context(request, is_admin=is_admin, page_title="Supplier Management", extra={
         "supplier_list": supplier_list,
@@ -5370,6 +6208,8 @@ def suppliers(request):
         "period_type": period_type,
         "period_value": period_value,
         "period_key": period_key,
+        "selected_year": selected_year,
+        "supplier_years": supplier_years,
         "supplier_dates": supplier_dates,
         "supplier_months": supplier_months,
         "payee_choices": payee_choices,
@@ -5385,6 +6225,11 @@ def suppliers(request):
         "tax_2_rate": tax_2_rate,
         "tax_1_label": tax_1_label,
         "tax_2_label": tax_2_label,
+        "tax_choices": json.dumps([
+            {'label': o.value, 'rate': o.uacs or ''}
+            for o in active_taxes
+        ]),
+        "goods_service_rates": _goods_service_rate_pcts(),
     })
     # Assign descending display numbers
     total_count = len(supplier_list)
@@ -5439,20 +6284,26 @@ def supplier_modal_context(request):
     approval_options = ['Approved', 'Pending', 'For Review']
     cashier_full_name = _full_name_or_username(request.user)
 
-    active_taxes = list(ManagementOption.objects.filter(
-        category=ManagementOption.CATEGORY_TAX, is_active=True
-    ).exclude(value__iexact='Professional Tax').order_by('pk'))
+    active_taxes = _active_tax_options()
     t1 = active_taxes[0] if len(active_taxes) > 0 else None
     t2 = active_taxes[1] if len(active_taxes) > 1 else None
-    tax_1_rate = t1.uacs if t1 else '5%/3%'
-    tax_2_rate = t2.uacs if t2 else '2%/1%'
-    tax_1_label = t1.value if t1 else 'Tax (5%/3%)'
-    tax_2_label = t2.value if t2 else 'Tax (2%/1%)'
+    # Empty when no taxes — never invent Tax (5%/3%) / Tax (2%/1%) after deletes
+    tax_1_rate = t1.uacs if t1 else ''
+    tax_2_rate = t2.uacs if t2 else ''
+    tax_1_label = t1.value if t1 else ''
+    tax_2_label = t2.value if t2 else ''
+    # Full list from Taxes page so modal rate dropdowns stay connected
+    tax_choices = [
+        {'label': o.value, 'rate': o.uacs or ''}
+        for o in active_taxes
+    ]
+    goods_service_rates = _goods_service_rate_pcts()
 
     auto_supplier_defaults = _compute_auto_supplier_defaults(request.user)
     auto_supplier_defaults['date'] = today_supplier_date
 
     return JsonResponse({
+        'ok': True,
         'payee_choices': payee_choices,
         'account_title_groups': account_title_groups,
         'remark_options': remark_options,
@@ -5463,6 +6314,8 @@ def supplier_modal_context(request):
         'tax_2_rate': tax_2_rate,
         'tax_1_label': tax_1_label,
         'tax_2_label': tax_2_label,
+        'tax_choices': tax_choices,
+        'goods_service_rates': goods_service_rates,
         'auto_supplier_defaults': auto_supplier_defaults,
         'today_supplier_date': today_supplier_date,
     })
@@ -5587,18 +6440,131 @@ def supplier_create_ajax(request):
     supplier_extras = {}
     for key in ('account_title', 'fund_cluster', 'fund_cluster_id', 'cashier_name', 'approval',
                 'other_deductions', 'is_vat', 'dv_payroll', 'ors_burs', 'responsibility_center',
-                'uacs', 'professional_tax_rate', 'professional_tax', 'tax_5', 'tax_2', 'gross_amount'):
+                'uacs', 'professional_tax_rate', 'professional_tax', 'tax_5', 'tax_2', 'gross_amount',
+                'tax_1_option', 'tax_2_option', 'tax_3', 'tax_4', 'tax_5_amount', 'net_amount',
+                'tax_3_option', 'tax_4_option', 'tax_exempt'):
         val = post.get(key, '').strip()
         if not val:
             continue
-        if key == 'is_vat':
+        if key in ('is_vat', 'tax_exempt'):
             val = 'true' if val.lower() in ('on', 'true', '1', 'yes') else 'false'
-        elif key in ('other_deductions', 'professional_tax', 'tax_5', 'tax_2', 'gross_amount'):
+        elif key in ('other_deductions', 'professional_tax', 'tax_5', 'tax_2', 'gross_amount', 'tax_3', 'tax_4'):
             val = _clean_money(val)
         elif key == 'professional_tax_rate':
             val = val.replace('%', '').strip()
         if val:
             supplier_extras[key] = val
+
+    tax_exempt_flag = str(post.get('tax_exempt', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
+    if tax_exempt_flag:
+        supplier_extras['tax_exempt'] = 'true'
+        supplier_extras['professional_tax'] = '0.00'
+        supplier_extras['professional_tax_rate'] = '0.00'
+        supplier_extras['tax_5'] = '0.00'
+        supplier_extras['tax_2'] = '0.00'
+        supplier_extras['goods_service_type'] = ''
+        supplier_extras['tax_2_option'] = ''
+        supplier_extras['tax_1_option'] = '0.00'
+        for sk in list(supplier_extras.keys()):
+            if sk.startswith('tax_') and sk.endswith('_option') and sk not in ('tax_1_option', 'tax_2_option'):
+                # keep rate for display, but force amount slot
+                pass
+            if sk.startswith('tax_') and sk[4:].isdigit() and not sk.endswith('_option'):
+                supplier_extras[sk] = '0.00'
+    else:
+        supplier_extras.setdefault('tax_exempt', 'false')
+        # Dual rate must follow VAT mode: VAT→first (5/2), Non-VAT→second (3/1)
+        try:
+            _is_vat_dual = str(supplier_extras.get('is_vat', post.get('is_vat', '')) or '').strip().lower() in ('on', 'true', '1', 'yes')
+            _active = _active_tax_options()
+            _t1 = _active[0] if _active else None
+            _t1_vat, _t1_nv = _get_tax_rates(_t1.uacs if _t1 else '5%/3%')
+            if _t1 and '/' in (_t1.uacs or '') and _t1_vat is not None and _t1_nv is not None:
+                _expected = _t1_vat if _is_vat_dual else _t1_nv
+                _other = _t1_nv if _is_vat_dual else _t1_vat
+                _posted1 = _pct_to_dec_local(str(supplier_extras.get('tax_1_option') or post.get('tax_1_option', '')))
+                if _posted1 is not None and _expected is not None and _posted1 == _other:
+                    _posted1 = _expected
+                if _posted1 is None:
+                    _posted1 = _expected
+                if _posted1 is not None:
+                    supplier_extras['tax_1_option'] = str((_posted1 * 100).quantize(Decimal('0.01')))
+                    # Recompute Tax 1 amount from corrected rate
+                    _base1 = Decimal(str(supplier_extras.get('gross_amount') or post.get('gross_amount') or post.get('amount') or '0').replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0').quantize(Decimal('0.01'))
+                    if _is_vat_dual:
+                        _base1 = (_base1 / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    supplier_extras['tax_5'] = str((_base1 * _posted1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        except Exception:
+            pass
+        # Persist Goods/Service selection (posted as goods_service_type)
+        _gs_post = str(post.get('goods_service_type', '') or '').strip().lower()
+        if _gs_post in ('goods', 'services'):
+            supplier_extras['goods_service_type'] = _gs_post
+            supplier_extras['tax_2_option'] = _gs_post
+        elif supplier_extras.get('goods_service_type', '').lower() not in ('goods', 'services'):
+            # Keep existing value if present, else clear
+            if 'goods_service_type' in supplier_extras and supplier_extras['goods_service_type'].lower() not in ('goods', 'services'):
+                supplier_extras['goods_service_type'] = ''
+
+    # Extra tax slots (tax_3_option, tax_4_option, …) → amounts computed same as Tax 1
+    def _pct_to_dec_local(raw):
+        if not raw:
+            return None
+        try:
+            return Decimal(str(raw).strip().replace('%', '')) / Decimal('100')
+        except (InvalidOperation, ValueError):
+            return None
+    try:
+        is_vat_flag_for_extra = str(post.get('is_vat', '')).strip().lower() in ('on', 'true', '1', 'yes')
+        gross_for_extra = Decimal(
+            str(post.get('gross_amount') or post.get('amount') or '0')
+            .replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0'
+        ).quantize(Decimal('0.01'))
+        if is_vat_flag_for_extra:
+            extra_base = (gross_for_extra / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        else:
+            extra_base = gross_for_extra
+        if tax_exempt_flag:
+            extra_base = Decimal('0.00')
+        for key in list(post.keys()):
+            if key.startswith('tax_') and key.endswith('_option') and key not in ('tax_1_option', 'tax_2_option'):
+                rate_dec = _pct_to_dec_local(str(post.get(key, '') or ''))
+                if rate_dec is None:
+                    continue
+                slot_name = key[:-7]
+                amount_dec = (extra_base * rate_dec).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                supplier_extras[slot_name] = str(amount_dec)
+                supplier_extras[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
+        # Net = Gross − tax_5 − tax_2 − extra taxes − prof − other deductions (when gross present)
+        if post.get('gross_amount', '').strip():
+            try:
+                _g = Decimal(str(post.get('gross_amount') or '0').replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0').quantize(Decimal('0.01'))
+                if tax_exempt_flag:
+                    supplier_extras['tax_5'] = '0.00'
+                    supplier_extras['tax_2'] = '0.00'
+                    supplier_extras['professional_tax'] = '0.00'
+                    supplier_extras['professional_tax_rate'] = '0.00'
+                    supplier_extras['goods_service_type'] = ''
+                _t5 = Decimal(str(supplier_extras.get('tax_5') or '0') or '0')
+                _t2 = Decimal(str(supplier_extras.get('tax_2') or '0') or '0')
+                _prof = Decimal(str(supplier_extras.get('professional_tax') or '0') or '0')
+                _ded = Decimal(str(supplier_extras.get('other_deductions') or '0') or '0')
+                _extra = Decimal('0')
+                for k, v in supplier_extras.items():
+                    if k.startswith('tax_') and k.endswith('_option'):
+                        continue
+                    if k in ('tax_5', 'tax_2', 'gross_amount', 'professional_tax', 'other_deductions'):
+                        continue
+                    if k.startswith('tax_') and k[4:].isdigit():
+                        try:
+                            _extra += Decimal(str(v or '0'))
+                        except Exception:
+                            pass
+                supplier_extras['net_amount'] = str((_g - _t5 - _t2 - _extra - _prof - _ded).quantize(Decimal('0.01')))
+            except Exception:
+                pass
+    except Exception:
+        pass
 
     # Ensure is_vat is always explicit (unchecked checkbox sends nothing)
     if 'is_vat' not in supplier_extras:
@@ -5611,6 +6577,18 @@ def supplier_create_ajax(request):
 
     action = post.get('action', 'create').strip()
     sup_id = post.get('sup_id', '').strip()
+
+    # Reject Check Serial values already used by another supplier or a cheque
+    if check_serial:
+        conflict_qs = Supplier.objects.filter(mr_or=check_serial)
+        if sup_id.isdigit():
+            conflict_qs = conflict_qs.exclude(pk=int(sup_id))
+        if conflict_qs.exists() or _find_cheque_by_number(check_serial) is not None:
+            return JsonResponse({
+                'error': f"Check Serial '{check_serial}' is already used.",
+                'field': 'fieldCheckSerial',
+                'serial_exists': True,
+            }, status=400)
 
     if action == 'edit' and sup_id:
         # ── Edit / update existing supplier ──────────────────────────
@@ -5655,6 +6633,7 @@ def supplier_create_ajax(request):
             'professional_tax': extras.get('professional_tax', ''),
             'tax_5': extras.get('tax_5', ''),
             'tax_2': extras.get('tax_2', ''),
+            'tax_exempt': extras.get('tax_exempt', 'false'),
             'amount': str(sup.amount.quantize(Decimal('0.01'))) if sup.amount else '',
             'other_deductions': extras.get('other_deductions', '0'),
             'fund_cluster_label': extras.get('fund_cluster', ''),
@@ -5695,6 +6674,7 @@ def supplier_create_ajax(request):
         'professional_tax': extras.get('professional_tax', ''),
         'tax_5': extras.get('tax_5', ''),
         'tax_2': extras.get('tax_2', ''),
+        'tax_exempt': extras.get('tax_exempt', 'false'),
         'amount': str(sup.amount.quantize(Decimal('0.01'))) if sup.amount else '',
         'other_deductions': extras.get('other_deductions', '0'),
         'fund_cluster_label': extras.get('fund_cluster', ''),
@@ -5716,6 +6696,13 @@ def radai(request):
         period_type, period_value = period_key.split('|', 1)
         period_type = period_type.strip().lower()
         period_value = period_value.strip()
+    selected_year = None
+    year_raw = (request.GET.get('year') or '').strip()
+    if year_raw.isdigit():
+        try:
+            selected_year = int(year_raw)
+        except ValueError:
+            selected_year = None
 
     from django.db.models import Count
     dup_serials = (
@@ -5816,6 +6803,7 @@ def radai(request):
                 raw_import['radai_extras'] = {
                     'dv_payroll': request.POST.get('dv_payroll', '').strip(),
                     'uacs': request.POST.get('uacs', '').strip(),
+                    'account_title': request.POST.get('account_title', '').strip(),
                     'remarks_text': request.POST.get('remarks', '').strip(),
                     'professional_tax': request.POST.get('professional_tax', '').strip(),
                     'total_ada': request.POST.get('total_ada', '').strip(),
@@ -5861,6 +6849,7 @@ def radai(request):
                             'radai_extras': {
                                 'dv_payroll': request.POST.get('dv_payroll', '').strip(),
                                 'uacs': request.POST.get('uacs', '').strip(),
+                                'account_title': request.POST.get('account_title', '').strip(),
                                 'remarks_text': request.POST.get('remarks', '').strip(),
                                 'professional_tax': request.POST.get('professional_tax', '').strip(),
                                 'total_ada': request.POST.get('total_ada', '').strip(),
@@ -5872,6 +6861,9 @@ def radai(request):
                     success = f"RADAI record '{data['account_name']}' added."
 
     radai_qs = Radai.objects.filter(is_archived=False).select_related('created_by', 'fund_cluster')
+
+    if selected_year:
+        radai_qs = radai_qs.filter(date__year=selected_year)
 
     if period_type == 'date' and period_value:
         try:
@@ -5893,6 +6885,7 @@ def radai(request):
         extras = ((radai_obj.raw_import or {}).get('radai_extras') or {})
         radai_obj.dv_payroll = str(extras.get('dv_payroll') or '')
         radai_obj.uacs_code = str(extras.get('uacs') or '')
+        radai_obj.account_title = str(extras.get('account_title') or '')
         radai_obj.prof_tax = str(extras.get('professional_tax') or '')
         radai_obj.total_ada = str(extras.get('total_ada') or '')
         radai_obj.display_date = radai_obj.date.strftime('%b %d, %Y') if radai_obj.date else ''
@@ -5905,13 +6898,21 @@ def radai(request):
         daily_counts[created_date] += 1
         radai_obj.daily_sequence = daily_counts[created_date]
 
+    radai_years = []
     radai_dates = []
     radai_months = []
+    seen_years = set()
     seen_dates = set()
     seen_months = set()
     for radai_obj in Radai.objects.filter(is_archived=False):
         record_date = radai_obj.date
         if not record_date:
+            continue
+        year_value = record_date.year
+        if year_value not in seen_years:
+            seen_years.add(year_value)
+            radai_years.append(year_value)
+        if selected_year and year_value != selected_year:
             continue
         month_str = record_date.strftime('%Y-%m')
         if record_date.isoformat() not in seen_dates:
@@ -5920,6 +6921,7 @@ def radai(request):
         if month_str not in seen_months:
             seen_months.add(month_str)
             radai_months.append(record_date.replace(day=1))
+    radai_years.sort(reverse=True)
     radai_dates.sort(reverse=True)
     radai_months = sorted(radai_months, reverse=True)
 
@@ -5966,6 +6968,22 @@ def radai(request):
     radai_settings = RadaiSetting.get_settings()
     fund_clusters = FundCluster.objects.filter(is_active=True).order_by('code')
 
+    from admin_panel.models import AccountTitleGroup, ManagementOption
+    account_title_groups = []
+    for g in AccountTitleGroup.objects.prefetch_related('options').order_by('name'):
+        titles = list(
+            g.options.filter(category=ManagementOption.CATEGORY_ACCOUNT_TITLE, is_active=True)
+            .order_by('value').values('value', 'uacs')
+        )
+        account_title_groups.append({'name': g.name, 'uacs': g.uacs or '', 'titles': titles})
+    _ungrouped = list(
+        ManagementOption.objects.filter(
+            category=ManagementOption.CATEGORY_ACCOUNT_TITLE, is_active=True, group__isnull=True,
+        ).order_by('value').values('value', 'uacs')
+    )
+    if _ungrouped:
+        account_title_groups.append({'name': 'Other', 'uacs': '', 'titles': _ungrouped})
+
     context = _page_context(request, is_admin=is_admin, page_title="RADAI Management", extra={
         "radai_list": radai_list,
         "page_obj": None,
@@ -5978,18 +6996,21 @@ def radai(request):
         "period_type": period_type,
         "period_value": period_value,
         "period_key": period_key,
+        "selected_year": selected_year,
+        "radai_years": radai_years,
         "radai_dates": radai_dates,
         "radai_months": radai_months,
         "payee_choices": payee_choices,
         "radai_settings": radai_settings,
         "fund_clusters": fund_clusters,
+        "account_title_groups": account_title_groups,
         "is_radai": True,
     })
     try:
         page_number = int(request.GET.get('page', 1))
     except Exception:
         page_number = 1
-    page_size = len(radai_list) if period_type in ('month', 'date') else 50
+    page_size = len(radai_list) if (selected_year or period_type in ('month', 'date')) else 50
     paginator = Paginator(radai_list, page_size or 50)
     try:
         page_obj = paginator.page(page_number)
@@ -6224,15 +7245,30 @@ def cheque_lookup(request):
 
     # ── Mode 1: kiosk bundle (recent cheques + suppliers + fund clusters) ──
     if recent:
+        # Unreleased first (newest), then everything else — all non-archived cheques.
+        def _releasable(c):
+            return 0 if c.status in ('draft', 'pending', 'unreleased') else 1
+
+        all_recent = list(
+            Cheque.objects.select_related('payee', 'fund_cluster').order_by('-created_at')
+        )
+        all_recent.sort(key=lambda c: (_releasable(c), -c.pk))
+
         recent_cheques = []
-        for c in Cheque.objects.select_related('payee', 'fund_cluster').order_by('-created_at')[:8]:
-            num = str(c.real_cheque_number or c.cheque_number or '')
+        for c in all_recent:
+            # Prefer the cheque's own number so each row is unique;
+            # fall back to payee.mr_or only when cheque_number is empty.
+            num = str(c.cheque_number or c.real_cheque_number or '').strip()
+            if not num:
+                continue
             recent_cheques.append({
                 "pk": c.pk,
                 "checkNo": num,
                 "label": f"#{num}",
                 "payee": c.payee_name or '',
                 "amount": str(c.amount or 0),
+                "status": c.status or '',
+                "printed": bool(c.printed_at),
             })
 
         printed_payee_ids = set(
@@ -6240,16 +7276,20 @@ def cheque_lookup(request):
             .filter(payee_id__isnull=False)
             .values_list('payee_id', flat=True)
         )
-        printed_payee_names = set(
-            name.strip().lower() for name in 
-            Cheque.objects.filter(printed_at__isnull=False)
+        # Name-only exclusion only for printed cheques not linked to a supplier.
+        # Matching names across different supplier records must not hide siblings.
+        orphan_printed_names = set(
+            name.strip().lower() for name in
+            Cheque.objects.filter(printed_at__isnull=False, payee_id__isnull=True)
             .values_list('payee_name', flat=True)
             if name
         )
 
         suppliers_payload = []
         for s in Supplier.objects.exclude(status='blacklisted').order_by('id'):
-            if s.pk in printed_payee_ids or (s.account_name and s.account_name.strip().lower() in printed_payee_names):
+            if s.pk in printed_payee_ids:
+                continue
+            if s.account_name and s.account_name.strip().lower() in orphan_printed_names:
                 continue
             extras = (s.raw_import or {}).get('supplier_extras') or {}
             seq_label = s.mr_or if s.mr_or else f"#{s.pk}"
@@ -6296,7 +7336,8 @@ def cheque_lookup(request):
             return JsonResponse({"ok": False})
 
         has_printed_cheque = Cheque.objects.filter(printed_at__isnull=False).filter(
-            models.Q(payee=supplier) | models.Q(payee_name__iexact=supplier.account_name)
+            Q(payee=supplier)
+            | Q(payee_name__iexact=supplier.account_name, payee__isnull=True)
         ).exists()
 
         if has_printed_cheque:
@@ -6358,7 +7399,7 @@ def cheque_lookup(request):
     return JsonResponse({
         "found": True,
         "number": cheque.cheque_number,
-        "checkNo": cheque.real_cheque_number or cheque.cheque_number,
+        "checkNo": cheque.cheque_number or cheque.real_cheque_number,
         "pk": cheque.pk,
         "date": cheque.date.isoformat() if cheque.date else '',
         "issueDate": cheque.date.isoformat() if cheque.date else '',
@@ -6429,6 +7470,7 @@ def _enrich_supplier_for_display(supplier):
     supplier.approval              = str(extras.get('approval') or '')
     supplier.other_deductions      = _clean_money_str(extras.get('other_deductions')) or '0'
     supplier.is_vat                = str(extras.get('is_vat') or 'false')
+    supplier.tax_exempt            = str(extras.get('tax_exempt') or 'false')
     supplier.remarks_text          = str(extras.get('remarks_text') or supplier.remarks or '')
     supplier.dv_payroll            = str(extras.get('dv_payroll') or '')
     supplier.ors_burs              = str(extras.get('ors_burs') or '')
@@ -6440,10 +7482,19 @@ def _enrich_supplier_for_display(supplier):
     supplier.tax_base_3_1          = str(extras.get('tax_base_3_1') or '')
     supplier.tax_1_option          = str(extras.get('tax_1_option') or '')
     supplier.tax_2_option          = str(extras.get('tax_2_option') or '')
+    supplier.tax_3                 = str(extras.get('tax_3') or '')
+    supplier.tax_4                 = str(extras.get('tax_4') or '')
+    supplier.tax_3_option          = str(extras.get('tax_3_option') or '')
+    supplier.tax_4_option          = str(extras.get('tax_4_option') or '')
     supplier.tax_5_rate_vat        = str(extras.get('tax_5_rate_vat') or '')
     supplier.tax_5_rate_non_vat    = str(extras.get('tax_5_rate_non_vat') or '')
     supplier.tax_2_rate_vat        = str(extras.get('tax_2_rate_vat') or '')
     supplier.tax_2_rate_non_vat    = str(extras.get('tax_2_rate_non_vat') or '')
+    supplier.goods_service_type    = str(extras.get('goods_service_type') or extras.get('tax_2_option') or '')
+    if supplier.goods_service_type.lower() not in ('goods', 'services'):
+        supplier.goods_service_type = ''
+    else:
+        supplier.goods_service_type = supplier.goods_service_type.lower()
     # Nature shown in table = stored nature_of_collections field
     supplier.x_nature     = str(supplier.nature_of_collections or extras.get('remarks_text') or '')
     supplier.x_dv_payroll = supplier.dv_payroll
@@ -6457,66 +7508,79 @@ def _enrich_supplier_for_display(supplier):
     raw_tax_2 = _clean_money_str(extras.get('tax_2'))
     raw_gross = _clean_money_str(extras.get('gross_amount'))
     is_vat_flag = supplier.is_vat == 'true'
+    goods_service = (supplier.goods_service_type or '').lower()
 
-    if not is_vat_flag:
-        supplier.tax_5 = '0.00'
-        supplier.tax_2 = '0.00'
+    # Resolve rates: Tax 1 from extras/defaults; Tax 2 from Goods/Services setup
+    try:
+        active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('value'))
+        t1 = active_taxes[0] if len(active_taxes) > 0 else None
+        t1_rate = t1.uacs if t1 else '5%/3%'
+        t1_vat, t1_nv = _get_tax_rates(t1_rate)
+    except Exception:
+        t1_vat, t1_nv = _get_tax_rates('5%/3%')
+
+    rate1 = t1_vat if is_vat_flag else t1_nv
+    custom1 = extras.get('tax_5_rate_vat' if is_vat_flag else 'tax_5_rate_non_vat')
+    if custom1 not in (None, ''):
         try:
-            base_amount = Decimal(str(supplier.amount if supplier.amount is not None else 0))
-            other = Decimal(supplier.other_deductions or '0')
-            prof = Decimal(supplier.professional_tax or '0')
-            supplier.gross_amount = str((base_amount + prof + other).quantize(Decimal('0.01')))
+            rate1 = Decimal(str(custom1).replace('%', '').strip()) / Decimal('100')
         except Exception:
-            supplier.gross_amount = raw_gross or ''
-    elif not raw_tax_5 and not raw_tax_2:
+            pass
+
+    gs_rates = _goods_service_rate_map()
+    if goods_service == 'goods':
+        rate2 = gs_rates['goods'] / Decimal('100')
+    elif goods_service == 'services':
+        rate2 = gs_rates['services'] / Decimal('100')
+    else:
+        # Legacy rows / imports without the type dropdown: use stored tax_2 rate
+        rate2 = Decimal('0')
+        custom2 = extras.get('tax_2_rate_vat' if is_vat_flag else 'tax_2_rate_non_vat')
+        if custom2 not in (None, ''):
+            try:
+                rate2 = Decimal(str(custom2).replace('%', '').strip()) / Decimal('100')
+            except Exception:
+                rate2 = Decimal('0')
+
+    def _tax_base(gross_dec):
+        if is_vat_flag:
+            return (gross_dec / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return gross_dec
+
+    if raw_tax_5 and raw_tax_2:
+        supplier.tax_5 = raw_tax_5
+        supplier.tax_2 = raw_tax_2
+        supplier.gross_amount = raw_gross or ''
+    elif raw_tax_5 or raw_tax_2:
+        # Partial stored values — keep what we have, recompute missing side from Gross
         try:
-            base_amount  = Decimal(str(supplier.amount or 0))
-            other        = Decimal(supplier.other_deductions or '0')
-            net          = base_amount + other
-
-            active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
-            t1 = active_taxes[0] if len(active_taxes) > 0 else None
-            t2 = active_taxes[1] if len(active_taxes) > 1 else None
-            t1_rate = t1.uacs if t1 else '5%/3%'
-            t2_rate = t2.uacs if t2 else '2%/1%'
-            t1_vat, t1_nv = _get_tax_rates(t1_rate)
-            t2_vat, t2_nv = _get_tax_rates(t2_rate)
-
-            # Check if there are custom rates in the extras
-            custom_t1_vat = extras.get('tax_5_rate_vat')
-            custom_t2_vat = extras.get('tax_2_rate_vat')
-            if custom_t1_vat not in (None, ''):
-                try:
-                    t1_vat = Decimal(str(custom_t1_vat).replace('%', '').strip()) / Decimal('100')
-                except Exception:
-                    pass
-            if custom_t2_vat not in (None, ''):
-                try:
-                    t2_vat = Decimal(str(custom_t2_vat).replace('%', '').strip()) / Decimal('100')
-                except Exception:
-                    pass
-
-            denom = Decimal('1.12') - (t1_vat + t2_vat)
-            if denom <= 0:
-                denom = Decimal('1.12')
-
-            gross = (net * Decimal('1.12') / denom).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            b     = (gross / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            t5    = (b * t1_vat).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            t2    = (b * t2_vat).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            prof          = Decimal(supplier.professional_tax or '0')
-            computed_gross = (base_amount + t5 + t2 + prof + other).quantize(Decimal('0.01'))
-            supplier.tax_5        = str(t5)
-            supplier.tax_2        = str(t2)
-            supplier.gross_amount = raw_gross if raw_gross else str(computed_gross)
+            if raw_gross:
+                gross_dec = Decimal(raw_gross)
+            else:
+                gross_dec = Decimal(str(supplier.amount if supplier.amount is not None else 0))
+            base = _tax_base(gross_dec)
+            supplier.tax_5 = raw_tax_5 or str((base * rate1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            supplier.tax_2 = raw_tax_2 or str((base * rate2).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            supplier.gross_amount = raw_gross or str(gross_dec.quantize(Decimal('0.01')))
         except Exception:
-            supplier.tax_5        = ''
-            supplier.tax_2        = ''
+            supplier.tax_5 = raw_tax_5 or ''
+            supplier.tax_2 = raw_tax_2 or ''
             supplier.gross_amount = raw_gross or ''
     else:
-        supplier.tax_5        = raw_tax_5 or ''
-        supplier.tax_2        = raw_tax_2 or ''
-        supplier.gross_amount = raw_gross or ''
+        # No stored taxes — compute from Gross (VAT ÷1.12 base; Non-VAT Gross base)
+        try:
+            if raw_gross:
+                gross_dec = Decimal(raw_gross)
+            else:
+                gross_dec = Decimal(str(supplier.amount if supplier.amount is not None else 0))
+            base = _tax_base(gross_dec)
+            supplier.tax_5 = str((base * rate1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            supplier.tax_2 = str((base * rate2).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            supplier.gross_amount = raw_gross if raw_gross else str(gross_dec.quantize(Decimal('0.01')))
+        except Exception:
+            supplier.tax_5 = ''
+            supplier.tax_2 = ''
+            supplier.gross_amount = raw_gross or ''
 
     # Aliases used by the cheque editor template (x_ prefix avoids Django underscore restriction)
     supplier.x_tax5  = supplier.tax_5
@@ -6549,6 +7613,11 @@ def _enrich_radai_for_display(radai_obj):
     radai_obj.tax_5_rate_non_vat    = str(extras.get('tax_5_rate_non_vat') or '')
     radai_obj.tax_2_rate_vat        = str(extras.get('tax_2_rate_vat') or '')
     radai_obj.tax_2_rate_non_vat    = str(extras.get('tax_2_rate_non_vat') or '')
+    radai_obj.goods_service_type    = str(extras.get('goods_service_type') or extras.get('tax_2_option') or '')
+    if radai_obj.goods_service_type.lower() not in ('goods', 'services'):
+        radai_obj.goods_service_type = ''
+    else:
+        radai_obj.goods_service_type = radai_obj.goods_service_type.lower()
     radai_obj.x_nature     = str(radai_obj.nature_of_collections or extras.get('remarks_text') or '')
     radai_obj.x_dv_payroll = radai_obj.dv_payroll
     radai_obj.x_ors_burs   = radai_obj.ors_burs
@@ -6556,69 +7625,65 @@ def _enrich_radai_for_display(radai_obj):
     radai_obj.x_uacs       = radai_obj.uacs
     radai_obj.x_prof_tax   = radai_obj.professional_tax
 
-    raw_tax_5 = extras.get('tax_5')
-    raw_tax_2 = extras.get('tax_2')
-    raw_gross = extras.get('gross_amount')
+    raw_tax_5 = _clean_money_str(extras.get('tax_5'))
+    raw_tax_2 = _clean_money_str(extras.get('tax_2'))
+    raw_gross = _clean_money_str(extras.get('gross_amount'))
     is_vat_flag = radai_obj.is_vat == 'true'
+    goods_service = (radai_obj.goods_service_type or '').lower()
 
-    if not is_vat_flag:
-        radai_obj.tax_5 = '0.00'
-        radai_obj.tax_2 = '0.00'
+    try:
+        active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('value'))
+        t1 = active_taxes[0] if len(active_taxes) > 0 else None
+        t1_rate = t1.uacs if t1 else '5%/3%'
+        t1_vat, t1_nv = _get_tax_rates(t1_rate)
+    except Exception:
+        t1_vat, t1_nv = _get_tax_rates('5%/3%')
+
+    rate1 = t1_vat if is_vat_flag else t1_nv
+    custom1 = extras.get('tax_5_rate_vat' if is_vat_flag else 'tax_5_rate_non_vat')
+    if custom1 not in (None, ''):
         try:
-            base_amount = Decimal(str(radai_obj.amount or 0))
-            other = Decimal(str(extras.get('other_deductions') or 0))
-            prof = Decimal(str(extras.get('professional_tax') or 0))
-            radai_obj.gross_amount = str((base_amount + prof + other).quantize(Decimal('0.01')))
+            rate1 = Decimal(str(custom1).replace('%', '').strip()) / Decimal('100')
         except Exception:
-            radai_obj.gross_amount = str(raw_gross or '')
-    elif raw_tax_5 is None and raw_tax_2 is None:
-        try:
-            base_amount  = Decimal(str(radai_obj.amount or 0))
-            other        = Decimal(str(extras.get('other_deductions') or 0))
-            net          = base_amount + other
+            pass
 
-            active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
-            t1 = active_taxes[0] if len(active_taxes) > 0 else None
-            t2 = active_taxes[1] if len(active_taxes) > 1 else None
-            t1_rate = t1.uacs if t1 else '5%/3%'
-            t2_rate = t2.uacs if t2 else '2%/1%'
-            t1_vat, t1_nv = _get_tax_rates(t1_rate)
-            t2_vat, t2_nv = _get_tax_rates(t2_rate)
-
-            custom_t1_vat = extras.get('tax_5_rate_vat')
-            custom_t2_vat = extras.get('tax_2_rate_vat')
-            if custom_t1_vat not in (None, ''):
-                try:
-                    t1_vat = Decimal(str(custom_t1_vat).replace('%', '').strip()) / Decimal('100')
-                except Exception:
-                    pass
-            if custom_t2_vat not in (None, ''):
-                try:
-                    t2_vat = Decimal(str(custom_t2_vat).replace('%', '').strip()) / Decimal('100')
-                except Exception:
-                    pass
-
-            denom = Decimal('1.12') - (t1_vat + t2_vat)
-            if denom <= 0:
-                denom = Decimal('1.12')
-
-            gross = (net * Decimal('1.12') / denom).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            b     = (gross / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            t5    = (b * t1_vat).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            t2    = (b * t2_vat).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-            prof          = Decimal(str(extras.get('professional_tax') or 0))
-            computed_gross = (base_amount + t5 + t2 + prof + other).quantize(Decimal('0.01'))
-            radai_obj.tax_5        = str(t5)
-            radai_obj.tax_2        = str(t2)
-            radai_obj.gross_amount = str(raw_gross if raw_gross is not None else computed_gross)
-        except Exception:
-            radai_obj.tax_5        = ''
-            radai_obj.tax_2        = ''
-            radai_obj.gross_amount = str(raw_gross or '')
+    gs_rates = _goods_service_rate_map()
+    if goods_service == 'goods':
+        rate2 = gs_rates['goods'] / Decimal('100')
+    elif goods_service == 'services':
+        rate2 = gs_rates['services'] / Decimal('100')
     else:
-        radai_obj.tax_5        = str(raw_tax_5 or '')
-        radai_obj.tax_2        = str(raw_tax_2 or '')
+        rate2 = Decimal('0')
+        custom2 = extras.get('tax_2_rate_vat' if is_vat_flag else 'tax_2_rate_non_vat')
+        if custom2 not in (None, ''):
+            try:
+                rate2 = Decimal(str(custom2).replace('%', '').strip()) / Decimal('100')
+            except Exception:
+                rate2 = Decimal('0')
+
+    def _radai_tax_base(gross_dec):
+        if is_vat_flag:
+            return (gross_dec / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return gross_dec
+
+    if raw_tax_5 and raw_tax_2:
+        radai_obj.tax_5 = raw_tax_5
+        radai_obj.tax_2 = raw_tax_2
         radai_obj.gross_amount = str(raw_gross or '')
+    else:
+        try:
+            if raw_gross:
+                gross_dec = Decimal(raw_gross)
+            else:
+                gross_dec = Decimal(str(radai_obj.amount or 0))
+            base = _radai_tax_base(gross_dec)
+            radai_obj.tax_5 = raw_tax_5 or str((base * rate1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            radai_obj.tax_2 = raw_tax_2 or str((base * rate2).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            radai_obj.gross_amount = str(raw_gross if raw_gross else gross_dec.quantize(Decimal('0.01')))
+        except Exception:
+            radai_obj.tax_5 = raw_tax_5 or ''
+            radai_obj.tax_2 = raw_tax_2 or ''
+            radai_obj.gross_amount = str(raw_gross or '')
 
     radai_obj.x_tax5  = radai_obj.tax_5
     radai_obj.x_tax2  = radai_obj.tax_2
@@ -6734,12 +7799,12 @@ def cheque_create(request):
 
                     chq.save()
 
-                    # Sync cheque number to supplier
+                    # Sync cheque number to supplier only if serial is still empty
                     try:
                         supplier_obj = chq.payee
                         if not supplier_obj and chq.payee_name:
                             supplier_obj = Supplier.objects.filter(account_name__iexact=chq.payee_name.strip()).first()
-                        if supplier_obj and chq.cheque_number:
+                        if supplier_obj and chq.cheque_number and not (supplier_obj.mr_or or '').strip():
                             supplier_obj.mr_or = chq.cheque_number
                             supplier_obj.save(update_fields=['mr_or'])
                     except Exception as sync_err:
@@ -6800,11 +7865,12 @@ def cheque_create(request):
             error = str(exc)
 
         payee_name_val = request.POST.get('payee_name', '').strip()
+        # Only reuse a row when the user manually typed a matching cheque number.
+        # Never reuse by payee name alone — that overwrites the previous cheque
+        # (new number + wiped remarks) and makes the old one disappear from kiosk/reports.
         existing_cheque = None
         if manual_cheque_input:
             existing_cheque = Cheque.objects.filter(cheque_number=cheque_number_value).first()
-        if not existing_cheque and payee_name_val:
-            existing_cheque = Cheque.objects.filter(payee_name__iexact=payee_name_val).exclude(status='voided').first()
 
         if existing_cheque:
             cheque = existing_cheque
@@ -6816,7 +7882,11 @@ def cheque_create(request):
             cheque.bank_name = request.POST.get('bank_name', '').strip() or cheque.bank_name
             cheque.account_number = request.POST.get('account_number', '').strip() or cheque.account_number
             cheque.status = status
-            cheque.remarks = 'Released' if cheque.status == 'released' else 'Unreleased'
+            # Keep any non-system remarks; only stamp status when empty or already system-managed.
+            current_remarks = (cheque.remarks or '').strip()
+            system_remarks = ('', 'Released', 'Unreleased', 'Pending', 'Draft')
+            if current_remarks in system_remarks or not current_remarks:
+                cheque.remarks = 'Released' if cheque.status == 'released' else 'Unreleased'
             cheque.dv_payroll_no = request.POST.get('dv_payroll_no', '').strip() or cheque.dv_payroll_no
             cheque.ors_burs_no = request.POST.get('ors_burs_no', '').strip() or cheque.ors_burs_no
             cheque.responsibility_center = request.POST.get('responsibility_center', '').strip() or cheque.responsibility_center
@@ -6873,12 +7943,14 @@ def cheque_create(request):
         else:
             cheque.save()
 
-            # Sync the new/edited cheque number directly to the supplier's check serial (mr_or)
+            # Sync the new/edited cheque number to supplier check serial (mr_or)
+            # only when the supplier has no serial yet — never clobber an existing one
+            # (multiple cheques may share a payee; last write was hiding earlier serials).
             try:
                 supplier_obj = cheque.payee
                 if not supplier_obj and cheque.payee_name:
                     supplier_obj = Supplier.objects.filter(account_name__iexact=cheque.payee_name.strip()).first()
-                if supplier_obj and cheque.cheque_number:
+                if supplier_obj and cheque.cheque_number and not (supplier_obj.mr_or or '').strip():
                     supplier_obj.mr_or = cheque.cheque_number
                     supplier_obj.save(update_fields=['mr_or'])
             except Exception as sync_err:
@@ -7016,12 +8088,12 @@ def cheque_edit(request, pk):
             else:
                 cheque.save()
 
-                # Sync the new/edited cheque number directly to the supplier's check serial (mr_or)
+                # Sync cheque number to supplier only if serial is still empty
                 try:
                     supplier_obj = cheque.payee
                     if not supplier_obj and cheque.payee_name:
                         supplier_obj = Supplier.objects.filter(account_name__iexact=cheque.payee_name.strip()).first()
-                    if supplier_obj and cheque.cheque_number:
+                    if supplier_obj and cheque.cheque_number and not (supplier_obj.mr_or or '').strip():
                         supplier_obj.mr_or = cheque.cheque_number
                         supplier_obj.save(update_fields=['mr_or'])
                 except Exception as sync_err:
@@ -7123,7 +8195,7 @@ def cheque_delete(request, pk):
     cheque_number = cheque.cheque_number
     cheque_payee = cheque.payee_name
 
-    if cheque.status == 'released' and not is_admin:
+    if cheque.status == 'released':
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({"ok": False, "error": "Released cheques cannot be deleted."}, status=400)
         return redirect(f"{reverse('cheque_list')}?error={quote('Released cheques cannot be deleted.')}")
@@ -7783,7 +8855,7 @@ def report_delete(request, pk):
     return redirect('reports')
 
 
-def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_cluster_id=None, cheque_status=None, payee=None):
+def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_cluster_id=None, cheque_status=None, payee=None, uacs=None):
     # Normalize weekly/monthly/annual variants to their base report type
     _base_map = {
         'weekly_cheque': 'cheque_summary', 'monthly_cheque': 'cheque_summary', 'annual_cheque': 'cheque_summary',
@@ -7816,16 +8888,6 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
         has_status_filter = cheque_status and cheque_status != 'all'
         has_date_filter = bool(date_from or date_to)
 
-        # If date filter is set, find suppliers within that date range first
-        date_filtered_supplier_ids = None
-        if has_date_filter:
-            supplier_date_qs = Supplier.objects.all()
-            if date_from:
-                supplier_date_qs = supplier_date_qs.filter(date__gte=date_from)
-            if date_to:
-                supplier_date_qs = supplier_date_qs.filter(date__lte=date_to)
-            date_filtered_supplier_ids = set(supplier_date_qs.values_list('pk', flat=True))
-
         # Build ALL cheques (no supplier filter) to determine released/unreleased status
         all_cheques = Cheque.objects.select_related('payee', 'fund_cluster')
         if fund_cluster:
@@ -7835,9 +8897,11 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
                 all_cheques = all_cheques.exclude(status='released')
             else:
                 all_cheques = all_cheques.filter(status=cheque_status)
-        # If date filter is set, restrict to cheques whose payee is in the date range
-        if date_filtered_supplier_ids is not None:
-            all_cheques = all_cheques.filter(payee_id__in=date_filtered_supplier_ids)
+        # Date filter applies to cheque dates (suppliers may have no date)
+        if date_from:
+            all_cheques = all_cheques.filter(date__gte=date_from)
+        if date_to:
+            all_cheques = all_cheques.filter(date__lte=date_to)
 
         # Map supplier pk -> list of cheques
         from collections import defaultdict
@@ -7871,34 +8935,39 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
 
         seen_cheque_pks = set()
         for s in supplier_list:
-            cheques_for_supplier = supplier_cheques.get(s.pk, [])
+            cheques_for_supplier = sorted(
+                supplier_cheques.get(s.pk, []),
+                key=lambda x: x.date or x.created_at.date() if x.created_at else '',
+                reverse=True,
+            )
             has_released = any(c.status == 'released' for c in cheques_for_supplier)
             supplier_status = 'released' if has_released else 'unreleased'
             extras = s.raw_import.get('supplier_extras') or {} if s.raw_import else {}
 
             if cheques_for_supplier:
-                c = sorted(cheques_for_supplier, key=lambda x: x.date or x.created_at.date() if x.created_at else '', reverse=True)[0]
-                if c.pk in seen_cheque_pks:
-                    continue
-                seen_cheque_pks.add(c.pk)
-                rows.append({
-                    "id": s.pk,
-                    "number": c.real_cheque_number or c.cheque_number or s.mr_or or '',
-                    "payee": s.account_name or c.payee_name,
-                    "fund": c.fund_cluster.code if c.fund_cluster else '',
-                    "amount": str(c.amount),
-                    "date": str(c.date),
-                    "status": supplier_status,
-                    "dv_payroll": c.dv_payroll_no or extras.get('dv_payroll', ''),
-                    "ors_burs": c.ors_burs_no or extras.get('ors_burs', ''),
-                    "responsibility_center": c.responsibility_center or extras.get('responsibility_center', ''),
-                    "uacs": c.uacs_object_code or extras.get('uacs') or extras.get('uacs_object_code', ''),
-                    "nature": c.nature_of_payment or extras.get('nature_of_payment') or extras.get('nature_of_collections') or s.nature_of_collections or '',
-                    "remarks": c.remarks or '',
-                    "professional_tax": str(c.professional_tax) if c.professional_tax is not None else (extras.get('professional_tax', '') or ''),
-                    "tax_5": str(c.tax_5_3) if c.tax_5_3 is not None else (extras.get('tax_5') or extras.get('tax_5_3', '') or ''),
-                    "tax_2": str(c.tax_3_1) if c.tax_3_1 is not None else (extras.get('tax_2') or extras.get('tax_3_1', '') or ''),
-                })
+                # One row per cheque so selected_rows can target cheque.pk
+                for c in cheques_for_supplier:
+                    if c.pk in seen_cheque_pks:
+                        continue
+                    seen_cheque_pks.add(c.pk)
+                    rows.append({
+                        "id": c.pk,
+                        "number": c.real_cheque_number or c.cheque_number or s.mr_or or '',
+                        "payee": s.account_name or c.payee_name,
+                        "fund": c.fund_cluster.code if c.fund_cluster else '',
+                        "amount": str(c.amount),
+                        "date": str(c.date),
+                        "status": supplier_status,
+                        "dv_payroll": c.dv_payroll_no or extras.get('dv_payroll', ''),
+                        "ors_burs": c.ors_burs_no or extras.get('ors_burs', ''),
+                        "responsibility_center": c.responsibility_center or extras.get('responsibility_center', ''),
+                        "uacs": c.uacs_object_code or extras.get('uacs') or extras.get('uacs_object_code', ''),
+                        "nature": c.nature_of_payment or extras.get('nature_of_payment') or extras.get('nature_of_collections') or s.nature_of_collections or '',
+                        "remarks": c.remarks or '',
+                        "professional_tax": str(c.professional_tax) if c.professional_tax is not None else (extras.get('professional_tax', '') or ''),
+                        "tax_5": str(c.tax_5_3) if c.tax_5_3 is not None else (extras.get('tax_5') or extras.get('tax_5_3', '') or ''),
+                        "tax_2": str(c.tax_3_1) if c.tax_3_1 is not None else (extras.get('tax_2') or extras.get('tax_3_1', '') or ''),
+                    })
             else:
                 extras = s.raw_import.get('supplier_extras') or {}
                 rows.append({
@@ -9845,11 +10914,12 @@ def _do_import(import_type, rows, user):
             except InvalidOperation:
                 amount = Decimal('0.00')
             parsed_date = _parse_supplier_date_value(parsed.get('date')) or _parse_supplier_date_value(parsed.get('mr')) or _parse_supplier_date_value(parsed.get('mr_or'))
+            account_number = parsed.get('or_number', '') or parsed.get('account_number', '')
             import_key = (
                 _norm(name),
+                _norm(account_number),
                 _norm(parsed.get('mr_or', '')),
                 parsed_date.isoformat() if parsed_date else '',
-                str(amount),
             )
             if import_key in seen_import_keys:
                 continue
@@ -9896,11 +10966,12 @@ def _do_import(import_type, rows, user):
                     )
                     continue
 
+            # account_number is EncryptedCharField (non-deterministic) — filter on plain or_number
             duplicate_exists = Supplier.objects.filter(
                 account_name=name,
+                or_number=account_number,
                 mr_or=parsed.get('mr_or', ''),
                 date=parsed_date,
-                amount=amount,
             ).exists()
             if duplicate_exists:
                 continue
@@ -9942,7 +11013,7 @@ def _do_import(import_type, rows, user):
 
             # --- Auto-detect custom tax rates on import ---
             try:
-                active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
+                active_taxes = _active_tax_options()
                 t1 = active_taxes[0] if len(active_taxes) > 0 else None
                 t2 = active_taxes[1] if len(active_taxes) > 1 else None
                 t1_rate = t1.uacs if t1 else '5%/3%'
@@ -9987,6 +11058,19 @@ def _do_import(import_type, rows, user):
                 except Exception:
                     pass
 
+            # Infer Goods/Services type from detected tax_2 rate (~1% → goods, ~2% → services)
+            goods_service_type_val = ''
+            try:
+                gs_rates = _goods_service_rate_map()
+                rate2_pct = Decimal(tax_2_rate_vat_val if auto_is_vat else tax_2_rate_non_vat_val)
+                if rate2_pct > 0:
+                    if abs(rate2_pct - gs_rates['goods']) <= abs(rate2_pct - gs_rates['services']):
+                        goods_service_type_val = 'goods'
+                    else:
+                        goods_service_type_val = 'services'
+            except Exception:
+                pass
+
             if not isinstance(raw_import, dict):
                 raw_import = {}
             raw_import['supplier_extras'] = {
@@ -9996,8 +11080,11 @@ def _do_import(import_type, rows, user):
                 'responsibility_center': parsed.get('responsibility_center', ''),
                 'uacs': uacs_code,
                 'professional_tax': prof_tax_val,
+                'professional_tax_rate': '5.00',
                 'tax_5': tax_5_val,
                 'tax_2': tax_2_val,
+                'goods_service_type': goods_service_type_val,
+                'tax_2_option': goods_service_type_val,
                 'other_deductions': other_deductions_val,
                 'gross_amount': parsed.get('gross_amount', ''),
                 'fund_cluster': fund_cluster_obj.code if fund_cluster_obj else raw_fc_code,
@@ -10011,6 +11098,8 @@ def _do_import(import_type, rows, user):
 
             Supplier.objects.create(
                 account_name=name,
+                account_number=account_number,
+                or_number=account_number,
                 mr_or=parsed.get('mr_or', ''),
                 mr=parsed.get('mr', ''),
                 code_or=parsed.get('code_or', ''),
@@ -10175,13 +11264,27 @@ def backup_restore(request):
     restore_preview = None
     restore_token = request.session.get("backup_restore_token")
 
+    # Plain page load / refresh: clear any in-progress restore state so the
+    # preview modal and accordion do not persist across visits or logout.
+    if request.method == "GET" and request.GET.get("action") != "download_server":
+        request.session.pop("backup_restore_token", None)
+        request.session.pop("backup_restore_path", None)
+        restore_token = None
+
     # Direct download of server-stored backup
     if request.method == "GET" and request.GET.get("action") == "download_server":
         filename = request.GET.get("filename", "").strip()
         backup_dir = _get_backup_storage_dir()
         target = backup_dir / filename
-        if filename and target.exists() and target.is_file() and target.suffix == ".bak" and target.resolve().parent == backup_dir.resolve():
-            response = HttpResponse(target.read_bytes(), content_type="application/octet-stream")
+        if filename and target.exists() and target.is_file() and _is_backup_filename(filename) and target.resolve().parent == backup_dir.resolve():
+            suffix = target.suffix.lower()
+            if suffix == ".json":
+                content_type = "application/json"
+            elif suffix == ".sql":
+                content_type = "application/sql"
+            else:
+                content_type = "application/octet-stream"
+            response = HttpResponse(target.read_bytes(), content_type=content_type)
             response["Content-Disposition"] = f'attachment; filename="{filename}"'
             response["Access-Control-Expose-Headers"] = "Content-Disposition"
             _audit(request.user, "Downloaded server backup", {"filename": filename})
@@ -10197,9 +11300,34 @@ def backup_restore(request):
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({"error": "Admin password is incorrect"}, status=400)
             error = "Admin password is incorrect"
+        elif action == "preview_create":
+            try:
+                from django.core import serializers as _serializers
+                objects = _serialize_restore_objects()
+                raw = json.loads(_serializers.serialize("json", objects))
+                data_preview = _build_data_preview_from_serialized(raw)
+                counts = _count_backup_stats()
+                backup_format = (request.POST.get("backup_format") or request.POST.get("format") or "bak").lower()
+                if backup_format not in ("bak", "json", "sql"):
+                    backup_format = "bak"
+                return JsonResponse({
+                    "ok": True,
+                    "format": backup_format,
+                    "created_at": timezone.now().strftime("%b %d, %Y %I:%M %p"),
+                    "created_by_username": request.user.username,
+                    "counts": counts,
+                    "data_preview": data_preview,
+                })
+            except Exception as exc:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({"error": f"Failed to build backup preview: {exc}"}, status=400)
+                error = f"Failed to build backup preview: {exc}"
         elif action == "download":
             try:
-                archive_path, backup_name, _ = _pack_backup_archive(request.user)
+                backup_format = (request.POST.get("backup_format") or request.POST.get("format") or "bak").lower()
+                if backup_format not in ("bak", "json", "sql"):
+                    backup_format = "bak"
+                archive_path, backup_name, pack_manifest = _pack_backup_archive(request.user, fmt=backup_format)
                 # Store backup on server and enforce retention
                 _store_backup(archive_path, backup_name)
                 # Also save to Downloads folder if enabled
@@ -10213,10 +11341,20 @@ def backup_restore(request):
                     except Exception:
                         pass
                 _enforce_backup_retention()
-                response = HttpResponse(archive_path.read_bytes(), content_type="application/octet-stream")
+                if backup_format == "json":
+                    content_type = "application/json"
+                elif backup_format == "sql":
+                    content_type = "application/sql"
+                else:
+                    content_type = "application/octet-stream"
+                response = HttpResponse(archive_path.read_bytes(), content_type=content_type)
                 response["Content-Disposition"] = f'attachment; filename="{backup_name}"'
                 response["Access-Control-Expose-Headers"] = "Content-Disposition"
-                _audit(request.user, "Backup downloaded", {"filename": backup_name})
+                _audit(request.user, "Backup downloaded", {
+                    "filename": backup_name,
+                    "format": backup_format,
+                    "counts": (pack_manifest or {}).get("counts", {}),
+                })
                 return response
             except Exception as exc:
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -10236,7 +11374,7 @@ def backup_restore(request):
             filename = request.POST.get("filename", "").strip()
             backup_dir = _get_backup_storage_dir()
             target = backup_dir / filename
-            if not filename or not target.exists() or target.suffix != ".bak" or target.resolve().parent != backup_dir.resolve():
+            if not filename or not target.exists() or not _is_backup_filename(filename) or target.resolve().parent != backup_dir.resolve():
                 error = "Server backup file not found."
             else:
                 try:
@@ -10255,7 +11393,7 @@ def backup_restore(request):
             filename = request.POST.get("filename", "").strip()
             backup_dir = _get_backup_storage_dir()
             target = backup_dir / filename
-            if filename and target.exists() and target.is_file() and target.suffix == ".bak" and target.resolve().parent == backup_dir.resolve():
+            if filename and target.exists() and target.is_file() and _is_backup_filename(filename) and target.resolve().parent == backup_dir.resolve():
                 try:
                     target.unlink()
                     _audit(request.user, "Server backup deleted", {"filename": filename})
@@ -10272,23 +11410,34 @@ def backup_restore(request):
                 token = secrets.token_hex(16)
                 temp_dir = Path(tempfile.gettempdir()) / "finalproject_backup_uploads"
                 temp_dir.mkdir(parents=True, exist_ok=True)
-                stored_path = temp_dir / f"{token}.bak"
-                try:
-                    with open(stored_path, "wb") as dest:
-                        for chunk in uploaded.chunks():
-                            dest.write(chunk)
-                    restore_preview = _inspect_backup_archive(stored_path)
-                    restore_preview.update({
-                        "filename": uploaded.name,
-                        "size": uploaded.size,
-                    })
-                    request.session["backup_restore_token"] = token
-                    request.session["backup_restore_path"] = str(stored_path)
-                    restore_token = token
-                except Exception as exc:
-                    if stored_path.exists():
-                        stored_path.unlink(missing_ok=True)
-                    error = f"Invalid backup: {exc}"
+                upload_name = Path(uploaded.name or "backup.bak").name
+                upload_suffix = Path(upload_name).suffix.lower()
+                if upload_suffix not in _BACKUP_FILE_SUFFIXES and upload_suffix != ".zip":
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                        return JsonResponse({"error": "Unsupported file type. Use .bak, .zip, .json, or .sql."}, status=400)
+                    error = "Unsupported file type. Use .bak, .zip, .json, or .sql."
+                else:
+                    if upload_suffix == ".zip":
+                        upload_suffix = ".bak"
+                    stored_path = temp_dir / f"{token}{upload_suffix}"
+                    try:
+                        with open(stored_path, "wb") as dest:
+                            for chunk in uploaded.chunks():
+                                dest.write(chunk)
+                        restore_preview = _inspect_backup_archive(stored_path)
+                        restore_preview.update({
+                            "filename": upload_name,
+                            "size": uploaded.size,
+                        })
+                        request.session["backup_restore_token"] = token
+                        request.session["backup_restore_path"] = str(stored_path)
+                        restore_token = token
+                    except Exception as exc:
+                        if stored_path.exists():
+                            stored_path.unlink(missing_ok=True)
+                        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                            return JsonResponse({"error": f"Invalid backup: {exc}"}, status=400)
+                        error = f"Invalid backup: {exc}"
         elif action == "restore":
             token = request.POST.get("restore_token") or request.session.get("backup_restore_token")
             stored_path_str = request.session.get("backup_restore_path")
@@ -10317,7 +11466,8 @@ def backup_restore(request):
                             manager.all().delete()
                     SystemSetting.objects.get_or_create(pk=1, defaults={"system_name": "registry"})
                     try:
-                        from cashier.models import RadaiSetting, ChatbotConfig
+                        from cashier.models import RadaiSetting
+                        from admin_panel.models import ChatbotConfig
                         RadaiSetting.objects.get_or_create(pk=1)
                         ChatbotConfig.objects.get_or_create(pk=1)
                     except Exception:
@@ -10327,23 +11477,10 @@ def backup_restore(request):
             except Exception as exc:
                 error = f"System reset failed: {exc}"
 
-    # Opportunistic check if 5-day scheduled auto-backup is due
-    try:
-        auto_res = _run_auto_backup(request.user, force=False)
-        if auto_res.get("executed") and not success:
-            dl_notice = " and copied to Downloads" if auto_res.get("downloads_path") else ""
-            success = f"Scheduled 5-day backup completed automatically: {auto_res.get('filename')}{dl_notice}."
-    except Exception:
-        pass
-
-    if not restore_preview and restore_token and request.session.get("backup_restore_path"):
-        try:
-            restore_preview = _inspect_backup_archive(Path(request.session["backup_restore_path"]))
-            restore_preview.update({
-                "filename": Path(request.session["backup_restore_path"]).name,
-            })
-        except Exception:
-            restore_preview = None
+    # NOTE: Do NOT run scheduled auto-backup on page GET — it must only run
+    # via the explicit "Run Backup Now" action or the run_auto_backup command.
+    # Restore preview is intentionally not rehydrated from session on GET so
+    # refresh/logout always resets the Restore section to a clean upload form.
 
     sys_setting = SystemSetting.get_settings()
     server_backups = _get_server_backups_list()
@@ -10599,7 +11736,7 @@ def audit_log(request):
     if search:
         logs = logs.filter(Q(action__icontains=search) | Q(admin__username__icontains=search))
     logs = logs[:500]
-    context = _page_context(request, is_admin=True, page_title="Audit Log", extra={"logs": logs, "search": search})
+    context = _page_context(request, is_admin=True, page_title="Activity Log", extra={"logs": logs, "search": search})
     return render(request, "admin_panel/audit_log.html", context)
 
 
@@ -10645,6 +11782,25 @@ def _generate_temp_password(length=10):
     pw += [secrets.choice(all_chars) for _ in range(length - 4)]
     random.shuffle(pw)
     return ''.join(pw)
+
+
+def _user_has_transactions(user):
+    """True if the user is linked to any cheque/supplier/RADAI financial record."""
+    if user is None:
+        return False
+    if Cheque.all_objects.filter(
+        Q(created_by=user) | Q(updated_by=user) | Q(archived_by=user)
+    ).exists():
+        return True
+    if Supplier.all_objects.filter(
+        Q(created_by=user) | Q(archived_by=user)
+    ).exists():
+        return True
+    if Radai.all_objects.filter(
+        Q(created_by=user) | Q(archived_by=user)
+    ).exists():
+        return True
+    return False
 
 
 @login_required
@@ -10709,6 +11865,11 @@ def user_management(request):
                 target_user = get_object_or_404(User.objects.select_related("profile"), pk=user_id)
                 if target_user.pk == request.user.pk:
                     error = "You cannot delete your own account"
+                elif _user_has_transactions(target_user):
+                    error = (
+                        f"Cannot delete '{target_user.username}': this account has transactions "
+                        "(cheques, suppliers, or RADAI records). Only accounts with no transactions can be deleted."
+                    )
                 else:
                     _audit(request.user, "Admin deleted user", {"deleted_user_id": target_user.id, "username": target_user.username})
                     target_user.delete()
@@ -11076,13 +12237,15 @@ def profile_settings(request):
                 error = "Current password is required"
                 password_error = True
                 show_current_password_modal = True
-            elif not request.user.check_password(current_password):
+            if not request.user.check_password(current_password):
                 error = "Current password is incorrect"
                 password_error = True
                 show_current_password_modal = True
+                _audit(request.user, "Failed password change attempt", {"reason": "incorrect_current_password"})
             else:
                 request.session["password_verified"] = True
                 show_new_password_modal = True
+                _audit(request.user, "Verified current password for change", {})
         elif form_type == "password":
             new_password = request.POST.get("new_password", "")
             confirm_password = request.POST.get("confirm_password", "")
@@ -11116,6 +12279,7 @@ def profile_settings(request):
                         from cashier.models import UserDevice
                         UserDevice.objects.filter(session_key=old_key).update(session_key=new_key)
                     request.session.pop("password_verified", None)
+                    _audit(request.user, "Changed password", {"method": "profile_settings"})
                     success = "Password changed successfully"
         else:
             last_name = request.POST.get("last_name", "").strip()
@@ -11128,9 +12292,26 @@ def profile_settings(request):
                 error = "Last name, given name, email, and username are required"
             elif Profile.objects.exclude(user=request.user).filter(email_hash=hashlib.sha256(email.lower().encode()).hexdigest()).exists():
                 error = "Email address is already in use"
+                _audit(request.user, "Failed to update account - email already in use", {"email": email})
             elif User.objects.exclude(pk=request.user.pk).filter(username=username).exists():
                 error = "Username already exists"
+                _audit(request.user, "Failed to update account - username already exists", {"username": username})
             else:
+                old_username = request.user.username
+                old_email = request.user.email
+                old_first = request.user.first_name
+                old_last = request.user.last_name
+                changes = {}
+                if old_username != username:
+                    changes['username'] = {'from': old_username, 'to': username}
+                if old_email != email:
+                    changes['email'] = {'from': old_email, 'to': email}
+                if old_first != first_name:
+                    changes['first_name'] = {'from': old_first, 'to': first_name}
+                if old_last != last_name:
+                    changes['last_name'] = {'from': old_last, 'to': last_name}
+                if profile_picture:
+                    changes['profile_picture'] = 'updated'
                 request.user.last_name = last_name
                 request.user.first_name = first_name
                 request.user.email = email
@@ -11140,6 +12321,11 @@ def profile_settings(request):
                 if profile_picture:
                     profile.profile_picture = profile_picture
                 profile.save()
+                _audit(request.user, "Updated account settings", {
+                    "changes": changes or {"fields": "saved"},
+                    "middle_initial": middle_initial,
+                    "ip": _get_client_ip(request),
+                })
                 success = "Account settings updated successfully!"
 
     context = _page_context(request, is_admin=is_admin, page_title="Profile Settings", extra={
@@ -11191,6 +12377,14 @@ def business_info(request):
             except (ValueError, TypeError):
                 system_setting.retention_max_count = 10
             system_setting.save()
+            _audit(request.user, "Updated system information", {
+                "system_name": system_name,
+                "entity_name": entity_name,
+                "logo_updated": bool(system_logo),
+                "logo_hover_updated": bool(system_logo_hover),
+                "wallpaper_updated": bool(lockscreen_wallpaper),
+                "login_bg_updated": bool(login_background),
+            })
             success = "System Information updated successfully"
     context = _page_context(request, is_admin=True, page_title=" System Information", extra={
         "error": error, "success": success, "system_setting": system_setting,
@@ -11262,24 +12456,8 @@ def screen_timeout(request):
     error = None
     success = None
     if request.method == "POST":
-        # Per-user lockscreen wallpaper
-        wallpaper = request.FILES.get("lockscreen_wallpaper")
-        if wallpaper:
-            profile.lockscreen_wallpaper = wallpaper
-            profile.save(update_fields=["lockscreen_wallpaper"])
-            success = "Lockscreen wallpaper updated"
-
-        # Per-user individual timeout settings
-        user_lock_raw = request.POST.get("user_auto_lock_seconds", "").strip()
+        # Per-user timeout settings (lock screen removed — logout only)
         user_logout_raw = request.POST.get("user_auto_logout_seconds", "").strip()
-
-        if user_lock_raw == "default" or not user_lock_raw:
-            profile.auto_lock_seconds = None
-        else:
-            try:
-                profile.auto_lock_seconds = max(10, min(3600, int(user_lock_raw)))
-            except (TypeError, ValueError):
-                pass
 
         if user_logout_raw == "default" or not user_logout_raw:
             profile.auto_logout_seconds = None
@@ -11295,26 +12473,14 @@ def screen_timeout(request):
 
         # System-wide settings (admin only)
         if _is_admin(request.user):
-            login_wallpaper = request.FILES.get("login_wallpaper")
-            if login_wallpaper:
-                sys_set.lockscreen_wallpaper = login_wallpaper
-                sys_set.save(update_fields=["lockscreen_wallpaper"])
-                success = "Login wallpaper updated"
-            auto_lock_raw = request.POST.get("auto_lock_seconds", "").strip()
             auto_logout_raw = request.POST.get("auto_logout_seconds", "").strip()
-            if auto_lock_raw:
-                try:
-                    sys_set.auto_lock_seconds = max(10, min(3600, int(auto_lock_raw)))
-                except (TypeError, ValueError):
-                    pass
             if auto_logout_raw:
                 try:
                     sys_set.auto_logout_seconds = max(60, min(86400, int(auto_logout_raw)))
                 except (TypeError, ValueError):
                     pass
             sys_set.save()
-            if not login_wallpaper and not wallpaper:
-                success = "Screen timeout preferences and system defaults updated."
+            success = "Screen timeout preferences and system defaults updated."
 
     context = _page_context(request, is_admin=_is_admin(request.user), page_title="Screen Timeout", extra={
         "error": error, 
@@ -11700,6 +12866,10 @@ def taxes_management(request):
 
     error = None
     success = None
+    tab = request.GET.get('tab', 'taxes').strip()
+    if tab not in ('taxes', 'goods-services'):
+        tab = 'taxes'
+
     if request.method == 'POST':
         action = request.POST.get('action', '').strip().lower()
         if action == 'add':
@@ -11746,32 +12916,46 @@ def taxes_management(request):
                 category=ManagementOption.CATEGORY_TAX,
             ).delete()
             success = 'Tax removed.'
+        elif action == 'save_goods_services':
+            goods_raw = request.POST.get('goods_rate', '').strip().replace('%', '')
+            services_raw = request.POST.get('services_rate', '').strip().replace('%', '')
+            try:
+                goods_dec = Decimal(goods_raw).quantize(Decimal('0.01'))
+                services_dec = Decimal(services_raw).quantize(Decimal('0.01'))
+                if goods_dec < 0 or services_dec < 0:
+                    raise InvalidOperation
+            except (InvalidOperation, ValueError):
+                error = 'Enter valid non-negative rates for Goods and Services.'
+            else:
+                _ensure_goods_service_rates()
+                ManagementOption.objects.filter(
+                    category=ManagementOption.CATEGORY_GOODS_SERVICE, value='Goods',
+                ).update(uacs=str(goods_dec), is_active=True)
+                ManagementOption.objects.filter(
+                    category=ManagementOption.CATEGORY_GOODS_SERVICE, value='Services',
+                ).update(uacs=str(services_dec), is_active=True)
+                success = 'Goods / Services rates saved.'
+                tab = 'goods-services'
+            if error:
+                tab = 'goods-services'
 
     existing = ManagementOption.objects.filter(
         category=ManagementOption.CATEGORY_TAX,
-    ).exclude(value__iexact='Professional Tax').order_by('value')
-    if not existing.exists():
-        defaults = [
-            {'name': 'Tax (5%/3%)', 'value': '5%/3%'},
-            {'name': 'Tax (2%/1%)', 'value': '2%/1%'},
-            {'name': 'Professional Tax', 'value': '0%'},
-        ]
-        for item in defaults:
-            ManagementOption.objects.get_or_create(
-                category=ManagementOption.CATEGORY_TAX,
-                value=item['name'],
-                defaults={'uacs': item['value'], 'is_active': True},
-            )
-        existing = ManagementOption.objects.filter(
-            category=ManagementOption.CATEGORY_TAX,
-        ).order_by('value')
+    ).exclude(value__iexact='Professional Tax')
+    existing = _sort_tax_options(list(existing))
+    # Do NOT re-seed defaults here — deleting taxes on this page must stick.
 
+    goods_service_rates = _goods_service_rate_pcts()
     context = _page_context(request, is_admin=True, page_title='Taxes', extra={
         'error': error,
         'success': success,
         'options': existing,
         'heading': 'Tax Management',
         'placeholder': 'Add tax label',
+        'tax_tab': tab,
+        'goods_service_rates': goods_service_rates,
+        'goods_rate': goods_service_rates.get('goods', '1.00'),
+        'services_rate': goods_service_rates.get('services', '2.00'),
     })
     return render(request, 'admin_panel/option_management.html', context)
 
@@ -11797,61 +12981,23 @@ def verify_password(request):
         if not password:
             return JsonResponse({"ok": False, "error": "Password required"}, status=400)
         if request.user.check_password(password):
+            _audit(request.user, "Verified password", {"ip": _get_client_ip(request), "result": "success"})
             return JsonResponse({"ok": True})
+        _audit(request.user, "Verified password", {"ip": _get_client_ip(request), "result": "failed"})
         return JsonResponse({"ok": False, "error": "Wrong password"}, status=403)
     return JsonResponse({"ok": False, "error": "POST required"}, status=400)
 
 
 @login_required
 def lockscreen_view(request):
-    error = None
-    next_url = request.GET.get('next') or request.POST.get('next')
-    hard = request.GET.get('hard', '0') == '1' or request.session.get('screen_lock_hard', False)
-    is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest'
-
-    request.session['screen_locked'] = True
-    if hard:
-        request.session['screen_lock_hard'] = True
+    # Lock screen removed — clear any legacy lock flags and leave
+    request.session['screen_locked'] = False
+    request.session['screen_lock_hard'] = False
     request.session.modified = True
-
-    if request.method == "POST":
-        hard = request.POST.get('hard', '0') == '1' or request.session.get('screen_lock_hard', False)
-        password = request.POST.get('password')
-
-        if not hard:
-            request.session['screen_locked'] = False
-            request.session['screen_lock_hard'] = False
-            profile = _get_profile(request.user)
-            destination = next_url if (next_url and not next_url.startswith('/lockscreen')) else \
-                reverse("admin_dashboard") if profile.role == "admin" else reverse("cashier_dashboard")
-            if is_ajax:
-                return JsonResponse({"status": "success", "redirect_url": destination})
-            return redirect(destination)
-
-        if not password:
-            error = "Password is required"
-        elif request.user.check_password(password):
-            request.session['screen_locked'] = False
-            request.session['screen_lock_hard'] = False
-            profile = _get_profile(request.user)
-            destination = next_url if (next_url and not next_url.startswith('/lockscreen')) else \
-                reverse("admin_dashboard") if profile.role == "admin" else reverse("cashier_dashboard")
-            if is_ajax:
-                return JsonResponse({"status": "success", "redirect_url": destination})
-            return redirect(destination)
-        else:
-            error = "Wrong password!"
-            if is_ajax:
-                return JsonResponse({"status": "error", "error": error}, status=401)
-
     profile = _get_profile(request.user)
-    context = {
-        "current_profile": profile,
-        "error": error,
-        "next": next_url or "",
-        "hard_lock": hard,
-    }
-    return render(request, "lockscreen.html", context)
+    _audit(request.user, "Unlocked screen / visited lockscreen", {"ip": _get_client_ip(request)})
+    destination = reverse("admin_dashboard") if profile.role == "admin" else reverse("cashier_dashboard")
+    return redirect(destination)
 
 
 @login_required
@@ -11879,8 +13025,10 @@ def mfa_setup(request):
                 profile.save(update_fields=["totp_secret", "totp_enabled", "mfa_recovery_codes"])
                 success = "Authenticator app enabled successfully."
                 request.session["mfa_recovery_codes_raw"] = raw_codes
+                _audit(request.user, "Enabled authenticator app (TOTP)", {"ip": _get_client_ip(request)})
             else:
                 error = "Invalid code. Make sure your authenticator app is set up correctly."
+                _audit(request.user, "Failed to enable authenticator app", {"reason": "invalid_code"})
         elif action == "disable_totp":
             otp_code = request.POST.get("otp_code", "").strip()
             expected = request.session.get("disable_totp_otp_code")
@@ -11907,6 +13055,7 @@ def mfa_setup(request):
                     request.session.pop("disable_totp_otp_created", None)
                 elif otp_code != expected:
                     error = "Invalid OTP code. Please try again."
+                    _audit(request.user, "Failed to disable authenticator app", {"reason": "invalid_otp"})
                 else:
                     profile.totp_secret = ""
                     profile.totp_enabled = False
@@ -11917,7 +13066,9 @@ def mfa_setup(request):
                     _audit(request.user, "Authenticator app disabled")
                     success = "Authenticator app disabled."
         elif action == "enable_email_otp":
-            if not request.user.email:
+            if not _email_setup_configured():
+                error = "Email Setup is not configured yet. Configure SMTP in Email Settings before enabling Email OTP."
+            elif not request.user.email:
                 error = "You must have an email address set on your account."
             else:
                 profile.email_otp_enabled = True
@@ -11927,6 +13078,7 @@ def mfa_setup(request):
                 profile.save(update_fields=["email_otp_enabled", "mfa_recovery_codes"])
                 success = "Email OTP enabled."
                 request.session["mfa_recovery_codes_raw"] = raw_codes
+                _audit(request.user, "Enabled Email OTP", {"ip": _get_client_ip(request)})
         elif action == "disable_email_otp":
             otp_code = request.POST.get("otp_code", "").strip()
             expected = request.session.get("disable_email_otp_code")
@@ -11953,6 +13105,7 @@ def mfa_setup(request):
                     request.session.pop("disable_email_otp_created", None)
                 elif otp_code != expected:
                     error = "Invalid OTP code. Please try again."
+                    _audit(request.user, "Failed to disable Email OTP", {"reason": "invalid_otp"})
                 else:
                     profile.email_otp_enabled = False
                     profile.save(update_fields=["email_otp_enabled"])
@@ -12048,6 +13201,8 @@ def mfa_totp_qr(request):
 
 @csrf_exempt
 def mfa_resend_email_otp(request):
+    if not _email_setup_configured():
+        return JsonResponse({"ok": False, "error": "Email Setup is not configured."}, status=400)
     mfa_user_id = request.session.get("mfa_user_id")
     if not mfa_user_id:
         return JsonResponse({"ok": False, "error": "Session expired"}, status=400)
@@ -12184,14 +13339,9 @@ def _disable_totp_otp_html(email, otp, system_name=None, system_logo=None):
 @login_required
 @require_POST
 def trigger_lock(request):
-    cancel = request.POST.get('cancel', '0') == '1'
-    if cancel:
-        request.session['screen_locked'] = False
-        request.session['screen_lock_hard'] = False
-    else:
-        hard = request.POST.get('hard', '0') == '1'
-        request.session['screen_locked'] = True
-        request.session['screen_lock_hard'] = hard
+    # Lock screen removed — always clear lock flags
+    request.session['screen_locked'] = False
+    request.session['screen_lock_hard'] = False
     request.session.modified = True
     return JsonResponse({"ok": True})
 

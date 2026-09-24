@@ -159,6 +159,40 @@
         border-top: 1px solid rgba(255, 255, 255, 0.15);
     }
 
+    .supplier-table tfoot {
+        position: sticky;
+        bottom: 0;
+        z-index: 4;
+    }
+
+    .supplier-table tfoot tr {
+        background: #eef2f6;
+        border-top: 2px solid #0f3d2e;
+        border-bottom: 2px solid #0f3d2e;
+    }
+
+    .supplier-table tfoot td {
+        padding: 11px 10px;
+        font-size: 13px;
+        color: #0f3d2e;
+        white-space: nowrap;
+        background: #f1f5f9;
+        vertical-align: middle;
+        box-shadow: inset 0 1px 0 #0f3d2e, inset 0 -1px 0 #0f3d2e;
+    }
+
+    [data-theme="dark"] .supplier-table tfoot tr {
+        background: #1e293b;
+        border-top: 2px solid #10b981;
+        border-bottom: 2px solid #10b981;
+    }
+
+    [data-theme="dark"] .supplier-table tfoot td {
+        background: #1e293b;
+        color: #f8fafc;
+        box-shadow: inset 0 1px 0 #10b981, inset 0 -1px 0 #10b981;
+    }
+
     .table-wrap {
         width: 100%;
         overflow-x: auto;
@@ -294,6 +328,14 @@
     <h2><i class="fas fa-building"></i> Registry Management</h2>
     <div class="supplier-toolbar">
         <form method="get" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select name="year" onchange="this.form.period.value='all'; this.form.submit()"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:120px;">
+                <option value="" {% if not selected_year %}selected{% endif %}>All Years</option>
+                {% for y in supplier_years %}
+                <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+
             <select name="period" onchange="this.form.submit()"
                 style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:220px;">
 
@@ -301,6 +343,7 @@
                     All Records
                 </option>
 
+                {% if supplier_dates %}
                 <optgroup label="Dates">
                     {% for dt in supplier_dates %}
                     {% with dt_str=dt|date:"Y-m-d" %}
@@ -310,7 +353,9 @@
                     {% endwith %}
                     {% endfor %}
                 </optgroup>
+                {% endif %}
 
+                {% if supplier_months %}
                 <optgroup label="Months">
                     {% for mt in supplier_months %}
                     {% with mt_str=mt|date:"Y-m" %}
@@ -320,6 +365,24 @@
                     {% endwith %}
                     {% endfor %}
                 </optgroup>
+                {% endif %}
+            </select>
+
+            <select id="supplierSortFilter" onchange="sortSuppliers(this.value)"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:180px; background:var(--card-bg, #fff); color:var(--ink, #111);">
+                <option value="default">Sort by: Default</option>
+                <option value="payee_asc">Payee (A &rarr; Z)</option>
+                <option value="payee_desc">Payee (Z &rarr; A)</option>
+                <option value="date_desc">Date (Newest First)</option>
+                <option value="date_asc">Date (Oldest First)</option>
+                <option value="serial_asc">Check Serial (Ascending)</option>
+                <option value="serial_desc">Check Serial (Descending)</option>
+                <option value="gross_desc">Gross Amount (High &rarr; Low)</option>
+                <option value="gross_asc">Gross Amount (Low &rarr; High)</option>
+                <option value="net_desc">Net Amount (High &rarr; Low)</option>
+                <option value="net_asc">Net Amount (Low &rarr; High)</option>
+                <option value="uacs_asc">UACS Code (Ascending)</option>
+                <option value="uacs_desc">UACS Code (Descending)</option>
             </select>
 
             <select id="orSourceFilter" onchange="filterORSource()"
@@ -330,8 +393,16 @@
             </select>
 
             <input type="text" id="supplierSearch" onkeyup="searchSuppliers()"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();}"
                 placeholder="Search Payee or OR Number..."
-                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:220px;">
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:200px;">
+
+            <input type="text" id="uacsSearch" onkeyup="searchSuppliers()"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();}"
+                oninput="this.value=this.value.replace(/[^0-9]/g,''); searchSuppliers()"
+                placeholder="Search UACS Code..."
+                inputmode="numeric" pattern="[0-9]*"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:160px;">
         </form>
 
 
@@ -355,9 +426,11 @@
                 </a>
                 {% endif %}
 
+                {% if current_profile.role != 'guest' and current_profile.role != 'budget_accounting' and request.user.profile.role != 'guest' and request.user.profile.role != 'budget_accounting' %}
                 <button type="button" onclick="openSupplierModal('create')">
                     <i class="fas fa-plus"></i> Add Supplier
                 </button>
+                {% endif %}
             </div>
         </div>
 
@@ -411,7 +484,18 @@
             </thead>
             <tbody id="supplierTableBody">
                 {% for sup in supplier_list %}
-                <tr data-or-source="{% if sup.is_old_or %}old{% else %}new{% endif %}">
+                <tr data-or-source="{% if sup.is_old_or %}old{% else %}new{% endif %}"
+                    data-default-order="{{ forloop.counter0 }}"
+                    data-serial="{{ sup.mr_or|default:''|escape }}"
+                    data-date="{% if sup.date %}{{ sup.date|date:'Y-m-d' }}{% else %}{{ sup.display_date_text|default:'' }}{% endif %}"
+                    data-payee="{{ sup.account_name|default:''|lower|escape }}"
+                    data-uacs="{{ sup.uacs|default:''|lower|escape }}"
+                    data-gross="{{ sup.gross_amount|default:'0' }}"
+                    data-prof="{{ sup.professional_tax|default:'0' }}"
+                    data-tax5="{{ sup.tax_5|default:'0' }}"
+                    data-tax2="{{ sup.tax_2|default:'0' }}"
+                    data-net="{{ sup.amount|default:'0' }}"
+                    data-ded="{{ sup.other_deductions|default:'0' }}">
                     <td style="color:var(--muted);">{{ sup.display_number|default:forloop.revcounter }}</td>
                     <td>{{ sup.mr_or|default:"—" }}</td>
                     <td>{% if sup.display_date_text %}{{ sup.display_date_text }}{% else %}{{ sup.date|date:"M d,
@@ -474,18 +558,24 @@
                             data-other-deductions="{{ sup.other_deductions|escape }}"
                             data-tax1-option="{{ sup.tax_1_option|escape }}"
                             data-tax2-option="{{ sup.tax_2_option|escape }}" data-is-vat="{{ sup.is_vat|escape }}"
+                            data-tax-exempt="{{ sup.tax_exempt|default:'false'|escape }}"
+                            data-goods-service-type="{{ sup.goods_service_type|escape }}"
+                            data-tax3="{{ sup.tax_3|default:''|escape }}"
+                            data-tax4="{{ sup.tax_4|default:''|escape }}"
+                            data-tax3-option="{{ sup.tax_3_option|default:''|escape }}"
+                            data-tax4-option="{{ sup.tax_4_option|default:''|escape }}"
                             data-tax5-rate-vat="{{ sup.tax_5_rate_vat|escape }}"
                             data-tax5-rate-non-vat="{{ sup.tax_5_rate_non_vat|escape }}"
                             data-tax2-rate-vat="{{ sup.tax_2_rate_vat|escape }}"
                             data-tax2-rate-non-vat="{{ sup.tax_2_rate_non_vat|escape }}"
                             data-remarks-text="{{ sup.remarks_text|escape }}"><i class="fas fa-pen"></i></button>
                         {% if 'delete' in role_permissions.permissions.suppliers %}
-                        <form method="post" style="display:inline;" onsubmit="requestDeleteConfirmation(event, this, 'Please enter your password (or an admin password) to confirm deletion of this supplier:')">
+                        <form method="post" style="display:inline;" onsubmit="requestDeleteConfirmation(event, this, 'Please enter your password (or an admin password) to confirm archiving of this supplier:')">
                             {% csrf_token %}
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="sup_id" value="{{ sup.pk }}">
                             <button type="submit" class="btn btn-sm btn-danger">
-                                <i class="fas fa-trash"></i>
+                                <i class="fas fa-box-archive"></i>
                             </button>
                         </form>
                         {% endif %}
@@ -493,28 +583,61 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="19" style="text-align:center; padding:30px; color:var(--muted);">No suppliers yet.</td>
+                    <td colspan="20" style="text-align:center; padding:30px; color:var(--muted);">No suppliers yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
+            <tfoot id="supplierTableFoot">
+                <tr>
+                    <td colspan="10" style="text-align: right; font-weight: 800; padding: 11px 16px; font-size: 13px; letter-spacing: 0.5px;">TOTAL:</td>
+                    <td id="totalSupplierGross" style="font-weight: 800;">₱ 0.00</td>
+                    <td id="totalSupplierProf" style="font-weight: 700;">₱ 0.00</td>
+                    <td id="totalSupplierTax5" style="font-weight: 700;">₱ 0.00</td>
+                    <td id="totalSupplierTax2" style="font-weight: 700;">₱ 0.00</td>
+                    <td id="totalSupplierNet" style="font-weight: 800;">₱ 0.00</td>
+                    <td id="totalSupplierOtherDed" style="font-weight: 700;">₱ 0.00</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 
     <div class="table-count">Showing all {{ supplier_list|length }} suppliers.</div>
 
 
-    {% include 'admin_panel/_supplier_modal.html' %}
-
     {{ remark_options|json_script:"remark-options-data" }}
 
     <script>
+        var CAN_DELETE_SUPPLIERS = {% if 'delete' in role_permissions.permissions.suppliers %}true{% else %}false{% endif %};
         let editingColumnIndex = -1;
         let autoCountResetResolver = null;
 
+        function parseNum(val) {
+            if (!val) return 0;
+            const cleaned = String(val).replace(/[^0-9.-]+/g, '');
+            if (!cleaned || cleaned === '-' || cleaned === '.') return 0;
+            const n = parseFloat(cleaned);
+            return isNaN(n) ? 0 : n;
+        }
+
+        function formatMoney(amount) {
+            if (isNaN(amount) || Math.abs(amount) < 0.0001) {
+                return "₱ 0.00";
+            }
+            return "₱ " + Number(amount).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
         function updatePaginationStats() {
-            const search = document.getElementById("supplierSearch").value.toLowerCase().trim();
-            const orFilter = document.getElementById("orSourceFilter").value;
-            const isFiltering = (search !== "" || orFilter !== "all");
+            const search = document.getElementById("supplierSearch") ? document.getElementById("supplierSearch").value.toLowerCase().trim() : "";
+            const uacsSearch = document.getElementById("uacsSearch") ? document.getElementById("uacsSearch").value.toLowerCase().trim() : "";
+            const orFilter = document.getElementById("orSourceFilter") ? document.getElementById("orSourceFilter").value : "all";
+            const isFiltering = (search !== "" || uacsSearch !== "" || orFilter !== "all");
 
             const rows = document.querySelectorAll(".supplier-table tbody tr:not(.nothing-follows-row)");
             let visibleCount = 0;
@@ -546,51 +669,154 @@
             }
         }
 
-        function filterORSource() {
-            const filter = document.getElementById("orSourceFilter").value;
-            const rows = document.querySelectorAll(".supplier-table tbody tr");
-
-            // SAVE selection
-            localStorage.setItem("orSourceFilter", filter);
+        function updateSupplierTotals() {
+            const rows = document.querySelectorAll(".supplier-table tbody tr:not(.nothing-follows-row)");
+            let grossTotal = 0;
+            let profTotal = 0;
+            let tax5Total = 0;
+            let tax2Total = 0;
+            let netTotal = 0;
+            let otherDedTotal = 0;
 
             rows.forEach(row => {
-                const source = row.dataset.orSource;
+                if (row.style.display === "none") return;
+                const cells = row.querySelectorAll("td");
+                if (!cells.length || cells.length < 16) return;
 
-                if (filter === "all") {
-                    row.style.display = "";
-                }
-                else if (filter === "old" && source === "old") {
-                    row.style.display = "";
-                }
-                else if (filter === "new" && source === "new") {
-                    row.style.display = "";
-                }
-                else {
-                    row.style.display = "none";
-                }
+                const gross = parseNum(row.dataset.gross) || parseNum(cells[10].innerText);
+                const prof = parseNum(row.dataset.prof) || parseNum(cells[11].innerText);
+                const tax5 = parseNum(row.dataset.tax5) || parseNum(cells[12].innerText);
+                const tax2 = parseNum(row.dataset.tax2) || parseNum(cells[13].innerText);
+                const net = parseNum(row.dataset.net) || parseNum(cells[14].innerText);
+                const ded = parseNum(row.dataset.ded) || parseNum(cells[15].innerText);
+
+                grossTotal += gross;
+                profTotal += prof;
+                tax5Total += tax5;
+                tax2Total += tax2;
+                netTotal += net;
+                otherDedTotal += ded;
             });
+
+            const elGross = document.getElementById("totalSupplierGross");
+            const elProf = document.getElementById("totalSupplierProf");
+            const elTax5 = document.getElementById("totalSupplierTax5");
+            const elTax2 = document.getElementById("totalSupplierTax2");
+            const elNet = document.getElementById("totalSupplierNet");
+            const elOtherDed = document.getElementById("totalSupplierOtherDed");
+
+            if (elGross) elGross.innerHTML = `<strong>${formatMoney(grossTotal)}</strong>`;
+            if (elProf) elProf.innerHTML = `<strong>${formatMoney(profTotal)}</strong>`;
+            if (elTax5) elTax5.innerHTML = `<strong>${formatMoney(tax5Total)}</strong>`;
+            if (elTax2) elTax2.innerHTML = `<strong>${formatMoney(tax2Total)}</strong>`;
+            if (elNet) elNet.innerHTML = `<strong>${formatMoney(netTotal)}</strong>`;
+            if (elOtherDed) elOtherDed.innerHTML = `<strong>${formatMoney(otherDedTotal)}</strong>`;
+        }
+
+        function applyFilters() {
+            const search = document.getElementById("supplierSearch") ? document.getElementById("supplierSearch").value.toLowerCase().trim() : "";
+            const uacsSearch = document.getElementById("uacsSearch") ? document.getElementById("uacsSearch").value.toLowerCase().trim() : "";
+            const orFilter = document.getElementById("orSourceFilter") ? document.getElementById("orSourceFilter").value : "all";
+            const rows = document.querySelectorAll(".supplier-table tbody tr");
+
+            rows.forEach(row => {
+                if (!row.querySelectorAll("td").length || row.classList.contains("nothing-follows-row")) {
+                    return;
+                }
+                const source = row.dataset.orSource;
+                const matchesSource = (orFilter === "all") || (source === orFilter);
+                const text = row.innerText.toLowerCase();
+                const matchesSearch = (search === "") || text.includes(search);
+
+                const uacsVal = (row.dataset.uacs || (row.cells[7] ? row.cells[7].innerText : "")).toLowerCase();
+                const matchesUacs = (uacsSearch === "") || uacsVal.includes(uacsSearch);
+
+                row.style.display = (matchesSource && matchesSearch && matchesUacs) ? "" : "none";
+            });
+
             updatePaginationStats();
+            updateSupplierTotals();
+        }
+
+        function filterORSource() {
+            const filter = document.getElementById("orSourceFilter").value;
+            localStorage.setItem("orSourceFilter", filter);
+            applyFilters();
         }
 
         function searchSuppliers() {
-            const search = document.getElementById("supplierSearch").value.toLowerCase().trim();
-            const rows = document.querySelectorAll(".supplier-table tbody tr");
+            applyFilters();
+        }
 
-            rows.forEach(row => {
+        function sortSuppliers(sortType, save = true) {
+            if (save) {
+                localStorage.setItem("supplierSortFilter", sortType);
+            }
+            const tbody = document.getElementById("supplierTableBody");
+            if (!tbody) return;
+            const rows = Array.from(tbody.querySelectorAll("tr:not(.nothing-follows-row)"));
+            if (rows.length <= 1) return;
 
-                // skip empty/summary rows safely
-                if (!row.querySelectorAll("td").length) {
-                    row.style.display = "";
-                    return;
+            rows.sort((a, b) => {
+                if (sortType === "default") {
+                    const idxA = parseInt(a.dataset.defaultOrder, 10);
+                    const idxB = parseInt(b.dataset.defaultOrder, 10);
+                    return (isNaN(idxA) ? 0 : idxA) - (isNaN(idxB) ? 0 : idxB);
+                } else if (sortType === "payee_asc") {
+                    const pA = (a.dataset.payee || (a.cells[3] ? a.cells[3].innerText : '')).trim();
+                    const pB = (b.dataset.payee || (b.cells[3] ? b.cells[3].innerText : '')).trim();
+                    return pA.localeCompare(pB, undefined, { sensitivity: 'base' });
+                } else if (sortType === "payee_desc") {
+                    const pA = (a.dataset.payee || (a.cells[3] ? a.cells[3].innerText : '')).trim();
+                    const pB = (b.dataset.payee || (b.cells[3] ? b.cells[3].innerText : '')).trim();
+                    return pB.localeCompare(pA, undefined, { sensitivity: 'base' });
+                } else if (sortType === "date_desc") {
+                    const dA = a.dataset.date || (a.cells[2] ? a.cells[2].innerText : '');
+                    const dB = b.dataset.date || (b.cells[2] ? b.cells[2].innerText : '');
+                    return dB.localeCompare(dA);
+                } else if (sortType === "date_asc") {
+                    const dA = a.dataset.date || (a.cells[2] ? a.cells[2].innerText : '');
+                    const dB = b.dataset.date || (b.cells[2] ? b.cells[2].innerText : '');
+                    return dA.localeCompare(dB);
+                } else if (sortType === "serial_asc") {
+                    const sA = a.dataset.serial || (a.cells[1] ? a.cells[1].innerText : '');
+                    const sB = b.dataset.serial || (b.cells[1] ? b.cells[1].innerText : '');
+                    return sA.localeCompare(sB, undefined, { numeric: true, sensitivity: 'base' });
+                } else if (sortType === "serial_desc") {
+                    const sA = a.dataset.serial || (a.cells[1] ? a.cells[1].innerText : '');
+                    const sB = b.dataset.serial || (b.cells[1] ? b.cells[1].innerText : '');
+                    return sB.localeCompare(sA, undefined, { numeric: true, sensitivity: 'base' });
+                } else if (sortType === "gross_desc") {
+                    const vA = parseNum(a.dataset.gross) || parseNum(a.cells[10] ? a.cells[10].innerText : 0);
+                    const vB = parseNum(b.dataset.gross) || parseNum(b.cells[10] ? b.cells[10].innerText : 0);
+                    return vB - vA;
+                } else if (sortType === "gross_asc") {
+                    const vA = parseNum(a.dataset.gross) || parseNum(a.cells[10] ? a.cells[10].innerText : 0);
+                    const vB = parseNum(b.dataset.gross) || parseNum(b.cells[10] ? b.cells[10].innerText : 0);
+                    return vA - vB;
+                } else if (sortType === "net_desc") {
+                    const vA = parseNum(a.dataset.net) || parseNum(a.cells[14] ? a.cells[14].innerText : 0);
+                    const vB = parseNum(b.dataset.net) || parseNum(b.cells[14] ? b.cells[14].innerText : 0);
+                    return vB - vA;
+                } else if (sortType === "net_asc") {
+                    const vA = parseNum(a.dataset.net) || parseNum(a.cells[14] ? a.cells[14].innerText : 0);
+                    const vB = parseNum(b.dataset.net) || parseNum(b.cells[14] ? b.cells[14].innerText : 0);
+                    return vA - vB;
+                } else if (sortType === "uacs_asc") {
+                    const uA = (a.dataset.uacs || (a.cells[7] ? a.cells[7].innerText : '')).trim();
+                    const uB = (b.dataset.uacs || (b.cells[7] ? b.cells[7].innerText : '')).trim();
+                    return uA.localeCompare(uB, undefined, { numeric: true, sensitivity: 'base' });
+                } else if (sortType === "uacs_desc") {
+                    const uA = (a.dataset.uacs || (a.cells[7] ? a.cells[7].innerText : '')).trim();
+                    const uB = (b.dataset.uacs || (b.cells[7] ? b.cells[7].innerText : '')).trim();
+                    return uB.localeCompare(uA, undefined, { numeric: true, sensitivity: 'base' });
                 }
-
-                const text = row.innerText.toLowerCase();
-
-                const match = search === "" || text.includes(search);
-
-                row.style.display = match ? "" : "none";
+                return 0;
             });
+
+            rows.forEach(r => tbody.appendChild(r));
             updatePaginationStats();
+            updateSupplierTotals();
         }
 
         function toggleActionDropdown() {
@@ -606,38 +832,29 @@
             }
         });
 
-
-
         // RESTORE ON PAGE LOAD
         document.addEventListener("DOMContentLoaded", function () {
             const savedFilter = localStorage.getItem("orSourceFilter") || "all";
             const dropdown = document.getElementById("orSourceFilter");
-
             if (dropdown) {
                 dropdown.value = savedFilter;
             }
 
-            const rows = document.querySelectorAll(".supplier-table tbody tr");
+            const savedSort = localStorage.getItem("supplierSortFilter") || "default";
+            const sortDropdown = document.getElementById("supplierSortFilter");
+            if (sortDropdown) {
+                sortDropdown.value = savedSort;
+            }
 
-            rows.forEach(row => {
-                const source = row.dataset.orSource;
+            applyFilters();
 
-                if (savedFilter === "all") {
-                    row.style.display = "";
-                }
-                else if (savedFilter === "old" && source === "old") {
-                    row.style.display = "";
-                }
-                else if (savedFilter === "new" && source === "new") {
-                    row.style.display = "";
-                }
-                else {
-                    row.style.display = "none";
-                }
-            });
-            updatePaginationStats();
+            if (savedSort && savedSort !== "default") {
+                sortSuppliers(savedSort, false);
+            }
 
-            // INLINE EDITABLE REMARKS DROPDOWN
+            updateSupplierTotals();
+
+            // INLINE EDITABLE REMARKS — event delegation so new rows work too
             const remarkOptionsData = document.getElementById('remark-options-data');
             const remarkOptions = remarkOptionsData ? JSON.parse(remarkOptionsData.textContent || '[]') : [];
 
@@ -646,32 +863,30 @@
                 return match ? decodeURIComponent(match[1]) : '';
             }
 
-            document.querySelectorAll('.remark-cell').forEach(cell => {
-                const textSpan = cell.querySelector('.remark-text');
-                if (!textSpan) return;
-
-                textSpan.addEventListener('click', function (e) {
+            var supplierTableBody = document.getElementById('supplierTableBody');
+            if (supplierTableBody) {
+                supplierTableBody.addEventListener('click', function(e) {
+                    var textSpan = e.target.closest('.remark-text');
+                    if (!textSpan) return;
                     e.stopPropagation();
 
-                    if (cell.classList.contains('editing')) return;
+                    var cell = textSpan.closest('.remark-cell');
+                    if (!cell || cell.classList.contains('editing')) return;
                     cell.classList.add('editing');
 
-                    const currentVal = cell.dataset.currentRemark || '';
-                    const supplierId = cell.dataset.supplierId;
+                    var currentVal = cell.dataset.currentRemark || '';
+                    var supplierId = cell.dataset.supplierId;
 
-                    // Create datalist dynamically
-                    const datalist = document.createElement('datalist');
-                    datalist.id = `datalist-${supplierId}`;
+                    var datalist = document.createElement('datalist');
+                    datalist.id = 'datalist-' + supplierId;
 
-                    // Add predefined options
-                    remarkOptions.forEach(opt => {
-                        const optElem = document.createElement('option');
+                    remarkOptions.forEach(function(opt) {
+                        var optElem = document.createElement('option');
                         optElem.value = opt;
                         datalist.appendChild(optElem);
                     });
 
-                    // Create text input
-                    const input = document.createElement('input');
+                    var input = document.createElement('input');
                     input.type = 'text';
                     input.className = 'remark-input-inline';
                     input.setAttribute('list', datalist.id);
@@ -683,83 +898,58 @@
                     cell.appendChild(input);
                     input.focus();
 
-                    // To avoid double execution (e.g. keydown + blur firing in sequence)
-                    let isSaved = false;
+                    var isSaved = false;
 
-                    const saveChanges = async () => {
+                    var saveChanges = async function() {
                         if (isSaved) return;
-                        const newVal = input.value.trim();
-
-                        if (newVal === currentVal) {
-                            cleanup();
-                            return;
-                        }
-
+                        var newVal = input.value.trim();
                         isSaved = true;
-                        try {
-                            input.disabled = true;
-                            const formData = new FormData();
-                            formData.append('remarks', newVal);
 
-                            const response = await fetch(`/suppliers/${supplierId}/update-remark/`, {
+                        try {
+                            var fd = new FormData();
+                            fd.append('remarks', newVal);
+                            await fetch('/suppliers/' + supplierId + '/update-remark/', {
                                 method: 'POST',
                                 headers: {
                                     'X-CSRFToken': getCsrfToken()
                                 },
-                                body: formData
+                                body: fd
                             });
+                        } catch(err) {}
 
-                            const resData = await response.json();
-                            if (response.ok && resData.ok) {
-                                cell.dataset.currentRemark = newVal;
-                                textSpan.textContent = newVal || '—';
-                                cell.style.backgroundColor = '#ecfdf5';
-                                setTimeout(() => { cell.style.backgroundColor = ''; }, 500);
-                            } else {
-                                showToast('error', 'Update Failed', resData.error || 'Failed to update remark.');
-                            }
-                        } catch (err) {
-                            console.error('Error saving remark:', err);
-                            showToast('error', 'Network Error', 'Could not save remark. Check your connection.');
-                        } finally {
-                            cleanup();
-                        }
-                    };
-
-                    const cleanup = () => {
+                        textSpan.textContent = newVal || 'Add Remarks!';
+                        cell.dataset.currentRemark = newVal;
+                        textSpan.style.display = '';
                         input.remove();
                         datalist.remove();
-                        textSpan.style.display = 'inline-block';
                         cell.classList.remove('editing');
                     };
 
-                    // Save on Enter, revert on Escape
-                    input.addEventListener('keydown', function (evt) {
-                        if (evt.key === 'Enter') {
-                            saveChanges();
-                        } else if (evt.key === 'Escape') {
-                            cleanup();
+                    input.addEventListener('blur', saveChanges);
+                    input.addEventListener('keydown', function(ev) {
+                        if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+                        if (ev.key === 'Escape') {
+                            isSaved = true;
+                            textSpan.style.display = '';
+                            input.remove();
+                            datalist.remove();
+                            cell.classList.remove('editing');
                         }
                     });
-
-                    // Save on blur
-                    input.addEventListener('blur', function () {
-                        setTimeout(() => {
-                            saveChanges();
-                        }, 180); // Small timeout to allow option selection clicking
-                    });
                 });
-            });
+            }
+
+
         });
 
 
     </script>
 
-    <!-- Deletion Password Confirmation Modal -->
+    <!-- Archive Password Confirmation Modal -->
     <div id="deleteConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
         <div style="background: white; border-radius: 12px; padding: 24px; width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid var(--line); color: var(--ink);">
             <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> Confirm Deletion
+                <i class="fas fa-box-archive" style="color: var(--warning);"></i> Confirm Archive
             </h3>
             <p id="deleteConfirmPromptText" style="font-size: 14px; margin-bottom: 16px; color: var(--muted);"></p>
             <div style="margin-bottom: 16px;">
@@ -768,7 +958,7 @@
             </div>
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="submitDeleteConfirm()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Delete</button>
+                <button type="button" class="btn btn-warning" onclick="submitDeleteConfirm()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Archive</button>
             </div>
         </div>
     </div>
