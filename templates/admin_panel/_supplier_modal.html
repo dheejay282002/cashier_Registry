@@ -1030,20 +1030,35 @@ function getTaxChoices() {
     return [];
 }
 function ratesFromRateStr(rateStr, isVat) {
-    // Dual rates "5%/3%" → first = VAT, second = Non-VAT. Show only the active side.
-    if (rateStr === undefined || rateStr === null || rateStr === '') return [];
+    // Dual rates "5%/3%" → keep BOTH options; pick default by VAT (first=VAT, second=Non-VAT)
+    const rates = [];
+    if (rateStr === undefined || rateStr === null || rateStr === '') return rates;
     const s = String(rateStr).replace(/%/g, '').trim();
-    if (!s) return [];
+    if (!s) return rates;
     if (s.includes('/')) {
-        const parts = s.split('/');
-        const raw = (typeof isVat === 'boolean')
-            ? (isVat ? parts[0] : (parts[1] !== undefined && parts[1] !== '' ? parts[1] : parts[0]))
-            : parts[0];
-        const n = parseFloat(raw);
-        return (!isNaN(n) && n >= 0) ? [n] : [];
+        const parts = s.split('/').map(p => parseFloat(p)).filter(n => !isNaN(n) && n >= 0);
+        parts.forEach(n => {
+            if (rates.indexOf(n) === -1) rates.push(n);
+        });
+        if (typeof isVat === 'boolean' && rates.length >= 2) {
+            // Prefer VAT side first when checked; Non-VAT side first when unchecked — keep both
+            const vatRate = parts[0];
+            const nvRate = parts[1] !== undefined ? parts[1] : parts[0];
+            const preferred = isVat ? vatRate : nvRate;
+            const other = isVat ? nvRate : vatRate;
+            const ordered = [];
+            if (preferred !== undefined && ordered.indexOf(preferred) === -1) ordered.push(preferred);
+            if (other !== undefined && ordered.indexOf(other) === -1) ordered.push(other);
+            rates.forEach(n => {
+                if (ordered.indexOf(n) === -1) ordered.push(n);
+            });
+            return ordered;
+        }
+        return rates;
     }
     const n = parseFloat(s);
-    return (!isNaN(n) && n >= 0) ? [n] : [];
+    if (!isNaN(n) && n >= 0) rates.push(n);
+    return rates;
 }
 function getGoodsServiceRates() {
     if (window._goodsServiceRates && typeof window._goodsServiceRates === 'object') {
@@ -1074,9 +1089,10 @@ function taxSlotIds(n) {
     if (n === 2) return { container: 'containerTax2', rate: 'fieldGoodsServiceType', amount: 'fieldTax2', rateName: 'goods_service_type', amountName: 'tax_2' };
     return { container: 'containerTax' + n, rate: 'fieldTax' + n + 'Rate', amount: 'fieldTax' + n, rateName: 'tax_' + n + '_option', amountName: 'tax_' + n };
 }
-function renderTaxSlots() {
+function renderTaxSlots(opts) {
     const wrap = document.getElementById('taxSlotsWrap');
     if (!wrap) return;
+    const forcePreferredRate = !!(opts && opts.forcePreferredRate);
     const choices = getTaxChoices();
     const gsRates = getGoodsServiceRates();
     const vatNow = isVatChecked();
@@ -1096,7 +1112,7 @@ function renderTaxSlots() {
     }
     choices.forEach((c, idx) => {
         const ids = slotFieldMap(idx);
-        // Dual rates: VAT → 5%/2% · Non-VAT → 3%/1%
+        // Dual rates keep BOTH options; order/default by VAT (5/2 vs 3/1)
         const rates = ratesFromRateStr(c.rate || '', vatNow);
         const label = (c && c.label) || 'Tax';
         const slot = document.createElement('div');
@@ -1115,7 +1131,7 @@ function renderTaxSlots() {
             '</div>';
         wrap.appendChild(slot);
         const sel = document.getElementById(ids.rate);
-        const prevRate = prevVals[ids.rate] || '';
+        const prevRate = forcePreferredRate ? '' : (prevVals[ids.rate] || '');
         const prevAmt = prevVals[ids.amount] || '';
         if (sel) {
             if (prevRate && sel.querySelector('option[value="' + prevRate + '"]')) sel.value = prevRate;
@@ -1255,7 +1271,10 @@ function updateGrossOnly() {
 document.addEventListener('DOMContentLoaded', () => {
     // These trigger full recalculation of taxes from Gross
     document.getElementById('fieldAmount')?.addEventListener('input', updateAllTaxesAndGross);
-    document.getElementById('fieldIsVat')?.addEventListener('change', toggleTaxFields);
+    document.getElementById('fieldIsVat')?.addEventListener('change', function () {
+        // VAT toggle: keep both dual-rate options, but re-select the preferred default
+        toggleTaxFields({ forcePreferredRate: true });
+    });
     document.getElementById('fieldEnableProfTax')?.addEventListener('change', updateAllTaxesAndGross);
     document.getElementById('fieldTaxExempt')?.addEventListener('change', updateAllTaxesAndGross);
 
@@ -1277,12 +1296,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNetOnly();
     }
 
-    function toggleTaxFields() {
-        // Rebuild rate options for VAT (5%/2%) vs Non-VAT (3%/1%), then recalc
+    function toggleTaxFields(opts) {
+        // Keep BOTH dual-rate options. On VAT toggle, re-select preferred default (5/2 vs 3/1).
+        // Otherwise preserve current selection (edit restore / amount recalc).
+        const forcePreferredRate = !!(opts && opts.forcePreferredRate);
         document.querySelectorAll('#taxSlotsWrap .tax-slot').forEach(el => {
             el.style.display = '';
         });
-        renderTaxSlots();
+        renderTaxSlots({ forcePreferredRate: forcePreferredRate });
         updateAllTaxesAndGross();
     }
 
@@ -1295,6 +1316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function syncAllTaxAndGross() {
+        // Do not force preferred rate here — preserve restored/selected rates
         toggleTaxFields();
         updateAllTaxesAndGross();
     }
