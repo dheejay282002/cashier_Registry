@@ -669,38 +669,144 @@ class SupplierGrossCalculationTests(TestCase):
 		# net = 10000 - 300 - 700 = 9000.00
 		self.assertEqual(extras.get('net_amount'), '9000.00')
 
-	def test_supplier_creation_tax_exempt(self):
+	def test_supplier_creation_tax_type_none(self):
 		self.client.force_login(self.admin)
 		response = self.client.post(
 			reverse('suppliers'),
 			data={
 				'action': 'create',
-				'payee': 'Tax Exempt Supplier',
+				'payee': 'Tax Type None Supplier',
 				'amount': '10000.00',
 				'gross_amount': '10000.00',
-				'is_vat': 'on',
+				'tax_type': 'none',
 				'goods_service_type': 'services',
 				'other_deductions': '50.00',
 				'enable_professional_tax': 'on',
 				'tax_1_option': '5',
 				'tax_3_option': '7',
-				'tax_exempt': 'on',
 			},
 			follow=True,
 		)
 		self.assertEqual(response.status_code, 200)
 		self.assertIn("added", str(response.context.get('success', '') or ''))
-		supplier = Supplier.objects.get(account_name='Tax Exempt Supplier')
+		supplier = Supplier.objects.get(account_name='Tax Type None Supplier')
 		extras = supplier.raw_import.get('supplier_extras') or {}
+		self.assertEqual(extras.get('tax_type'), 'none')
 		self.assertEqual(extras.get('tax_exempt'), 'true')
+		self.assertEqual(extras.get('is_vat'), 'false')
 		self.assertEqual(extras.get('tax_5'), '0.00')
 		self.assertEqual(extras.get('tax_2'), '0.00')
 		self.assertEqual(extras.get('tax_3'), '0.00')
-		self.assertEqual(extras.get('professional_tax'), '0.00')
-		self.assertEqual(extras.get('professional_tax_rate'), '0.00')
 		self.assertEqual(extras.get('goods_service_type'), '')
-		# net = 10000 - 0 - 0 - 0 - 0 - 50 = 9950.00
-		self.assertEqual(extras.get('net_amount'), '9950.00')
+		# Prof. Tax is independent of Tax Type=None — still applies when Enable is on
+		self.assertEqual(extras.get('professional_tax'), '500.00')
+		self.assertEqual(extras.get('professional_tax_rate'), '5.00')
+		# net = 10000 - 0 - 0 - 0 - 500 - 50 = 9450.00
+		self.assertEqual(extras.get('net_amount'), '9450.00')
+
+	def test_supplier_creation_tax_type_vat(self):
+		self.client.force_login(self.admin)
+		self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'Tax Type Vat Supplier',
+				'amount': '11200.00',
+				'gross_amount': '11200.00',
+				'tax_type': 'vat',
+				'goods_service_type': '',
+				'other_deductions': '0.00',
+				'tax_1_option': '5',
+			},
+			follow=True,
+		)
+		supplier = Supplier.objects.get(account_name='Tax Type Vat Supplier')
+		extras = supplier.raw_import.get('supplier_extras') or {}
+		self.assertEqual(extras.get('tax_type'), 'vat')
+		self.assertEqual(extras.get('is_vat'), 'true')
+		self.assertEqual(extras.get('tax_exempt'), 'false')
+		# base = 11200/1.12 = 10000; 5% → 500.00
+		self.assertEqual(extras.get('tax_5'), '500.00')
+
+	def test_supplier_creation_tax_type_custom(self):
+		"""Legacy tax_type='custom' post still accepted (rate option 'custom' is the UI path)."""
+		self.client.force_login(self.admin)
+		response = self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'Tax Type Custom Supplier',
+				'amount': '10000.00',
+				'gross_amount': '10000.00',
+				'tax_type': 'custom',
+				'goods_service_type': 'services',
+				'other_deductions': '10.00',
+				'enable_professional_tax': 'on',
+				'tax_1_option': '5',
+				'tax_5': '222.22',
+				'tax_2': '33.33',
+				'tax_4': '44.44',
+				'tax_4_option': '7',
+			},
+			follow=True,
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertIn("added", str(response.context.get('success', '') or ''))
+		supplier = Supplier.objects.get(account_name='Tax Type Custom Supplier')
+		extras = supplier.raw_import.get('supplier_extras') or {}
+		self.assertEqual(extras.get('tax_type'), 'custom')
+		self.assertEqual(extras.get('tax_exempt'), 'false')
+		self.assertEqual(extras.get('is_vat'), 'false')
+		# Posted amounts kept as-is — NOT recomputed from rates (5% of 10000 would be 500.00)
+		self.assertEqual(extras.get('tax_5'), '222.22')
+		self.assertEqual(extras.get('tax_2'), '33.33')
+		self.assertEqual(extras.get('tax_4'), '44.44')
+		self.assertEqual(extras.get('tax_4_option'), '7.00')
+		# Prof. Tax still applies under Custom when Enable is on
+		self.assertEqual(extras.get('professional_tax'), '500.00')
+		# net = 10000 - 222.22 - 33.33 - 44.44 - 500 - 10 = 9190.01
+		self.assertEqual(extras.get('net_amount'), '9190.01')
+
+	def test_supplier_creation_custom_rate_option(self):
+		"""Tax rate dropdowns: option 'custom' → posted amounts win, stored for edit restore."""
+		self.client.force_login(self.admin)
+		response = self.client.post(
+			reverse('suppliers'),
+			data={
+				'action': 'create',
+				'payee': 'Custom Rate Supplier',
+				'amount': '10000.00',
+				'gross_amount': '10000.00',
+				'tax_type': 'non_vat',
+				'goods_service_type': 'custom',
+				'other_deductions': '10.00',
+				'enable_professional_tax': 'on',
+				'tax_1_option': 'custom',
+				'tax_5': '222.22',
+				'tax_2': '33.33',
+				'tax_4': '44.44',
+				'tax_4_option': 'custom',
+			},
+			follow=True,
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertIn("added", str(response.context.get('success', '') or ''))
+		supplier = Supplier.objects.get(account_name='Custom Rate Supplier')
+		extras = supplier.raw_import.get('supplier_extras') or {}
+		# Custom markers survive so edit restore re-selects them
+		self.assertEqual(extras.get('tax_1_option'), 'custom')
+		self.assertEqual(extras.get('goods_service_type'), 'custom')
+		self.assertEqual(extras.get('tax_4_option'), 'custom')
+		# Posted amounts win over rate computation (3% of 10000 would be 300.00)
+		self.assertEqual(extras.get('tax_5'), '222.22')
+		self.assertEqual(extras.get('tax_2'), '33.33')
+		self.assertEqual(extras.get('tax_4'), '44.44')
+		# net = 10000 - 222.22 - 33.33 - 44.44 - 500 - 10 = 9190.01
+		self.assertEqual(extras.get('net_amount'), '9190.01')
+		# Enrichment keeps 'custom' for the edit button data attributes
+		views._enrich_supplier_for_display(supplier)
+		self.assertEqual(supplier.goods_service_type, 'custom')
+		self.assertEqual(supplier.tax_1_option, 'custom')
 
 	def test_tax_1_option_follows_vat_mode(self):
 		"""VAT posts 5% · Non-VAT posts 3% even if the other side is sent (dual rate)."""

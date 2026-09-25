@@ -793,15 +793,11 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
         </div>
         <div class="supplier-field tax-type-field">
             <label>Tax Type</label>
-            <div class="tax-type-row">
-                <label class="tax-type-pill" title="VAT vs Non-VAT">
-                    <input type="checkbox" name="is_vat" id="fieldIsVat"> VAT
-                </label>
-                <label class="tax-type-pill" title="Skip all taxes for this supplier">
-                    <input type="checkbox" name="tax_exempt" id="fieldTaxExempt"> Tax Exempt
-                </label>
-            </div>
-            <div class="tax-type-help">VAT off = Non VAT. Tax Exempt skips all taxes.</div>
+            <select name="tax_type" id="fieldTaxType">
+                <option value="none">None</option>
+                <option value="vat">VAT</option>
+                <option value="non_vat" selected>Non-VAT</option>
+            </select>
         </div>
     </div>
 
@@ -1122,7 +1118,7 @@ function renderTaxSlots(opts) {
         rates.forEach(r => {
             rateOpts += '<option value="' + r + '">' + r + '%</option>';
         });
-        if (!rates.length) rateOpts = '<option value="">—</option>';
+        rateOpts += '<option value="custom">Custom</option>';
         slot.innerHTML =
             '<label>' + label + '</label>' +
             '<div class="tax-slot-controls">' +
@@ -1155,6 +1151,7 @@ function renderTaxSlots(opts) {
         '<option value="">None</option>' +
         '<option value="goods">Goods (' + gsPctGoods + '%)</option>' +
         '<option value="services">Services (' + gsPctServices + '%)</option>' +
+        '<option value="custom">Custom</option>' +
         '</select>' +
         '<input type="text" name="' + ids2.amountName + '" id="' + ids2.amount + '" class="auto-readonly tax-amount-input" readonly aria-readonly="true" tabindex="-1" placeholder="₱0.00">' +
         '</div>';
@@ -1171,6 +1168,10 @@ function renderTaxSlots(opts) {
     // Bind amount edits (delegated — slots are rebuilt)
     wrap.querySelectorAll('.tax-amount-input').forEach(inp => {
         inp.addEventListener('input', updateNetOnly);
+    });
+    // Custom rate slots: amount field stays editable after re-render
+    wrap.querySelectorAll('.tax-rate-select').forEach(sel => {
+        setSlotAmountEditable(document.getElementById(sel.dataset.amountId), isCustomRate(sel));
     });
     if (!choices.length && !wrap.querySelector('.tax-slot')) {
         wrap.innerHTML = '<div class="supplier-field" style="grid-column: 1 / -1;"><label>Taxes</label><div class="tax-type-help" style="margin-top:0;">No active taxes on the Taxes page. Goods/Service rates still apply.</div></div>';
@@ -1194,11 +1195,32 @@ function getSelectedTaxRate(selectEl) {
     return isNaN(n) ? 0 : n / 100;
 }
 // Triggered when Gross Amount or a tax rate dropdown changes
+function getTaxTypeValue() {
+    return String(document.getElementById('fieldTaxType')?.value || 'non_vat').toLowerCase();
+}
 function isVatChecked() {
-    return !!document.getElementById('fieldIsVat')?.checked;
+    return getTaxTypeValue() === 'vat';
 }
 function isTaxExemptChecked() {
-    return !!document.getElementById('fieldTaxExempt')?.checked;
+    // Tax Type = None → skip VAT/other taxes (Prof. Tax independent)
+    return getTaxTypeValue() === 'none';
+}
+function isCustomRate(sel) {
+    return String(sel && sel.value || '').toLowerCase() === 'custom';
+}
+function setSlotAmountEditable(amt, editable) {
+    if (!amt) return;
+    if (editable) {
+        amt.readOnly = false;
+        amt.removeAttribute('aria-readonly');
+        amt.removeAttribute('tabindex');
+        amt.classList.remove('auto-readonly');
+    } else {
+        amt.readOnly = true;
+        amt.setAttribute('aria-readonly', 'true');
+        amt.setAttribute('tabindex', '-1');
+        amt.classList.add('auto-readonly');
+    }
 }
 function updateAllTaxesAndGross() {
     const gross = parseNumber(document.getElementById('fieldAmount')?.value);
@@ -1210,15 +1232,17 @@ function updateAllTaxesAndGross() {
     if (exempt) {
         document.querySelectorAll('#taxSlotsWrap .tax-amount-input').forEach(el => {
             el.value = formatAmount(0);
+            setSlotAmountEditable(el, false);
         });
         document.querySelectorAll('#taxSlotsWrap .tax-rate-select').forEach(sel => {
             if (sel.classList.contains('goods-service-select')) sel.value = '';
         });
-        const enableProfCheckbox = document.getElementById('fieldEnableProfTax');
-        if (enableProfCheckbox) enableProfCheckbox.checked = false;
-        if (proAmt) proAmt.value = formatAmount(0);
-        if (proRate) proRate.value = '0.00';
-        if (proHidden) proHidden.value = formatAmountHidden(0);
+        // Prof. Tax is independent of Tax Type = None — still 5% of Gross when Enable is checked
+        const enableProf = !!document.getElementById('fieldEnableProfTax')?.checked;
+        const prof = enableProf ? roundHalfUp(gross * 0.05) : 0;
+        if (proAmt) proAmt.value = formatAmount(prof);
+        if (proRate) proRate.value = enableProf ? '5.00' : '0.00';
+        if (proHidden) proHidden.value = formatAmountHidden(prof);
         updateNetOnly();
         return;
     }
@@ -1227,6 +1251,12 @@ function updateAllTaxesAndGross() {
     document.querySelectorAll('#taxSlotsWrap .tax-rate-select').forEach(sel => {
         const amt = document.getElementById(sel.dataset.amountId);
         if (!amt) return;
+        if (isCustomRate(sel)) {
+            // Custom: manually entered amount — lock is off, never overwrite
+            setSlotAmountEditable(amt, true);
+            return;
+        }
+        setSlotAmountEditable(amt, false);
         if (sel.classList.contains('goods-service-select')) {
             const ratePct = getGoodsServiceRatePct(sel.value) / 100;
             amt.value = formatAmount(roundHalfUp(base * ratePct));
@@ -1271,12 +1301,11 @@ function updateGrossOnly() {
 document.addEventListener('DOMContentLoaded', () => {
     // These trigger full recalculation of taxes from Gross
     document.getElementById('fieldAmount')?.addEventListener('input', updateAllTaxesAndGross);
-    document.getElementById('fieldIsVat')?.addEventListener('change', function () {
-        // VAT toggle: keep both dual-rate options, but re-select the preferred default
+    document.getElementById('fieldTaxType')?.addEventListener('change', function () {
+        // Tax Type change: keep both dual-rate options, re-select preferred default (5/2 vs 3/1)
         toggleTaxFields({ forcePreferredRate: true });
     });
     document.getElementById('fieldEnableProfTax')?.addEventListener('change', updateAllTaxesAndGross);
-    document.getElementById('fieldTaxExempt')?.addEventListener('change', updateAllTaxesAndGross);
 
     // These ONLY update the Net (tax slots + prof tax are auto-computed from Gross)
     document.getElementById('fieldOtherDeductions')?.addEventListener('input', updateNetOnly);
@@ -1347,14 +1376,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 setFieldValue('fieldDvPayroll', trigger.dataset.dvPayroll);
                 setFieldValue('fieldOrsBurs', trigger.dataset.orsBurs);
                 setFieldValue('fieldResponsibilityCenter', trigger.dataset.responsibilityCenter);
-                // Set VAT / Tax Exempt BEFORE rebuilding rate options (5%/2% vs 3%/1%)
-                const vatCheckbox = document.getElementById('fieldIsVat');
-                if (vatCheckbox) {
-                    vatCheckbox.checked = String(trigger.dataset.isVat).toLowerCase() === 'true';
-                }
-                const exemptCheckbox = document.getElementById('fieldTaxExempt');
-                if (exemptCheckbox) {
-                    exemptCheckbox.checked = String(trigger.dataset.taxExempt || '').toLowerCase() === 'true';
+                // Set Tax Type BEFORE rebuilding rate options (5%/2% vs 3%/1%)
+                const taxTypeSel = document.getElementById('fieldTaxType');
+                if (taxTypeSel) {
+                    const savedTaxType = String(trigger.dataset.taxType || '').toLowerCase();
+                    if (savedTaxType === 'none' || savedTaxType === 'vat' || savedTaxType === 'non_vat') {
+                        taxTypeSel.value = savedTaxType;
+                    } else {
+                        const isExempt = String(trigger.dataset.taxExempt || '').toLowerCase() === 'true';
+                        const isVat = String(trigger.dataset.isVat || '').toLowerCase() === 'true';
+                        taxTypeSel.value = isExempt ? 'none' : (isVat ? 'vat' : 'non_vat');
+                    }
                 }
                 const enableProfCheckbox = document.getElementById('fieldEnableProfTax');
                 const savedProfTax = parseNumber(trigger.dataset.professionalTax);
@@ -1369,12 +1401,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const rate1Sel = document.getElementById('fieldTax5Rate');
                 const gsSel = document.getElementById('fieldGoodsServiceType');
                 if (rate1Sel) {
-                    const r1 = parseFloat(String(trigger.dataset.tax1Option || '').replace('%', '').trim());
-                    if (!isNaN(r1) && rate1Sel.querySelector('option[value="' + r1 + '"]')) rate1Sel.value = String(r1);
+                    const rawR1 = String(trigger.dataset.tax1Option || '').replace('%', '').trim();
+                    if (rawR1.toLowerCase() === 'custom' && rate1Sel.querySelector('option[value="custom"]')) {
+                        rate1Sel.value = 'custom';
+                    } else {
+                        const r1 = parseFloat(rawR1);
+                        if (!isNaN(r1) && rate1Sel.querySelector('option[value="' + r1 + '"]')) rate1Sel.value = String(r1);
+                    }
                 }
                 if (gsSel) {
                     const gsVal = String(trigger.dataset.goodsServiceType || trigger.dataset.tax2Option || '').toLowerCase();
-                    gsSel.value = (gsVal === 'goods' || gsVal === 'services') ? gsVal : '';
+                    gsSel.value = (gsVal === 'goods' || gsVal === 'services' || gsVal === 'custom') ? gsVal : '';
                 }
                 setFieldValue('fieldTax5', formatAmount(trigger.dataset.tax5));
                 setFieldValue('fieldTax2', formatAmount(trigger.dataset.tax2));
@@ -1386,8 +1423,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const rateVal = trigger.dataset[dsKey + 'Option'] || '';
                     if (amtEl) amtEl.value = amtVal ? formatAmount(amtVal) : formatAmount(0);
                     if (rateEl && rateVal) {
-                        const opt = Array.from(rateEl.options).find(o => o.value === String(parseFloat(rateVal)));
-                        if (opt) rateEl.value = opt.value;
+                        if (String(rateVal).toLowerCase() === 'custom' && rateEl.querySelector('option[value="custom"]')) {
+                            rateEl.value = 'custom';
+                        } else {
+                            const opt = Array.from(rateEl.options).find(o => o.value === String(parseFloat(rateVal)));
+                            if (opt) rateEl.value = opt.value;
+                        }
                     }
                 });
                 setFieldValue('fieldGrossAmount', formatAmount(trigger.dataset.amount));
@@ -1431,14 +1472,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 setFieldValue('fieldProfessionalTaxAmount', formatAmount(0));
                 const enableProfCheckbox = document.getElementById('fieldEnableProfTax');
                 if (enableProfCheckbox) enableProfCheckbox.checked = false;
-                // Reset VAT first so rate options rebuild as Non-VAT (3%/1%)
-                const vatCheckbox = document.getElementById('fieldIsVat');
-                if (vatCheckbox) {
-                    vatCheckbox.checked = false;
-                }
-                const exemptCheckboxCreate = document.getElementById('fieldTaxExempt');
-                if (exemptCheckboxCreate) {
-                    exemptCheckboxCreate.checked = false;
+                // Default Tax Type = Non-VAT so rate options rebuild as 3%/1%
+                const taxTypeSelCreate = document.getElementById('fieldTaxType');
+                if (taxTypeSelCreate) {
+                    taxTypeSelCreate.value = 'non_vat';
                 }
                 populateTaxRateOptions();
                 document.querySelectorAll('#taxSlotsWrap .tax-amount-input').forEach(el => {

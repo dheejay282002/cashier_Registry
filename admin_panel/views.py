@@ -5574,7 +5574,26 @@ def suppliers(request):
         t1_vat, t1_nv = _get_tax_rates(t1_rate)
         t2_vat, t2_nv = _get_tax_rates(t2_rate)
 
-        is_vat = bool(post.get('is_vat'))
+        # Tax Type from modal dropdown: none | vat | non_vat (legacy: is_vat / tax_exempt posts)
+        tax_type = str(post.get('tax_type', '') or '').strip().lower()
+        if tax_type in ('none', 'no', 'exempt', 'no_taxes'):
+            is_vat = False
+            tax_exempt = True
+        elif tax_type == 'vat':
+            is_vat = True
+            tax_exempt = False
+        elif tax_type in ('non_vat', 'non-vat', 'nonvat'):
+            is_vat = False
+            tax_exempt = False
+        elif tax_type == 'custom':
+            # Custom: user-entered tax amounts — rate recompute is skipped below
+            is_vat = False
+            tax_exempt = False
+        else:
+            is_vat = bool(post.get('is_vat'))
+            tax_exempt = str(post.get('tax_exempt', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
+        if not tax_type:
+            tax_type = 'none' if tax_exempt else ('vat' if is_vat else 'non_vat')
 
         def _pct_to_dec(raw):
             if not raw:
@@ -5584,17 +5603,15 @@ def suppliers(request):
             except (InvalidOperation, ValueError):
                 return None
 
-        # Tax Exempt — skip all taxes for this supplier (Net = Gross − other deductions only)
-        tax_exempt = str(post.get('tax_exempt', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
-
-        # Tax 1: user-picked rate from modal dropdown (tax_1_option holds "5", …)
+        # Tax 1: user-picked rate from modal dropdown (tax_1_option holds "5", "custom", …)
+        rate1_is_custom = str(post.get('tax_1_option', '') or '').strip().lower() == 'custom'
         rate1 = _pct_to_dec(post.get('tax_1_option', ''))
         custom1 = _pct_to_dec(post.get('tax_5_rate_vat' if is_vat else 'tax_5_rate_non_vat', ''))
         if custom1 is not None:
             rate1 = custom1
         if rate1 is None:
             rate1 = t1_vat if is_vat else t1_nv
-        elif '/' in (t1_rate or ''):
+        elif tax_type != 'custom' and '/' in (t1_rate or ''):
             # Dual rate must follow VAT mode: VAT→first (5/2), Non-VAT→second (3/1)
             expected = t1_vat if is_vat else t1_nv
             other = t1_nv if is_vat else t1_vat
@@ -5602,19 +5619,24 @@ def suppliers(request):
                 rate1 = expected
         if tax_exempt:
             rate1 = Decimal('0')
+            rate1_is_custom = False
+        if rate1 is None:
+            rate1 = Decimal('0')
 
         # Tax 2 = Goods / Services selection (dropdown replaces the old Tax 2 rate slot)
         goods_service = str(post.get('goods_service_type', '') or '').strip().lower()
-        if goods_service not in ('goods', 'services'):
+        if goods_service not in ('goods', 'services', 'custom'):
             # Legacy posts that still send tax_2_option without the type dropdown
             legacy_gs = str(post.get('tax_2_option', '') or '').strip().lower()
-            if legacy_gs in ('goods', 'services'):
+            if legacy_gs in ('goods', 'services', 'custom'):
                 goods_service = legacy_gs
             else:
                 goods_service = ''
         gs_rates = _goods_service_rate_map()
         if tax_exempt:
             goods_service = ''
+            rate2 = Decimal('0')
+        elif goods_service == 'custom':
             rate2 = Decimal('0')
         elif goods_service == 'goods':
             rate2 = gs_rates['goods'] / Decimal('100')
@@ -5630,15 +5652,29 @@ def suppliers(request):
             tax_base = gross_amount_dec
         if tax_exempt:
             tax_base = Decimal('0.00')
-        tax_5 = str((tax_base * rate1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
-        tax_2 = str((tax_base * rate2).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+
+        def _posted_money(name):
+            raw = str(post.get(name, '') or '').strip().replace(',', '').replace('₱', '').replace('₱', '')
+            try:
+                return str(Decimal(raw or '0').quantize(Decimal('0.01')))
+            except (InvalidOperation, ValueError):
+                return '0.00'
+
+        # Custom rate option: posted amount wins — never recompute from rates
+        if tax_type == 'custom' or rate1_is_custom:
+            tax_5 = _posted_money('tax_5')
+        else:
+            tax_5 = str((tax_base * rate1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+        if tax_type == 'custom' or goods_service == 'custom':
+            tax_2 = _posted_money('tax_2')
+        else:
+            tax_2 = str((tax_base * rate2).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
         tax_base_5_3 = str(tax_base)
         tax_base_3_1 = str(tax_base)
 
         # Professional tax optional — 5% of Gross only when Enable is checked
+        # NOTE: Prof. Tax is independent of No Taxes (tax_exempt) and is never forced off by it
         enable_prof_tax = str(post.get('enable_professional_tax', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
-        if tax_exempt:
-            enable_prof_tax = False
         if enable_prof_tax:
             professional_tax_rate = '5.00'
             professional_tax_amount = str((gross_amount_dec * Decimal('0.05')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
@@ -5655,17 +5691,22 @@ def suppliers(request):
                 continue
             if key in ('tax_1_option', 'tax_2_option'):
                 continue  # tax_1 already handled; tax_2_option is Goods/Service legacy
-            rate_dec = _pct_to_dec(str(val or ''))
-            if rate_dec is None:
-                continue
             slot_name = key[:-7]  # 'tax_3_option' → 'tax_3'
+            opt_raw = str(val or '').strip()
+            opt_is_custom = opt_raw.lower() == 'custom'
+            rate_dec = None if opt_is_custom else _pct_to_dec(opt_raw)
+            if rate_dec is None and not opt_is_custom:
+                continue
             if tax_exempt:
                 extra_tax_result[slot_name] = '0.00'
-                extra_tax_result[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
+                extra_tax_result[key] = 'custom' if opt_is_custom else str((rate_dec * 100).quantize(Decimal('0.01')))
                 continue
-            amount_dec = (tax_base * rate_dec).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            if opt_is_custom or tax_type == 'custom':
+                amount_dec = Decimal(_posted_money(slot_name))
+            else:
+                amount_dec = (tax_base * rate_dec).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             extra_tax_result[slot_name] = str(amount_dec)
-            extra_tax_result[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
+            extra_tax_result[key] = 'custom' if opt_is_custom else str((rate_dec * 100).quantize(Decimal('0.01')))
             extra_tax_total += amount_dec
 
         # Net = Gross − Tax1 − Goods/Services − Extra taxes − ProfTax − OtherDeductions
@@ -5693,6 +5734,7 @@ def suppliers(request):
             'approval': post.get('approval', '').strip(),
             'other_deductions': deductions,
             'is_vat': 'true' if is_vat else 'false',
+            'tax_type': tax_type,
             'remarks_text': post.get('remarks_text', '').strip() or post.get('remarks', '').strip(),
             'dv_payroll': post.get('dv_payroll', '').strip(),
             'ors_burs': post.get('ors_burs', '').strip(),
@@ -5703,7 +5745,7 @@ def suppliers(request):
             'tax_5': tax_5,
             'tax_2': tax_2,
             'goods_service_type': goods_service,
-            'tax_1_option': str((rate1 * 100).quantize(Decimal('0.01'))),
+            'tax_1_option': 'custom' if rate1_is_custom else str((rate1 * 100).quantize(Decimal('0.01'))),
             'tax_2_option': goods_service,
             'tax_base_5_3': tax_base_5_3,
             'tax_base_3_1': tax_base_3_1,
@@ -6437,12 +6479,20 @@ def supplier_create_ajax(request):
         except (InvalidOperation, ValueError):
             return ''
 
+    def _pct_to_dec_local(raw):
+        if not raw:
+            return None
+        try:
+            return Decimal(str(raw).strip().replace('%', '')) / Decimal('100')
+        except (InvalidOperation, ValueError):
+            return None
+
     supplier_extras = {}
     for key in ('account_title', 'fund_cluster', 'fund_cluster_id', 'cashier_name', 'approval',
                 'other_deductions', 'is_vat', 'dv_payroll', 'ors_burs', 'responsibility_center',
                 'uacs', 'professional_tax_rate', 'professional_tax', 'tax_5', 'tax_2', 'gross_amount',
                 'tax_1_option', 'tax_2_option', 'tax_3', 'tax_4', 'tax_5_amount', 'net_amount',
-                'tax_3_option', 'tax_4_option', 'tax_exempt'):
+                'tax_3_option', 'tax_4_option', 'tax_exempt', 'tax_type'):
         val = post.get(key, '').strip()
         if not val:
             continue
@@ -6455,11 +6505,33 @@ def supplier_create_ajax(request):
         if val:
             supplier_extras[key] = val
 
-    tax_exempt_flag = str(post.get('tax_exempt', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
+    # Tax Type from modal dropdown: none | vat | non_vat (legacy: is_vat / tax_exempt posts)
+    _tax_type = str(post.get('tax_type', '') or '').strip().lower()
+    if _tax_type in ('none', 'no', 'exempt', 'no_taxes'):
+        _is_vat_flag = False
+        tax_exempt_flag = True
+        _tax_type = 'none'
+    elif _tax_type == 'vat':
+        _is_vat_flag = True
+        tax_exempt_flag = False
+    elif _tax_type in ('non_vat', 'non-vat', 'nonvat'):
+        _is_vat_flag = False
+        tax_exempt_flag = False
+        _tax_type = 'non_vat'
+    elif _tax_type == 'custom':
+        # Custom: manual amounts already copied into supplier_extras — skip recompute
+        _is_vat_flag = False
+        tax_exempt_flag = False
+    else:
+        _is_vat_flag = str(post.get('is_vat', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
+        tax_exempt_flag = str(post.get('tax_exempt', '') or '').strip().lower() in ('on', 'true', '1', 'yes')
+        _tax_type = 'none' if tax_exempt_flag else ('vat' if _is_vat_flag else 'non_vat')
+    supplier_extras['tax_type'] = _tax_type
+    supplier_extras['is_vat'] = 'true' if _is_vat_flag else 'false'
+    supplier_extras['tax_exempt'] = 'true' if tax_exempt_flag else 'false'
+
+    # Tax Type = None: zero VAT/other taxes — Prof. Tax is NOT part of this flag
     if tax_exempt_flag:
-        supplier_extras['tax_exempt'] = 'true'
-        supplier_extras['professional_tax'] = '0.00'
-        supplier_extras['professional_tax_rate'] = '0.00'
         supplier_extras['tax_5'] = '0.00'
         supplier_extras['tax_2'] = '0.00'
         supplier_extras['goods_service_type'] = ''
@@ -6472,99 +6544,112 @@ def supplier_create_ajax(request):
             if sk.startswith('tax_') and sk[4:].isdigit() and not sk.endswith('_option'):
                 supplier_extras[sk] = '0.00'
     else:
-        supplier_extras.setdefault('tax_exempt', 'false')
         # Dual rate must follow VAT mode: VAT→first (5/2), Non-VAT→second (3/1)
-        try:
-            _is_vat_dual = str(supplier_extras.get('is_vat', post.get('is_vat', '')) or '').strip().lower() in ('on', 'true', '1', 'yes')
-            _active = _active_tax_options()
-            _t1 = _active[0] if _active else None
-            _t1_vat, _t1_nv = _get_tax_rates(_t1.uacs if _t1 else '5%/3%')
-            if _t1 and '/' in (_t1.uacs or '') and _t1_vat is not None and _t1_nv is not None:
-                _expected = _t1_vat if _is_vat_dual else _t1_nv
-                _other = _t1_nv if _is_vat_dual else _t1_vat
-                _posted1 = _pct_to_dec_local(str(supplier_extras.get('tax_1_option') or post.get('tax_1_option', '')))
-                if _posted1 is not None and _expected is not None and _posted1 == _other:
-                    _posted1 = _expected
-                if _posted1 is None:
-                    _posted1 = _expected
-                if _posted1 is not None:
-                    supplier_extras['tax_1_option'] = str((_posted1 * 100).quantize(Decimal('0.01')))
-                    # Recompute Tax 1 amount from corrected rate
-                    _base1 = Decimal(str(supplier_extras.get('gross_amount') or post.get('gross_amount') or post.get('amount') or '0').replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0').quantize(Decimal('0.01'))
-                    if _is_vat_dual:
-                        _base1 = (_base1 / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                    supplier_extras['tax_5'] = str((_base1 * _posted1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
-        except Exception:
+        _raw_opt1 = str(supplier_extras.get('tax_1_option') or post.get('tax_1_option', '') or '').strip()
+        if _raw_opt1.lower() == 'custom':
+            # Custom rate option: posted tax_5 is final — no rate realignment
             pass
+        else:
+            try:
+                _is_vat_dual = _is_vat_flag
+                _active = _active_tax_options()
+                _t1 = _active[0] if _active else None
+                _t1_vat, _t1_nv = _get_tax_rates(_t1.uacs if _t1 else '5%/3%')
+                if _tax_type != 'custom' and _t1 and '/' in (_t1.uacs or '') and _t1_vat is not None and _t1_nv is not None:
+                    _expected = _t1_vat if _is_vat_dual else _t1_nv
+                    _other = _t1_nv if _is_vat_dual else _t1_vat
+                    _posted1 = _pct_to_dec_local(str(supplier_extras.get('tax_1_option') or post.get('tax_1_option', '')))
+                    if _posted1 is not None and _expected is not None and _posted1 == _other:
+                        _posted1 = _expected
+                    if _posted1 is None:
+                        _posted1 = _expected
+                    if _posted1 is not None:
+                        supplier_extras['tax_1_option'] = str((_posted1 * 100).quantize(Decimal('0.01')))
+                        # Recompute Tax 1 amount from corrected rate
+                        _base1 = Decimal(str(supplier_extras.get('gross_amount') or post.get('gross_amount') or post.get('amount') or '0').replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0').quantize(Decimal('0.01'))
+                        if _is_vat_dual:
+                            _base1 = (_base1 / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                        supplier_extras['tax_5'] = str((_base1 * _posted1).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP))
+            except Exception:
+                pass
         # Persist Goods/Service selection (posted as goods_service_type)
         _gs_post = str(post.get('goods_service_type', '') or '').strip().lower()
-        if _gs_post in ('goods', 'services'):
+        if _gs_post in ('goods', 'services', 'custom'):
             supplier_extras['goods_service_type'] = _gs_post
             supplier_extras['tax_2_option'] = _gs_post
-        elif supplier_extras.get('goods_service_type', '').lower() not in ('goods', 'services'):
+        elif supplier_extras.get('goods_service_type', '').lower() not in ('goods', 'services', 'custom'):
             # Keep existing value if present, else clear
-            if 'goods_service_type' in supplier_extras and supplier_extras['goods_service_type'].lower() not in ('goods', 'services'):
+            if 'goods_service_type' in supplier_extras and supplier_extras['goods_service_type'].lower() not in ('goods', 'services', 'custom'):
                 supplier_extras['goods_service_type'] = ''
 
     # Extra tax slots (tax_3_option, tax_4_option, …) → amounts computed same as Tax 1
-    def _pct_to_dec_local(raw):
-        if not raw:
-            return None
+    # Custom mode: posted tax_3/tax_4 amounts are final — keep rate for display only
+    if _tax_type == 'custom':
         try:
-            return Decimal(str(raw).strip().replace('%', '')) / Decimal('100')
-        except (InvalidOperation, ValueError):
-            return None
-    try:
-        is_vat_flag_for_extra = str(post.get('is_vat', '')).strip().lower() in ('on', 'true', '1', 'yes')
-        gross_for_extra = Decimal(
-            str(post.get('gross_amount') or post.get('amount') or '0')
-            .replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0'
-        ).quantize(Decimal('0.01'))
-        if is_vat_flag_for_extra:
-            extra_base = (gross_for_extra / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        else:
-            extra_base = gross_for_extra
-        if tax_exempt_flag:
-            extra_base = Decimal('0.00')
-        for key in list(post.keys()):
-            if key.startswith('tax_') and key.endswith('_option') and key not in ('tax_1_option', 'tax_2_option'):
-                rate_dec = _pct_to_dec_local(str(post.get(key, '') or ''))
-                if rate_dec is None:
+            for key in list(post.keys()):
+                if key.startswith('tax_') and key.endswith('_option') and key not in ('tax_1_option', 'tax_2_option'):
+                    rate_dec = _pct_to_dec_local(str(post.get(key, '') or ''))
+                    if rate_dec is None:
+                        continue
+                    supplier_extras[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
+        except Exception:
+            pass
+    else:
+        try:
+            is_vat_flag_for_extra = _is_vat_flag
+            gross_for_extra = Decimal(
+                str(post.get('gross_amount') or post.get('amount') or '0')
+                .replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0'
+            ).quantize(Decimal('0.01'))
+            if is_vat_flag_for_extra:
+                extra_base = (gross_for_extra / Decimal('1.12')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            else:
+                extra_base = gross_for_extra
+            if tax_exempt_flag:
+                extra_base = Decimal('0.00')
+            for key in list(post.keys()):
+                if key.startswith('tax_') and key.endswith('_option') and key not in ('tax_1_option', 'tax_2_option'):
+                    opt_raw = str(post.get(key, '') or '').strip()
+                    slot_name = key[:-7]
+                    if opt_raw.lower() == 'custom':
+                        # Custom rate option: posted slot amount is final
+                        continue
+                    rate_dec = _pct_to_dec_local(opt_raw)
+                    if rate_dec is None:
+                        continue
+                    amount_dec = (extra_base * rate_dec).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+                    supplier_extras[slot_name] = str(amount_dec)
+                    supplier_extras[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
+        except Exception:
+            pass
+
+    # Net = Gross − tax_5 − tax_2 − extra taxes − prof − other deductions (when gross present)
+    if post.get('gross_amount', '').strip():
+        try:
+            _g = Decimal(str(post.get('gross_amount') or '0').replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0').quantize(Decimal('0.01'))
+            if tax_exempt_flag:
+                supplier_extras['tax_5'] = '0.00'
+                supplier_extras['tax_2'] = '0.00'
+                supplier_extras['goods_service_type'] = ''
+            # Prof. Tax left as posted — independent of No Taxes
+            _t5 = Decimal(str(supplier_extras.get('tax_5') or '0') or '0')
+            _t2 = Decimal(str(supplier_extras.get('tax_2') or '0') or '0')
+            _prof = Decimal(str(supplier_extras.get('professional_tax') or '0') or '0')
+            _ded = Decimal(str(supplier_extras.get('other_deductions') or '0') or '0')
+            _extra = Decimal('0')
+            for k, v in supplier_extras.items():
+                if k.startswith('tax_') and k.endswith('_option'):
                     continue
-                slot_name = key[:-7]
-                amount_dec = (extra_base * rate_dec).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-                supplier_extras[slot_name] = str(amount_dec)
-                supplier_extras[key] = str((rate_dec * 100).quantize(Decimal('0.01')))
-        # Net = Gross − tax_5 − tax_2 − extra taxes − prof − other deductions (when gross present)
-        if post.get('gross_amount', '').strip():
-            try:
-                _g = Decimal(str(post.get('gross_amount') or '0').replace(',', '').replace('₱', '').replace('\u20B1', '').strip() or '0').quantize(Decimal('0.01'))
-                if tax_exempt_flag:
-                    supplier_extras['tax_5'] = '0.00'
-                    supplier_extras['tax_2'] = '0.00'
-                    supplier_extras['professional_tax'] = '0.00'
-                    supplier_extras['professional_tax_rate'] = '0.00'
-                    supplier_extras['goods_service_type'] = ''
-                _t5 = Decimal(str(supplier_extras.get('tax_5') or '0') or '0')
-                _t2 = Decimal(str(supplier_extras.get('tax_2') or '0') or '0')
-                _prof = Decimal(str(supplier_extras.get('professional_tax') or '0') or '0')
-                _ded = Decimal(str(supplier_extras.get('other_deductions') or '0') or '0')
-                _extra = Decimal('0')
-                for k, v in supplier_extras.items():
-                    if k.startswith('tax_') and k.endswith('_option'):
-                        continue
-                    if k in ('tax_5', 'tax_2', 'gross_amount', 'professional_tax', 'other_deductions'):
-                        continue
-                    if k.startswith('tax_') and k[4:].isdigit():
-                        try:
-                            _extra += Decimal(str(v or '0'))
-                        except Exception:
-                            pass
-                supplier_extras['net_amount'] = str((_g - _t5 - _t2 - _extra - _prof - _ded).quantize(Decimal('0.01')))
-            except Exception:
-                pass
-    except Exception:
-        pass
+                if k in ('tax_5', 'tax_2', 'gross_amount', 'professional_tax', 'other_deductions'):
+                    continue
+                if k.startswith('tax_') and k[4:].isdigit():
+                    try:
+                        _extra += Decimal(str(v or '0'))
+                    except Exception:
+                        pass
+            supplier_extras['net_amount'] = str((_g - _t5 - _t2 - _extra - _prof - _ded).quantize(Decimal('0.01')))
+        except Exception:
+            pass
 
     # Ensure is_vat is always explicit (unchecked checkbox sends nothing)
     if 'is_vat' not in supplier_extras:
@@ -6634,6 +6719,8 @@ def supplier_create_ajax(request):
             'tax_5': extras.get('tax_5', ''),
             'tax_2': extras.get('tax_2', ''),
             'tax_exempt': extras.get('tax_exempt', 'false'),
+            'tax_type': extras.get('tax_type', ''),
+            'is_vat': extras.get('is_vat', 'false'),
             'amount': str(sup.amount.quantize(Decimal('0.01'))) if sup.amount else '',
             'other_deductions': extras.get('other_deductions', '0'),
             'fund_cluster_label': extras.get('fund_cluster', ''),
@@ -6675,6 +6762,8 @@ def supplier_create_ajax(request):
         'tax_5': extras.get('tax_5', ''),
         'tax_2': extras.get('tax_2', ''),
         'tax_exempt': extras.get('tax_exempt', 'false'),
+        'tax_type': extras.get('tax_type', ''),
+        'is_vat': extras.get('is_vat', 'false'),
         'amount': str(sup.amount.quantize(Decimal('0.01'))) if sup.amount else '',
         'other_deductions': extras.get('other_deductions', '0'),
         'fund_cluster_label': extras.get('fund_cluster', ''),
@@ -7471,6 +7560,7 @@ def _enrich_supplier_for_display(supplier):
     supplier.other_deductions      = _clean_money_str(extras.get('other_deductions')) or '0'
     supplier.is_vat                = str(extras.get('is_vat') or 'false')
     supplier.tax_exempt            = str(extras.get('tax_exempt') or 'false')
+    supplier.tax_type              = str(extras.get('tax_type') or '')
     supplier.remarks_text          = str(extras.get('remarks_text') or supplier.remarks or '')
     supplier.dv_payroll            = str(extras.get('dv_payroll') or '')
     supplier.ors_burs              = str(extras.get('ors_burs') or '')
@@ -7491,7 +7581,7 @@ def _enrich_supplier_for_display(supplier):
     supplier.tax_2_rate_vat        = str(extras.get('tax_2_rate_vat') or '')
     supplier.tax_2_rate_non_vat    = str(extras.get('tax_2_rate_non_vat') or '')
     supplier.goods_service_type    = str(extras.get('goods_service_type') or extras.get('tax_2_option') or '')
-    if supplier.goods_service_type.lower() not in ('goods', 'services'):
+    if supplier.goods_service_type.lower() not in ('goods', 'services', 'custom'):
         supplier.goods_service_type = ''
     else:
         supplier.goods_service_type = supplier.goods_service_type.lower()

@@ -8130,7 +8130,7 @@ function attachPasswordValidation(inputId) {
       '<td>' + esc(d.fund_cluster_label) + '</td>' +
       '<td class="remark-cell" data-supplier-id="' + d.id + '" data-current-remark="' + esc(d.remarks) + '"><span class="remark-text inline-editable-remark" title="Click to change remark">' + esc(d.remarks || 'Add Remarks!') + '</span></td>' +
       '<td><span class="badge badge-' + esc(d.status) + '">' + esc(d.status_display) + '</span></td>' +
-      '<td><button class="btn btn-sm btn-secondary" onclick="openSupplierModal(\'edit\', this)" data-id="' + d.id + '" data-mr-or="' + esc(d.mr_or) + '" data-date="' + (d.date_yyyy_mm_dd || '') + '" data-payee="' + esc(d.account_name) + '" data-dv-payroll="' + esc(d.dv_payroll) + '" data-ors-burs="' + esc(d.ors_burs) + '" data-responsibility-center="' + esc(d.responsibility_center) + '" data-uacs="' + esc(d.uacs) + '" data-account-title="' + esc(d.account_title) + '" data-nature-of-collections="' + esc(d.nature_of_collections) + '" data-amount="' + (d.amount || '0.00') + '" data-gross-amount="' + esc(d.gross_amount) + '" data-professional-tax="' + esc(d.professional_tax) + '" data-tax5="' + esc(d.tax_5) + '" data-tax2="' + esc(d.tax_2) + '" data-remarks="' + esc(d.remarks) + '" data-status="' + esc(d.status) + '" data-fund-cluster="' + esc(d.fund_cluster_label) + '"><i class="fas fa-pen"></i></button>' + deleteBtn + '</td>';
+      '<td><button class="btn btn-sm btn-secondary" onclick="openSupplierModal(\'edit\', this)" data-id="' + d.id + '" data-mr-or="' + esc(d.mr_or) + '" data-date="' + (d.date_yyyy_mm_dd || '') + '" data-payee="' + esc(d.account_name) + '" data-dv-payroll="' + esc(d.dv_payroll) + '" data-ors-burs="' + esc(d.ors_burs) + '" data-responsibility-center="' + esc(d.responsibility_center) + '" data-uacs="' + esc(d.uacs) + '" data-account-title="' + esc(d.account_title) + '" data-nature-of-collections="' + esc(d.nature_of_collections) + '" data-amount="' + (d.amount || '0.00') + '" data-gross-amount="' + esc(d.gross_amount) + '" data-professional-tax="' + esc(d.professional_tax) + '" data-tax5="' + esc(d.tax_5) + '" data-tax2="' + esc(d.tax_2) + '" data-tax-type="' + esc(d.tax_type || '') + '" data-tax-exempt="' + esc(d.tax_exempt || 'false') + '" data-is-vat="' + esc(d.is_vat || 'false') + '" data-remarks="' + esc(d.remarks) + '" data-status="' + esc(d.status) + '" data-fund-cluster="' + esc(d.fund_cluster_label) + '"><i class="fas fa-pen"></i></button>' + deleteBtn + '</td>';
     tbody.insertBefore(tr, tbody.firstChild);
     // re-number all rows
     var allRows = tbody.querySelectorAll('tr');
@@ -8186,8 +8186,8 @@ function attachPasswordValidation(inputId) {
       }
     });
 
-    var vatCb = document.getElementById('fieldIsVat');
-    if (vatCb) vatCb.checked = false;
+    var taxTypeSel = document.getElementById('fieldTaxType');
+    if (taxTypeSel) taxTypeSel.value = 'non_vat';
     var statusSel = document.getElementById('fieldStatus');
     if (statusSel) statusSel.value = 'active';
     var supId = document.getElementById('supplierId');
