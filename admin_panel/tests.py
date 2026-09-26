@@ -1,5 +1,5 @@
 import json
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
@@ -1434,6 +1434,237 @@ class SystemResetTests(TestCase):
 		self.assertEqual(RoleConfig.objects.count(), 1)
 		self.assertEqual(SystemSetting.objects.count(), 1)
 		self.assertEqual(AuditLog.objects.count(), 1)
+
+
+class BackupPreviewTests(TestCase):
+	"""Backup Data Preview: cheque badges match the live Cheques page,
+	and fund clusters show Total Disbursed (released cheques), not balance."""
+
+	@staticmethod
+	def _cluster(pk=1):
+		return {"model": "cashier.fundcluster", "pk": pk, "fields": {
+			"code": "101", "name": "ISABELA STATE UNIVERSITY", "description": "",
+			"balance": "0", "bank_name": "LANDBANK", "is_active": True, "is_archived": False,
+		}}
+
+	@staticmethod
+	def _cheque(pk, status, amount="0.00", fc=1, stale_at=None, archived=False):
+		return {"model": "cashier.cheque", "pk": pk, "fields": {
+			"cheque_number": f"CHK{pk}", "payee_name": f"Payee {pk}",
+			"fund_cluster": fc, "amount": amount, "status": status,
+			"stale_at": stale_at, "released_at": None,
+			"is_archived": archived,
+		}}
+
+	def test_cheque_status_never_shows_draft_or_pending(self):
+		from admin_panel.views import _build_data_preview_from_serialized
+		yesterday = (date.today() - timedelta(days=1)).isoformat()
+		tomorrow = (date.today() + timedelta(days=1)).isoformat()
+		raw = [
+			self._cluster(),
+			self._cheque(1, "pending", amount="100.00"),
+			self._cheque(2, "draft", amount="100.00"),
+			self._cheque(3, "unreleased", amount="100.00"),
+			self._cheque(4, "released", amount="150.00"),
+			self._cheque(5, "stale", amount="100.00"),
+			self._cheque(6, "unreleased", amount="100.00", stale_at=yesterday),
+			self._cheque(7, "unreleased", amount="100.00", stale_at=tomorrow),
+			self._cheque(8, "voided", amount="100.00"),
+			self._cheque(9, "released", amount="999.00", archived=True),
+		]
+		preview = _build_data_preview_from_serialized(raw)
+		statuses = [c["status"] for c in preview["cheques"]]
+		self.assertEqual(statuses, [
+			"unreleased",   # legacy 'pending'
+			"unreleased",   # legacy 'draft'
+			"unreleased",
+			"released",
+			"stale",
+			"stale",        # overdue stale_at
+			"unreleased",   # stale_at in the future
+			"voided",
+			"archived",     # archived wins over released
+		])
+		for c in preview["cheques"]:
+			self.assertNotIn(c["status"], ("draft", "pending"))
+
+	def test_cluster_disbursed_sums_released_cheques_only(self):
+		from admin_panel.views import _build_data_preview_from_serialized
+		raw = [
+			self._cluster(pk=1),
+			self._cheque(1, "released", amount="500.00", fc=1),
+			self._cheque(2, "released", amount="250.50", fc=1),
+			self._cheque(3, "unreleased", amount="999.99", fc=1),
+			self._cheque(4, "pending", amount="888.88", fc=1),
+			self._cheque(5, "released", amount="42.00", fc=None),
+		]
+		preview = _build_data_preview_from_serialized(raw)
+		fc = preview["fund_clusters"][0]
+		self.assertEqual(fc["disbursed"], "750.50")
+		self.assertEqual(fc["balance"], "0")  # legacy key kept
+
+	def test_cheque_display_status_helper(self):
+		from admin_panel.views import _cheque_display_status
+		self.assertEqual(_cheque_display_status({"status": "released"}), "released")
+		self.assertEqual(_cheque_display_status({"status": "draft"}), "unreleased")
+		self.assertEqual(_cheque_display_status({"status": "pending"}), "unreleased")
+		self.assertEqual(_cheque_display_status({"status": "unreleased"}), "unreleased")
+		self.assertEqual(_cheque_display_status({"status": "stale"}), "stale")
+		self.assertEqual(_cheque_display_status({"status": "voided"}), "voided")
+		self.assertEqual(_cheque_display_status({"status": "released", "is_archived": True}), "archived")
+		yesterday = (date.today() - timedelta(days=1)).isoformat()
+		self.assertEqual(_cheque_display_status({"status": "unreleased", "stale_at": yesterday}), "stale")
+
+
+class SystemFilesBackupTests(TestCase):
+	"""App-code (system files) backup: zip of source only, download-only, no data restore."""
+
+	def setUp(self):
+		self.admin = User.objects.create_superuser(username='admin', email='admin@example.com', password='pass12345')
+		self.client.force_login(self.admin)
+		from admin_panel.models import SystemSetting
+		settings_obj = SystemSetting.get_settings()
+		if getattr(settings_obj, 'auto_backup_to_downloads', False):
+			settings_obj.auto_backup_to_downloads = False
+			settings_obj.save(update_fields=['auto_backup_to_downloads'])
+
+	def test_pack_system_files_backup_contains_code_not_data(self):
+		import shutil
+		import zipfile as zf_mod
+		from admin_panel.views import _pack_system_files_backup
+		path, name, manifest = _pack_system_files_backup(self.admin)
+		try:
+			self.assertTrue(name.endswith('_CODE.zip'))
+			self.assertEqual(manifest['backup_type'], 'code')
+			self.assertGreater(manifest['file_count'], 50)
+			with zf_mod.ZipFile(path, 'r') as zf:
+				names = zf.namelist()
+				self.assertIn('manage.py', names)
+				self.assertIn('requirements.txt', names)
+				self.assertIn('admin_panel/views.py', names)
+				self.assertIn('templates/base.html', names)
+				self.assertIn('manifest.json', names)
+				self.assertFalse(any('__pycache__' in n for n in names), 'pycache leaked into code backup')
+				self.assertFalse(any(n.endswith('.pyc') for n in names), 'pyc leaked into code backup')
+				self.assertFalse(any(n.startswith('media/') for n in names), 'media leaked into code backup')
+				self.assertFalse(any('.venv/' in n for n in names), '.venv leaked into code backup')
+				self.assertFalse(any('db.sqlite3' in n for n in names), 'database leaked into code backup')
+		finally:
+			shutil.rmtree(path.parent, ignore_errors=True)
+
+	def test_download_code_action_streams_zip(self):
+		from admin_panel.views import _get_backup_storage_dir
+		response = self.client.post(reverse('backup_restore'), data={
+			'action': 'download_code',
+			'admin_password': 'pass12345',
+		})
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response['Content-Type'], 'application/zip')
+		self.assertIn('_CODE.zip', response['Content-Disposition'])
+		self.assertEqual(response.content[:2], b'PK')
+		# clean up the copy stored in media/backups by this test
+		stored = _get_backup_storage_dir() / response['Content-Disposition'].split('filename="')[1].rstrip('"')
+		stored.unlink(missing_ok=True)
+
+	def test_download_code_requires_admin_password(self):
+		response = self.client.post(
+			reverse('backup_restore'),
+			data={'action': 'download_code', 'admin_password': 'wrong'},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+		)
+		self.assertEqual(response.status_code, 400)
+		self.assertIn('password', str(response.content).lower())
+
+	def test_code_archive_cannot_be_restored(self):
+		import shutil
+		from admin_panel.views import _pack_system_files_backup, _get_backup_storage_dir
+		path, name, _ = _pack_system_files_backup(self.admin)
+		stored = _get_backup_storage_dir() / name
+		shutil.copy2(path, stored)
+		try:
+			response = self.client.post(reverse('backup_restore'), data={
+				'action': 'restore_server_backup',
+				'filename': name,
+				'admin_password': 'pass12345',
+			})
+			self.assertEqual(response.status_code, 200)
+			self.assertIn('system files', str(response.context['error']).lower())
+			self.assertIsNone(response.context.get('restore_preview'))
+		finally:
+			stored.unlink(missing_ok=True)
+			shutil.rmtree(path.parent, ignore_errors=True)
+
+
+class SqlBackupPreviewTests(TestCase):
+	"""SQL restore preview: INSERT statements parse into data_preview rows."""
+
+	SQL = r"""-- Registry System Backup (SQL)
+-- META {"version": 3, "backup_type": "SQL", "format": "sql", "created_at": "2026-09-25T15:45:43", "created_by_username": "admin", "counts": {"fund_clusters": 1, "suppliers": 1, "cheques": 2}}
+SET FOREIGN_KEY_CHECKS=0;
+SET UNIQUE_CHECKS=0;
+
+DELETE FROM `cashier_cheque`;
+DELETE FROM `cashier_fundcluster`;
+
+-- table: cashier_fundcluster (1 rows)
+INSERT INTO `cashier_fundcluster` (`id`, `code`, `name`, `description`, `balance`, `is_active`, `bank_name`, `is_archived`) VALUES (1, '101', 'ISABELA STATE UNIVERSITY', '', '0.00', 1, 'LANDBANK', 0) ON DUPLICATE KEY UPDATE `code`=VALUES(`code`);
+
+-- table: cashier_supplier (1 rows)
+INSERT INTO `cashier_supplier` (`id`, `account_name`, `raw_import`, `mr_or`, `amount`, `status`, `is_archived`) VALUES (1, 'ACME', '{"supplier_extras": {"tax_type": "vat", "gross_amount": "1000.00"}}', '2359197', '900.00', 'active', 0) ON DUPLICATE KEY UPDATE `account_name`=VALUES(`account_name`);
+
+-- table: cashier_cheque (2 rows)
+INSERT INTO `cashier_cheque` (`id`, `cheque_number`, `payee_name`, `fund_cluster_id`, `amount`, `date`, `status`, `stale_at`, `is_archived`, `purpose`) VALUES (1, '2359197', '5G TRADING', 1, '13533.93', '2026-09-24', 'pending', NULL, 0, 'Pay ''special'' fee\nline2') ON DUPLICATE KEY UPDATE `cheque_number`=VALUES(`cheque_number`);
+INSERT INTO `cashier_cheque` (`id`, `cheque_number`, `payee_name`, `fund_cluster_id`, `amount`, `date`, `status`, `stale_at`, `is_archived`, `purpose`) VALUES (2, '2359173', 'A.C.S. W3', 1, '52250.00', '2026-09-24', 'released', NULL, 0, 'Facilitation') ON DUPLICATE KEY UPDATE `cheque_number`=VALUES(`cheque_number`);
+SET UNIQUE_CHECKS=1;
+SET FOREIGN_KEY_CHECKS=1;
+"""
+
+	def test_sql_dump_parser_builds_preview_rows(self):
+		from admin_panel.views import _sql_dump_to_serialized, _build_data_preview_from_serialized
+		objects = _sql_dump_to_serialized(self.SQL)
+		preview = _build_data_preview_from_serialized(objects)
+		self.assertEqual(len(preview['fund_clusters']), 1)
+		self.assertEqual(len(preview['cheques']), 2)
+		self.assertEqual(len(preview['suppliers']), 1)
+		# legacy 'pending' normalizes to Unreleased, released stays Released
+		self.assertEqual([c['status'] for c in preview['cheques']], ['unreleased', 'released'])
+		# disbursed = sum of released cheques only (pending excluded)
+		self.assertEqual(preview['fund_clusters'][0]['disbursed'], '52250.00')
+		purposes = {c['cheque_number']: c['purpose'] for c in preview['cheques']}
+		# '' escaping and \n escape decode correctly
+		self.assertEqual(purposes['2359197'], "Pay 'special' fee\nline2")
+		# FK column fund_cluster_id mapped onto field fund_cluster (join key works)
+		self.assertEqual(str(preview['cheques'][0]['fund_cluster']), '1')
+		self.assertEqual(str(preview['fund_clusters'][0]['id']), '1')
+
+	def test_sql_dump_parser_decodes_json_columns(self):
+		from admin_panel.views import _sql_dump_to_serialized, _build_data_preview_from_serialized
+		preview = _build_data_preview_from_serialized(_sql_dump_to_serialized(self.SQL))
+		sup = preview['suppliers'][0]
+		self.assertEqual(sup['account_name'], 'ACME')
+		# raw_import decoded from SQL string to dict so extras render
+		self.assertEqual(sup['gross_amount'], '1000.00')
+
+	def test_inspect_sql_backup_returns_nonempty_preview(self):
+		import tempfile
+		from pathlib import Path as _Path
+		from admin_panel.views import _inspect_sql_backup
+		with tempfile.NamedTemporaryFile('w', suffix='.sql', delete=False, encoding='utf-8') as fh:
+			fh.write(self.SQL)
+			sql_path = _Path(fh.name)
+		try:
+			result = _inspect_sql_backup(sql_path)
+			self.assertEqual(len(result['data_preview']['cheques']), 2)
+			self.assertEqual(len(result['data_preview']['fund_clusters']), 1)
+			self.assertEqual(result['counts'].get('cheques'), 2)
+			self.assertEqual(result['format'], 'sql')
+		finally:
+			sql_path.unlink(missing_ok=True)
+
+	def test_sql_dump_parser_ignores_unknown_tables(self):
+		from admin_panel.views import _sql_dump_to_serialized
+		text = "INSERT INTO `django_migrations` (`id`, `app`, `name`) VALUES (1, 'auth', 'initial');"
+		self.assertEqual(_sql_dump_to_serialized(text), [])
 
 
 class CashierPermissionsTests(TestCase):

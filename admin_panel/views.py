@@ -2924,6 +2924,82 @@ def _pack_backup_archive(created_by, fmt="bak"):
         raise
 
 
+_SYSTEM_BACKUP_ROOTS = (
+    "admin_panel",
+    "cashier",
+    "registry",
+    "templates",
+    "static",
+    "scripts",
+)
+_SYSTEM_BACKUP_FILES = (
+    "manage.py",
+    "requirements.txt",
+    "package.json",
+    "package-lock.json",
+    "electron-main.js",
+    "electron-preload.js",
+    "runserver.bat",
+    "runserver.ps1",
+    "python.bat",
+)
+_SYSTEM_BACKUP_EXCLUDE_DIRS = {"__pycache__", ".git", ".venv", "node_modules", ".local", "backups"}
+_SYSTEM_BACKUP_EXCLUDE_SUFFIX = {".pyc", ".pyo", ".sqlite3", ".log"}
+
+
+def _pack_system_files_backup(created_by):
+    """Zip the application source code (no DB data, no media) as a download-only
+    'system files' archive. Restoring is manual (unzip over the app)."""
+    timestamp = timezone.now().strftime("%Y_%m_%d_%H%M%S")
+    backup_name = f"system_files_{timestamp}_CODE.zip"
+    temp_dir = Path(tempfile.mkdtemp(prefix="finalproject_code_"))
+    archive_path = temp_dir / backup_name
+    base_dir = Path(settings.BASE_DIR)
+
+    file_count = 0
+    total_bytes = 0
+    try:
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for root_name in _SYSTEM_BACKUP_ROOTS:
+                root = base_dir / root_name
+                if not root.exists():
+                    continue
+                for file_path in root.rglob("*"):
+                    if not file_path.is_file():
+                        continue
+                    rel = file_path.relative_to(root)
+                    if any(part in _SYSTEM_BACKUP_EXCLUDE_DIRS for part in rel.parts):
+                        continue
+                    if file_path.suffix.lower() in _SYSTEM_BACKUP_EXCLUDE_SUFFIX:
+                        continue
+                    zf.write(file_path, arcname=f"{root_name}/{rel.as_posix()}")
+                    file_count += 1
+                    total_bytes += file_path.stat().st_size
+            for file_name in _SYSTEM_BACKUP_FILES:
+                file_path = base_dir / file_name
+                if file_path.is_file():
+                    zf.write(file_path, arcname=file_name)
+                    file_count += 1
+                    total_bytes += file_path.stat().st_size
+            manifest = {
+                "backup_type": "code",
+                "format": "zip",
+                "version": 1,
+                "created_at": timezone.now().isoformat(),
+                "created_by_username": getattr(created_by, "username", str(created_by or "")),
+                "file_count": file_count,
+                "source_bytes": total_bytes,
+                "roots": list(_SYSTEM_BACKUP_ROOTS),
+                "files": list(_SYSTEM_BACKUP_FILES),
+            }
+            zf.writestr("manifest.json", json.dumps(manifest, indent=2, default=str))
+
+        return archive_path, backup_name, manifest
+    except Exception:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        raise
+
+
 def _get_backup_storage_dir():
     """Get or create the server-side backup storage directory."""
     backup_dir = Path(settings.MEDIA_ROOT) / "backups"
@@ -2940,7 +3016,7 @@ def _store_backup(archive_path, backup_name):
     return dest
 
 
-_BACKUP_FILE_SUFFIXES = (".bak", ".json", ".sql")
+_BACKUP_FILE_SUFFIXES = (".bak", ".json", ".sql", ".zip")
 
 
 def _is_backup_filename(name):
@@ -3138,6 +3214,7 @@ def _build_data_preview_from_serialized(raw):
         "cashier.radai": "radai",
     }
     group_names = {}
+    disbursed_by_cluster = {}
     for item in raw:
         pk = item.get("pk")
         model = (item.get("model") or "").lower()
@@ -3192,7 +3269,8 @@ def _build_data_preview_from_serialized(raw):
                 "is_archived": fields.get("is_archived", False),
             })
         elif target == "suppliers":
-            extras = ((fields.get("raw_import") or {}).get("supplier_extras") or {})
+            _raw = fields.get("raw_import")
+            extras = ((_raw.get("supplier_extras") or {}) if isinstance(_raw, dict) else {})
             data_preview[target].append({
                 "id": pk,
                 "mr_or": fields.get("mr_or", ""),
@@ -3250,6 +3328,14 @@ def _build_data_preview_from_serialized(raw):
                 "is_archived": fields.get("is_archived", False),
             })
         elif target == "cheques":
+            raw_status = str(fields.get("status") or "").lower()
+            if raw_status == "released":
+                fc_key = str(fields.get("fund_cluster") or "")
+                try:
+                    amt = Decimal(str(fields.get("amount") or "0") or "0")
+                except InvalidOperation:
+                    amt = Decimal("0")
+                disbursed_by_cluster[fc_key] = disbursed_by_cluster.get(fc_key, Decimal("0")) + amt
             data_preview[target].append({
                 "id": pk,
                 "cheque_number": fields.get("cheque_number", ""),
@@ -3268,11 +3354,13 @@ def _build_data_preview_from_serialized(raw):
                 "professional_tax": fields.get("professional_tax", "0"),
                 "tax_5_3": fields.get("tax_5_3", "0"),
                 "tax_3_1": fields.get("tax_3_1", "0"),
-                "status": fields.get("status", ""),
+                "status": _cheque_display_status(fields),
+                "status_raw": fields.get("status", ""),
                 "is_archived": fields.get("is_archived", False),
             })
         elif target == "radai":
-            extras = ((fields.get("raw_import") or {}).get("radai_extras") or {})
+            _raw = fields.get("raw_import")
+            extras = ((_raw.get("radai_extras") or {}) if isinstance(_raw, dict) else {})
             serial = fields.get("mr_or", "") or fields.get("or_number", "")
             payee = fields.get("account_name", "")
             data_preview[target].append({
@@ -3309,6 +3397,8 @@ def _build_data_preview_from_serialized(raw):
         u.setdefault("department", "")
         u.setdefault("position", "")
         u.setdefault("status", "")
+    for fc_row in data_preview["fund_clusters"]:
+        fc_row["disbursed"] = f'{disbursed_by_cluster.get(str(fc_row.get("id")), Decimal("0")):.2f}'
     return data_preview
 
 
@@ -3429,10 +3519,211 @@ def _split_sql_statements(text):
     return statements
 
 
+def _sql_paren_match(s, start):
+    """Index of the ')' matching the '(' at s[start], quote-aware. None if unbalanced."""
+    if start >= len(s) or s[start] != "(":
+        return None
+    depth = 0
+    in_single = in_double = in_backtick = False
+    i = start
+    n = len(s)
+    while i < n:
+        ch = s[i]
+        if in_single:
+            if ch == "'":
+                if i + 1 < n and s[i + 1] == "'":
+                    i += 2
+                    continue
+                in_single = False
+        elif in_double:
+            if ch == '"':
+                in_double = False
+        elif in_backtick:
+            if ch == '`':
+                in_backtick = False
+        elif ch == "'":
+            in_single = True
+        elif ch == '"':
+            in_double = True
+        elif ch == '`':
+            in_backtick = True
+        elif ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                return i
+        i += 1
+    return None
+
+
+def _sql_split_top_level(s):
+    """Split on commas that are outside quotes/parens."""
+    parts = []
+    buf = []
+    depth = 0
+    in_single = in_double = False
+    i = 0
+    n = len(s)
+    while i < n:
+        ch = s[i]
+        if in_single:
+            buf.append(ch)
+            if ch == "'":
+                if i + 1 < n and s[i + 1] == "'":
+                    buf.append(s[i + 1])
+                    i += 2
+                    continue
+                in_single = False
+        elif in_double:
+            buf.append(ch)
+            if ch == '"':
+                in_double = False
+        elif ch == "'":
+            in_single = True
+            buf.append(ch)
+        elif ch == '"':
+            in_double = True
+            buf.append(ch)
+        elif ch == "(":
+            depth += 1
+            buf.append(ch)
+        elif ch == ")":
+            depth -= 1
+            buf.append(ch)
+        elif ch == "," and depth == 0:
+            parts.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+        i += 1
+    parts.append("".join(buf))
+    return [p.strip() for p in parts]
+
+
+def _decode_sql_literal(tok):
+    """Decode one SQL value literal produced by _sql_literal()."""
+    t = tok.strip()
+    if not t:
+        return ""
+    if t.upper() == "NULL":
+        return None
+    if len(t) >= 2 and t[0] == "'" and t[-1] == "'":
+        inner = t[1:-1]
+        out = []
+        i = 0
+        n = len(inner)
+        while i < n:
+            ch = inner[i]
+            if ch == "\\" and i + 1 < n:
+                nxt = inner[i + 1]
+                mapped = {"\\": "\\", "'": "'", '"': '"', "n": "\n", "r": "\r", "0": "\0", "Z": "\x1a"}
+                if nxt in mapped:
+                    out.append(mapped[nxt])
+                    i += 2
+                    continue
+                out.append(nxt)
+                i += 2
+                continue
+            if ch == "'" and i + 1 < n and inner[i + 1] == "'":
+                out.append("'")
+                i += 2
+                continue
+            out.append(ch)
+            i += 1
+        return "".join(out)
+    if re.fullmatch(r"[+-]?\d+", t):
+        try:
+            return int(t)
+        except ValueError:
+            return t
+    if re.fullmatch(r"[+-]?\d*\.\d+([eE][+-]?\d+)?", t):
+        try:
+            return float(t)
+        except ValueError:
+            return t
+    return t
+
+
+def _sql_dump_to_serialized(text):
+    """Parse INSERT statements from a SQL dump into Django-serialized-shaped
+    dicts [{"model":..., "pk":..., "fields": {...}}, ...] so the shared data
+    preview builder can render .sql backups."""
+    table_map = {}
+    for m in _get_backup_restore_models():
+        table_map[m._meta.db_table] = {
+            "label": m._meta.label.lower(),
+            "pk_col": m._meta.pk.column,
+            "col2field": {f.column: f.name for f in m._meta.fields},
+            "json_cols": {f.column for f in m._meta.fields if f.get_internal_type() == "JSONField"},
+        }
+    objects = []
+    insert_head = re.compile(r"INSERT\s+(?:OR\s+REPLACE\s+)?INTO\s+", re.IGNORECASE)
+    for stmt in _split_sql_statements(text):
+        s = stmt.strip()
+        if not s.upper().startswith("INSERT"):
+            continue
+        m = insert_head.match(s)
+        if not m:
+            continue
+        rest = s[m.end():]
+        quote_open = rest[:1] in ('`', '"', '[')
+        if quote_open:
+            close_ch = {'`': '`', '"': '"', '[': ']'}[rest[0]]
+            end = rest.find(close_ch, 1)
+            if end == -1:
+                continue
+            table = rest[1:end]
+            rest = rest[end + 1:].lstrip()
+        else:
+            tm = re.match(r"([\w.]+)", rest)
+            if not tm:
+                continue
+            table = tm.group(1)
+            rest = rest[tm.end():]
+        info = table_map.get(table)
+        if not info or not rest.startswith("("):
+            continue
+        cols_end = _sql_paren_match(rest, 0)
+        if cols_end is None:
+            continue
+        columns = [c.strip().strip('`"[]') for c in _sql_split_top_level(rest[1:cols_end])]
+        rest = rest[cols_end + 1:].lstrip()
+        vm = re.match(r"VALUES\s*\(", rest, re.IGNORECASE)
+        if not vm:
+            continue
+        vopen = vm.end() - 1
+        vclose = _sql_paren_match(rest, vopen)
+        if vclose is None:
+            continue
+        values = [_decode_sql_literal(v) for v in _sql_split_top_level(rest[vopen + 1:vclose])]
+        fields = {}
+        pk_val = None
+        for col, val in zip(columns, values):
+            if col == info["pk_col"]:
+                pk_val = val
+                continue
+            name = info["col2field"].get(col, col)
+            if col in info["json_cols"] and isinstance(val, str):
+                try:
+                    val = json.loads(val)
+                except Exception:
+                    val = {}
+            fields[name] = val
+        if pk_val is None:
+            continue
+        objects.append({"model": info["label"], "pk": pk_val, "fields": fields})
+    return objects
+
+
 def _inspect_sql_backup(path: Path):
     text = path.read_text(encoding="utf-8", errors="replace")
     meta = _parse_sql_meta(text)
     counts = meta.get("counts") or {}
+    try:
+        data_preview = _build_data_preview_from_serialized(_sql_dump_to_serialized(text))
+    except Exception:
+        data_preview = _empty_data_preview()
     if not counts:
         table_counts = {}
         for stmt in _split_sql_statements(text):
@@ -3454,7 +3745,7 @@ def _inspect_sql_backup(path: Path):
         "counts": counts,
         "sections": meta.get("sections", ["database", "audit", "activity_log"]),
         "files": [path.name],
-        "data_preview": _empty_data_preview(),
+        "data_preview": data_preview,
         "sql_note": "SQL restore applies table data only (no media files).",
     }
 
@@ -3491,9 +3782,14 @@ def _inspect_backup_archive(archive_path: Path):
             names = zf.namelist()
             if "manifest.json" not in names:
                 raise ValueError("Backup manifest missing")
+            manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
+            if manifest.get("backup_type") == "code" or archive_path.name.endswith("_CODE.zip"):
+                raise ValueError(
+                    "This is a system files (code) archive — it cannot be restored as data. "
+                    "Download it only; unzip it manually to update the application files."
+                )
             if "database/db_data.json" not in names and "database/db.sqlite3" not in names:
                 raise ValueError("Database snapshot missing")
-            manifest = json.loads(zf.read("manifest.json").decode("utf-8"))
             result = {
                 "backup_type": manifest.get("backup_type", "FULL"),
                 "format": manifest.get("format", "bak"),
@@ -4906,6 +5202,30 @@ def _adjust_fund_balance(fund_cluster, delta):
 
 def _cheque_is_released(cheque):
     return cheque and cheque.status == 'released'
+
+
+def _cheque_display_status(fields):
+    """Canonical preview badge matching the live Cheques page
+    (cheques.html / cheques_rows.html): Released / Stale / Voided / Archived / Unreleased.
+    Never shows legacy 'Draft'/'Pending' values."""
+    if fields.get("is_archived"):
+        return "archived"
+    status = str(fields.get("status") or "").lower()
+    if status == "released":
+        return "released"
+    if status == "voided":
+        return "voided"
+    if status == "stale":
+        return "stale"
+    stale_at = fields.get("stale_at")
+    if stale_at:
+        try:
+            stale_date = stale_at if not isinstance(stale_at, str) else date.fromisoformat(str(stale_at)[:10])
+            if stale_date < date.today():
+                return "stale"
+        except (ValueError, TypeError):
+            pass
+    return "unreleased"
 
 
 def _cheque_action_block_reason(cheque):
@@ -11372,6 +11692,8 @@ def backup_restore(request):
                 content_type = "application/json"
             elif suffix == ".sql":
                 content_type = "application/sql"
+            elif suffix == ".zip":
+                content_type = "application/zip"
             else:
                 content_type = "application/octet-stream"
             response = HttpResponse(target.read_bytes(), content_type=content_type)
@@ -11450,6 +11772,31 @@ def backup_restore(request):
                 if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                     return JsonResponse({"error": f"Backup failed: {exc}"}, status=400)
                 error = f"Backup failed: {exc}"
+        elif action == "download_code":
+            try:
+                archive_path, code_name, code_manifest = _pack_system_files_backup(request.user)
+                _store_backup(archive_path, code_name)
+                settings_obj = SystemSetting.get_settings()
+                if settings_obj.auto_backup_to_downloads:
+                    try:
+                        dl = _get_downloads_folder()
+                        if dl and dl.exists():
+                            import shutil as _shutil
+                            _shutil.copy2(str(archive_path), str(dl / code_name))
+                    except Exception:
+                        pass
+                response = HttpResponse(archive_path.read_bytes(), content_type="application/zip")
+                response["Content-Disposition"] = f'attachment; filename="{code_name}"'
+                response["Access-Control-Expose-Headers"] = "Content-Disposition"
+                _audit(request.user, "System files backup downloaded", {
+                    "filename": code_name,
+                    "file_count": code_manifest.get("file_count", 0),
+                })
+                return response
+            except Exception as exc:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({"error": f"System files backup failed: {exc}"}, status=400)
+                error = f"System files backup failed: {exc}"
         elif action == "trigger_auto_backup":
             try:
                 res = _run_auto_backup(request.user, force=True)

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load humanize %}
 {% block title %}Reports{% endblock %}
 {% block nav_reports %}active{% endblock %}
 {% block content %}
@@ -6,1034 +7,1387 @@
 {% if error %}<div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
 
 <style>
-/* Center the main table wrapper content */
-.table-wrap table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-/* Center all table headers */
-.table-wrap thead th {
-    background: linear-gradient(135deg, #0f3d2e, #17563d);
-    color: #ffffff;
-    border-bottom: 1px solid #0b2f23;
-    text-align: center; /* Centered column headers */
-    vertical-align: middle;
-    padding: 12px;
-}
-
-/* Center all table data cells */
-.table-wrap tbody td {
-    text-align: center; /* Centered text, dates, and badges */
-    vertical-align: middle;
-    padding: 12px;
-}
-
-/* Center the flex container holding the row action buttons */
-.table-wrap tbody td .actions-container {
-    display: flex; 
-    gap: 6px; 
-    flex-wrap: wrap;
-    justify-content: center; /* Centered action items */
-    align-items: center;
-}
-
-/* ── Dark Mode Overrides for Reports Page & Modals ── */
-[data-theme="dark"] #genModal > div,
-[data-theme="dark"] #exportModal > div,
-[data-theme="dark"] #missingReportModal > div,
-[data-theme="dark"] .report-preview-card {
-    background: #111827 !important;
-    background-color: #111827 !important;
-    color: #f8fafc !important;
-    border: 1px solid #1a1a1a !important;
-}
-
-[data-theme="dark"] #genModal label,
-[data-theme="dark"] #exportModal label,
-[data-theme="dark"] #genPreviewMeta,
-[data-theme="dark"] .report-preview-head h3,
-[data-theme="dark"] #genModal h3,
-[data-theme="dark"] #exportModal h3 {
-    color: #f8fafc !important;
-}
-
-[data-theme="dark"] #genModal select,
-[data-theme="dark"] #genModal input,
-[data-theme="dark"] #genModal textarea,
-[data-theme="dark"] #exportModal select,
-[data-theme="dark"] #exportModal input {
-    background: #111111 !important;
-    color: #ffffff !important;
-    border-color: #222222 !important;
-}
-
-[data-theme="dark"] #genModal div[style*="border"],
-[data-theme="dark"] #exportModal div[style*="border"] {
-    border-color: #1a1a1a !important;
-}
-
-[data-theme="dark"] #genModal div[style*="background:#f8fafc"],
-[data-theme="dark"] #genModal div[style*="background:#fafafa"],
-[data-theme="dark"] #genModal div[style*="background:#fff"],
-[data-theme="dark"] #exportModal div[style*="background:#f8fafc"],
-[data-theme="dark"] #exportModal div[style*="background:#fafafa"] {
-    background: #111111 !important;
-}
+body .a11y-fab, body #a11yFab, body .a11y-panel, body #a11yPanel { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+.reports-tabs{display:flex;gap:0;border-bottom:2px solid #e5e7eb;background:#fff;border-radius:10px 10px 0 0;overflow:hidden;}
+.reports-tab{padding:12px 24px;font-size:13px;font-weight:700;cursor:pointer;border:none;background:transparent;color:#6b7280;transition:all 0.2s;display:flex;align-items:center;gap:8px;border-bottom:3px solid transparent;margin-bottom:-2px;}
+.reports-tab:hover{color:#0f3d2e;background:#f0faf4;}
+.reports-tab.active{color:#0f3d2e;border-bottom-color:#107c41;background:#f0faf4;}
+.tab-count{background:#e5e7eb;color:#374151;font-size:11px;padding:2px 8px;border-radius:12px;font-weight:600;}
+.reports-tab.active .tab-count{background:#107c41;color:#fff;}
+.tab-panel{display:none;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px;overflow:visible;}
+.tab-panel.active{display:block;}
+.rm-filter-bar{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;padding:10px 14px;background:#f8fafc;border-bottom:1px solid #e5e7eb;}
+.rm-filter-bar input,.rm-filter-bar select{padding:5px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:11px;background:#fff;}
+.rm-filter-bar input:focus,.rm-filter-bar select:focus{outline:none;border-color:#107c41;box-shadow:0 0 0 2px rgba(16,124,65,0.12);}
+.rm-filter-bar label{font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;}
+.rm-filter-group{display:flex;align-items:center;gap:4px;}
+.rm-data-wrap{width:100%;overflow-x:auto;overflow-y:auto;max-height:70vh;overscroll-behavior:auto;-webkit-overflow-scrolling:touch;}
+.rm-data-wrap table{border-collapse:collapse;width:100%;table-layout:auto;}
+.rm-data-wrap thead{position:sticky;top:0;z-index:15;}
+.rm-data-wrap th,.rm-data-wrap td{border:1px solid #e5ebf2;padding:4px 6px;vertical-align:middle;font-size:11px;text-align:center!important;}
+.rm-data-wrap th{background:linear-gradient(135deg,#0f3d2e,#17563d);color:#fff;font-weight:700;text-align:center!important;text-transform:uppercase;letter-spacing:0.03em;white-space:nowrap;position:sticky;top:0;z-index:15;box-shadow:0 1px 0 #0f3d2e;}
+.rm-data-wrap td{background:#fff;color:#1f2937;white-space:nowrap;text-align:center!important;}
+.rm-data-wrap td.wrap-cell{white-space:normal;word-break:break-word;min-width:80px;max-width:160px;text-align:center!important;}
+.rm-data-wrap td.payee-cell{white-space:nowrap!important;text-align:center!important;}
+.rm-data-wrap tbody tr:hover td{background:#f0faf4;}
+.rm-data-wrap .row-num{text-align:center!important;background:#f3f4f6;font-weight:700;width:30px;min-width:30px;padding:4px 3px;}
+.rm-data-wrap .amount-col{text-align:right!important;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.amt-box{display:flex;justify-content:space-between;align-items:baseline;width:100%;min-width:65px;box-sizing:border-box;font-variant-numeric:tabular-nums;}
+.amt-box .amt-p{flex-shrink:0;text-align:left;padding-right:2px;font-weight:normal;color:inherit;}
+.amt-box .amt-v{flex:1 1 auto;text-align:right;white-space:nowrap;margin-left:auto;}
+.rm-data-wrap .status-badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:9px;font-weight:600;text-transform:capitalize;white-space:nowrap;}
+.status-active,.status-released{background:#dcfce7;color:#166534;}
+.status-unreleased{background:#fef3c7;color:#92400e;}
+.status-stale,.status-blacklisted{background:#fee2e2;color:#991b1b;}
+.empty-state{text-align:center;padding:40px 20px;color:#9ca3af;}
+.empty-state i{font-size:36px;opacity:0.3;margin-bottom:8px;display:block;}
+.rm-filter-bar .rm-right{margin-left:auto;display:flex;gap:6px;align-items:center;}
+.rm-filter-bar .rm-right label.rm-count{font-size:10px;color:#6b7280;white-space:nowrap;}
+.rm-filter-bar .rm-right button.rm-print-btn{padding:5px 12px;background:#17563d;color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;white-space:nowrap;line-height:1;}
+.rm-filter-bar .rm-right button.rm-print-btn i{font-size:10px;}
+[data-theme="dark"] .reports-tabs{background:#111827!important;border-color:#1a1a1a!important;}
+[data-theme="dark"] .reports-tab{color:#9ca3af!important;}
+[data-theme="dark"] .reports-tab:hover{background:#1a2332!important;color:#f8fafc!important;}
+[data-theme="dark"] .reports-tab.active{color:#10b981!important;background:#0d2818!important;border-bottom-color:#10b981!important;}
+[data-theme="dark"] .tab-panel{background:#111827!important;border-color:#1a1a1a!important;}
+[data-theme="dark"] .rm-filter-bar{background:#0f172a!important;border-color:#1a1a1a!important;}
+[data-theme="dark"] .rm-filter-bar input,[data-theme="dark"] .rm-filter-bar select{background:#111827!important;color:#f8fafc!important;border-color:#222!important;}
+[data-theme="dark"] .rm-filter-bar label{color:#9ca3af!important;}
+[data-theme="dark"] .rm-data-wrap th{background:#0f3d2e!important;color:#fff!important;border-color:#1a1a1a!important;}
+.supplier-master-fab, .cheque-master-fab, #chequeMasterFab, #chequeMasterMenu, .a11y-fab, #a11yFab, .a11y-panel, #a11yPanel { display: none !important; }
+.rm-data-wrap tfoot tr { font-weight:700; background:#f8fafc; border-top:2px solid #0f3d2e; }
+.rm-data-wrap tfoot td { font-weight:700; background:#f8fafc; color:#0f3d2e; border:1px solid #e5ebf2; padding:5px 6px; font-size:11px; }
+[data-theme="dark"] .rm-data-wrap thead{background:#0f3d2e!important;}
+[data-theme="dark"] .rm-data-wrap tfoot{background:#111827!important;}
+[data-theme="dark"] .rm-data-wrap tfoot td{background:#111827!important;color:#f8fafc!important;border-color:#1a1a1a!important;}
+[data-theme="dark"] .rm-data-wrap td{background:#050505!important;color:#f8fafc!important;border-color:#1a1a1a!important;}
+[data-theme="dark"] .rm-data-wrap tbody tr:hover td{background:#111827!important;}
+@media(max-width:1400px){.rm-data-wrap td.wrap-cell{max-width:120px;}.rm-data-wrap th,.rm-data-wrap td{font-size:10px;padding:3px 5px;}}
 </style>
 
-
-<div class="page-header">
-    <h2><i class="fas fa-chart-bar"></i> Reports</h2>
-    {% if can_generate %}
-    <div style="display:flex; gap:8px;">
-        <button class="btn btn-secondary" onclick="openExportModal()"><i class="fas fa-file-pdf"></i> Export Report</button>
-        <button class="btn btn-primary" onclick="openGenerateModal()"><i class="fas fa-plus"></i> Generate Report</button>
-    </div>
-    {% endif %}
+<div class="reports-tabs" id="reportsTabs">
+    <button class="reports-tab active" onclick="switchTab('cheque')" data-tab="cheque"><i class="fas fa-money-check-dollar"></i> Cheque Records <span class="tab-count">{{ cheque_all|length }}</span></button>
+    <button class="reports-tab" onclick="switchTab('radai')" data-tab="radai"><i class="fas fa-database"></i> RADAI Records <span class="tab-count">{{ radai_all|length }}</span></button>
 </div>
 
-{% if missing_report_message %}
-<div id="missingReportModal" style="display:flex; position:fixed; inset:0; z-index:6000; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:16px;">
-    <div style="background:#fff; width:min(460px, 96vw); border-radius:12px; padding:22px; box-shadow:0 18px 50px rgba(0,0,0,0.25);">
-        <div style="display:flex; align-items:center; gap:10px; font-weight:800; font-size:16px; margin-bottom:10px; color:#7f1d1d;">
-            <i class="fas fa-circle-exclamation"></i> Report Missing
+{# ═══════════ CHEQUE TAB ═══════════ #}
+<div class="tab-panel active" id="tab-cheque">
+    <div class="rm-filter-bar">
+        <div class="rm-filter-group"><label>Search:</label><input type="text" id="chequeSearch" placeholder="Search cheque no, payee..." oninput="if(!this.value){document.getElementById('chequeUacsFilter').value='';document.getElementById('chequeAccountTitleFilter').value='';document.getElementById('chequeAccountTitleFilter').disabled=false;document.getElementById('chequeUacsFilter').disabled=false;}filterCheque()" style="min-width:140px;"></div>
+        <div class="rm-filter-group"><label>FC:</label><select id="chequeFundFilter" onchange="filterCheque()"><option value="">All</option>{% for fc in fund_clusters %}<option value="{{ fc.code }}">{{ fc.code }}</option>{% endfor %}</select></div>
+        <div class="rm-filter-group">
+            <label>Duration:</label>
+            <select id="chequeDuration" onchange="chequeDurationChange()"><option value="" selected>Default</option><option value="daily">Daily</option><option value="monthly">Monthly</option><option value="annual">Annual</option></select>
+            <select id="chequeWeek" onchange="filterCheque()" style="display:none;"></select>
+            <select id="chequeMonthYear" onchange="populateChequeMonths();filterCheque()" style="display:none;"></select>
+            <select id="chequeMonth" onchange="filterCheque()" style="display:none;"><option value="">Month</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select>
+            <select id="chequeYear" onchange="filterCheque()" style="display:none;"></select>
         </div>
-        <div style="font-size:14px; color:#374151; line-height:1.5;">{{ missing_report_message }}</div>
-        <div style="display:flex; justify-content:flex-end; margin-top:18px;">
-            <button type="button" class="btn btn-primary" onclick="document.getElementById('missingReportModal').style.display='none'">OK</button>
+        <div class="rm-filter-group">
+            <label>Account Title:</label>
+            <select id="chequeAccountTitleFilter" onchange="filterChequeAccountTitle()" style="max-width:180px;"><option value="">Select Account Title</option>{% for g in account_title_groups %}{% for t in g.titles %}<option value="{{ t.uacs }}" data-uacs="{{ t.uacs }}">{{ t.value }}</option>{% endfor %}{% endfor %}</select>
         </div>
-    </div>
-</div>
-{% endif %}
-
-<div class="table-wrap">
-    <table>
-        <thead>
-            <tr><th>Title</th><th>Type</th><th>Generated By</th><th>Date Range</th><th>Generated At</th><th>Actions</th></tr>
-        </thead>
-        <tbody>
-        {% for r in report_list %}
-        <tr>
-            <td><strong>{{ r.title }}</strong></td>
-            <td><span class="badge">{{ r.get_report_type_display }}</span></td>
-            <td>{{ r.generated_by_name }}</td>
-            <td style="font-size:12px; color:var(--muted);">
-                {% if r.date_from %}{{ r.date_from }} → {% if r.date_to %}{{ r.date_to }}{% else %}present{% endif %}{% else %}All time{% endif %}
-            </td>
-            <td style="font-size:12px; color:var(--muted);">{{ r.generated_at|date:"Y-m-d H:i" }}</td>
-            <td>
-                <div class="actions-container">
-                    <a href="{% url 'report_detail' r.pk %}" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i> View</a>
-                    {% if can_generate %}
-                    <a href="{% url 'reports' %}?edit={{ r.pk }}" class="btn btn-sm btn-secondary"><i class="fas fa-pen"></i> Edit</a>
-                    {% endif %}
-                    {% if is_admin %}
-                    <form method="post" action="{% url 'report_delete' r.pk %}" onsubmit="return confirm('Delete this report? This cannot be undone.');" style="display:inline; margin:0;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i> Delete</button>
-                    </form>
-                    {% endif %}
-                </div>
-            </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="6" style="text-align:center; padding:30px; color:var(--muted);">No reports generated yet.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-{% if edit_report %}
-{{ edit_report.data_snapshot|json_script:"edit-report-snapshot" }}
-<div id="editReportMeta"
-    data-report-id="{{ edit_report.pk }}"
-     data-report-type="{{ edit_report.report_type }}"
-     data-date-from="{{ edit_report.date_from|default_if_none:''|date:'Y-m-d' }}"
-     data-date-to="{{ edit_report.date_to|default_if_none:''|date:'Y-m-d' }}"
-     data-fund-cluster-id="{{ edit_report.data_snapshot.fund_cluster_id|default:'' }}"
-     data-notes="{{ edit_report.notes|default:''|escape }}"
-     style="display:none;"></div>
-{% endif %}
-
-{% if can_generate %}
-<div id="genModal" style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-    <div style="background:white; border-radius:12px; padding:24px; width:min(1120px, 96vw); max-height:92vh; overflow:auto;">
-        <h3 style="margin-bottom:18px; font-size:16px;"><i class="fas fa-chart-bar"></i> Generate New Report</h3>
-        <form method="post" onsubmit="return validateGenForm(event)">
-            {% csrf_token %}
-            <input type="hidden" name="report_id" id="genReportId" value="">
-            <div style="margin-bottom:14px;">
-                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Report Type *</label>
-                <select name="report_type" id="genReportType" required style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                    {% for val, label in report_types %}
-                    <option value="{{ val }}">{{ label }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div id="genFundClusterWrap" style="display:none; margin-bottom:14px;">
-                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Fund Cluster</label>
-                <select name="fund_cluster" id="genFundCluster" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                    <option value="">-- select fund cluster --</option>
-                    {% for fc in fund_clusters %}
-                    <option value="{{ fc.pk }}">{{ fc.code }} — {{ fc.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div id="genPayeeWrap" style="display:none; margin-bottom:14px;">
-                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Payee</label>
-                <select name="payee" id="genPayee" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                    <option value="">-- All Payees --</option>
-                    {% for payee in radai_payees %}
-                    <option value="{{ payee }}">{{ payee }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div id="genChequeStatusWrap" style="display:none; margin-bottom:14px;">
-                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Cheque Status *</label>
-                <select name="cheque_status" id="genChequeStatus" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                    <option value="">-- select status --</option>
-                    <option value="all">All</option>
-                    <option value="draft">Draft</option>
-                    <option value="pending">Pending</option>
-                    <option value="released">Released</option>
-                    <option value="voided">Voided</option>
-                    <option value="stale">Stale</option>
-                </select>
-            </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px;">
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Date From</label>
-                    <input type="date" name="date_from" id="genDateFrom" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                </div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Date To</label>
-                    <input type="date" name="date_to" id="genDateTo" value="{{ today }}" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                </div>
-            </div>
-            <div style="margin-bottom:18px;">
-                <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Notes (optional)</label>
-                <textarea name="notes" rows="3" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; resize:vertical;"></textarea>
-            </div>
-            <input type="hidden" name="selected_rows" id="genSelectedRows" value="">
-            <div style="border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; margin-bottom:18px; background:#fff;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; border-bottom:1px solid #e5e7eb; background:#f8fafc;">
-                    <div>
-                        <div style="font-size:13px; font-weight:700; color:#050505;">Live Preview</div>
-                        <div style="font-size:12px; color:#6b7280;">Check the rows you want included in the generated report.</div>
-                    </div>
-                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; color:#050505; cursor:pointer;">
-                        <input type="checkbox" id="genSelectAll" checked style="width:16px; height:16px;">
-                        Select all
-                    </label>
-                </div>
-                <div style="max-height:360px; overflow:auto;">
-                    <table style="width:100%; border-collapse:collapse;">
-                        <thead id="genPreviewHead"></thead>
-                        <tbody id="genPreviewBody"></tbody>
-                    </table>
-                </div>
-                <div id="genPreviewMeta" style="font-size:12px; color:#4b5563; padding:10px 14px; border-top:1px solid #e5e7eb; background:#fafafa;">Preview not loaded yet.</div>
-            </div>
-            <div style="display:flex; gap:10px; justify-content:flex-end;">
-                <button type="button" class="btn btn-secondary" onclick="closeGenerateModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary"><i class="fas fa-chart-bar"></i> Generate Report</button>
-            </div>
-        </form>
-    </div>
-</div>
-{% endif %}
-
-{% if can_generate %}
-<div id="exportModal" style="display:none; position:fixed; z-index:5200; inset:0; background:rgba(15,23,42,0.58); align-items:center; justify-content:center; padding:16px;">
-    <div style="width:min(1200px, 100%); max-height:92vh; overflow:hidden; background:white; border-radius:14px; box-shadow:0 24px 60px rgba(15,23,42,0.28); display:flex; flex-direction:column;">
-        <div style="display:flex; justify-content:space-between; align-items:center; padding:18px 20px; border-bottom:1px solid #e5e7eb;">
-            <div>
-                <h3 style="margin:0; font-size:18px; font-weight:800;"><i class="fas fa-file-export"></i> Export Report</h3>
-                <div style="font-size:13px; color:#6b7280; margin-top:4px;">Choose report type first, preview the rows, then export PDF.</div>
-            </div>
-            <button type="button" onclick="closeExportModal()" style="border:none; background:transparent; font-size:28px; line-height:1; cursor:pointer; color:#6b7280;">&times;</button>
+        <div class="rm-filter-group">
+            <label>UACS Code:</label>
+            <input type="text" id="chequeUacsFilter" placeholder="Enter UACS code" oninput="this.value=this.value.replace(/[^0-9]/g,''); filterChequeUacsInput()" style="width:100px;" inputmode="numeric" pattern="[0-9]*">
         </div>
-
-        <div style="padding:18px 20px; overflow:auto; flex:1;">
-            <div style="display:grid; grid-template-columns:repeat(4, minmax(170px, 1fr)); gap:12px; margin-bottom:14px;">
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Report Type</label>
-                    <select id="exportReportType" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                        {% for val, label in report_types %}
-                        <option value="{{ val }}" {% if val == 'supplier_summary' %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Date From</label>
-                    <input id="exportDateFrom" type="date" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                </div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Date To</label>
-                    <input id="exportDateTo" type="date" value="{{ today }}" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                </div>
-                <div style="display:flex; align-items:flex-end; gap:8px;">
-                    <button type="button" class="btn btn-primary" style="width:100%;" onclick="loadReportPreview()"><i class="fas fa-eye"></i> Preview</button>
-                </div>
-            </div>
-
-            <div style="display:grid; grid-template-columns:repeat(5, minmax(150px, 1fr)); gap:12px; margin-bottom:14px;">
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Entity Name</label>
-                    <input id="exportEntityName" type="text" placeholder="Entity name" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;" value="{{ system_setting.entity_name|default:system_setting.system_name }}">
-                </div>
-                <div id="genFundClusterWrap" style="display:none; margin-bottom:14px;">
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Fund Cluster</label>
-                    <select name="fund_cluster" id="genFundCluster" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                        <option value="">-- select fund cluster --</option>
-                        {% for fc in fund_clusters %}
-                        <option value="{{ fc.pk }}">{{ fc.code }} — {{ fc.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div id="genPayeeWrap" style="display:none; margin-bottom:14px;">
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Payee</label>
-                    <input type="text" name="payee" id="genPayee" placeholder="Enter Payee name" style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;" />
-                </div>
-                <div id="exportChequeStatusWrap" style="display:none;">
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Cheque Status *</label>
-                    <select id="exportChequeStatus" required style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
-                        <option value="">-- select status --</option>
-                        <option value="all">All</option>
-                        <option value="draft">Draft</option>
-                        <option value="pending">Pending</option>
-                        <option value="released">Released</option>
-                        <option value="voided">Voided</option>
-                        <option value="stale">Stale</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Bank Name / Account No.</label>
-                    <input id="exportBankAccount" type="text" placeholder="Auto-filled from fund cluster" readonly style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; background:#f9fafb;">
-                </div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">Report No.</label>
-                    <input id="exportReportNo" type="text" placeholder="2026-01-0001" readonly style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; background:#f9fafb; cursor:not-allowed;">
-                </div>
-                <div>
-                    <label style="font-size:13px; font-weight:600; display:block; margin-bottom:5px;">No. Of Sheets</label>
-                    <input id="exportSheets" type="text" readonly style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; background:#f9fafb; cursor:not-allowed;">
-                </div>
-            </div>
-
-            <div id="previewMeta" style="font-size:13px; color:#4b5563; margin-bottom:10px;">Preview not loaded yet.</div>
-
-            <div style="overflow:auto; max-height:58vh; border:1px solid #e5e7eb; border-radius:10px; background:white; padding:10px;">
-                <table id="reportPreviewTable" style="width:max-content; min-width:100%; border-collapse:collapse; table-layout:fixed;">
-                    <thead id="reportPreviewHead"></thead>
-                    <tbody id="reportPreviewBody"></tbody>
-                </table>
-            </div>
-
-            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:16px;">
-                <button type="button" class="btn btn-secondary" onclick="closeExportModal()">Cancel</button>
-                <a id="exportPdfBtn" href="#" class="btn btn-primary" style="pointer-events:none; opacity:0.5;"><i class="fas fa-file-pdf"></i> Export PDF</a>
-            </div>
+        <div class="rm-filter-group"><label>Status:</label><select id="chequeStatusFilter" onchange="filterCheque()"><option value="">All</option><option value="released">Released</option><option value="unreleased">Unreleased</option><option value="stale">Stale</option></select></div>
+        <div class="rm-filter-group"><label>Sort:</label><select id="chequeSortFilter" onchange="filterCheque()"><option value="">Default</option><option value="payee_az">Payee A-Z</option><option value="payee_za">Payee Z-A</option><option value="date_new">Date Newest</option><option value="date_old">Date Oldest</option><option value="amount_hi">Amount High-Low</option><option value="amount_lo">Amount Low-High</option></select></div>
+        <div class="rm-right">
+            <label class="rm-count" id="chequeCount">{{ cheque_all|length }} record(s)</label>
+            <button type="button" class="rm-print-btn" onclick="printAllCheques()"><i class="fas fa-print"></i> Print All</button>
+            <button type="button" class="rm-print-btn" onclick="exportChequeExcel()" style="background:#107c41;"><i class="fas fa-file-excel"></i> Export Excel</button>
         </div>
     </div>
+    <div class="rm-data-wrap" id="chequeTableWrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th>SERIAL NO.</th>
+                    <th>CHECK DATE</th>
+                    <th>PAYEE</th>
+                    <th>DV/PAYROLL NO.</th>
+                    <th>ORS/BURS NO.</th>
+                    <th>RESPONSIBILITY CODE CENTER</th>
+                    <th>UACS OBJECT CODE</th>
+                    <th>ACCOUNT TITLE</th>
+                    <th>NATURE OF PAYMENTS</th>
+                    <th style="text-align:right;">GROSS AMOUNT</th>
+                    <th style="text-align:right;">PROFESSIONAL TAX</th>
+                    <th style="text-align:right;">TAX 5%/3%</th>
+                    <th style="text-align:right;">TAX 3%/1%</th>
+                    <th style="text-align:right;">NET AMOUNT</th>
+                    <th style="text-align:right;">OTHER DEDUCTIONS</th>
+                    <th>FUND CLUSTER</th>
+                    <th>REMARKS</th>
+                </tr>
+            </thead>
+            <tbody id="chequeBody">
+                {% for c in cheque_all %}
+                <tr data-fund="{{ c.fund_cluster.code|default:'' }}" data-status="{{ c.cheque_status }}" data-date="{{ c.date|date:'Y-m-d' }}" data-uacs="{{ c.uacs_object_code }}" data-search="{{ c.account_name|lower }} {{ c.cheque_number|lower }} {{ c.dv_payroll_no|lower }} {{ c.account_title|lower }}" data-pk="{{ c.cheque_pk|default:'' }}">
+                    <td class="row-num"></td>
+                    <td>{% if c.cheque_number %}<strong>{{ c.cheque_number }}</strong>{% else %}--{% endif %}</td>
+                    <td>{% if c.date %}{{ c.date|date:"M j, Y" }}{% else %}--{% endif %}</td>
+                    <td class="payee-cell"><strong>{{ c.account_name }}</strong></td>
+                    <td>{{ c.dv_payroll_no|default:"--" }}</td>
+                    <td>{{ c.ors_burs_no|default:"--" }}</td>
+                    <td>{{ c.responsibility_center|default:"--" }}</td>
+                    <td>{{ c.uacs_object_code|default:"--" }}</td>
+                    <td class="wrap-cell">{{ c.account_title|default:"--" }}</td>
+                    <td class="wrap-cell">{{ c.nature_of_payment|default:"--" }}</td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if c.gross_amount %}{{ c.gross_amount|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if c.professional_tax != None %}{{ c.professional_tax|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if c.tax_5_3 != None %}{{ c.tax_5_3|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if c.tax_3_1 != None %}{{ c.tax_3_1|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if c.amount %}{{ c.amount|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td>{% if c.fund_cluster %}{{ c.fund_cluster.code }}{% else %}--{% endif %}</td>
+                    <td>{{ c.remarks|default:'' }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="18"><div class="empty-state"><i class="fas fa-money-check-dollar"></i><p>No cheque records found.</p></div></td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot id="chequeFoot">
+                <tr style="font-weight:700; background:#f8fafc; border-top:2px solid #0f3d2e;">
+                    <td colspan="10" style="text-align:right!important; font-weight:700; padding:6px 10px;">Total:</td>
+                    <td id="total-cheque-gross" class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td id="total-cheque-prof" class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td id="total-cheque-tax53" class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td id="total-cheque-tax31" class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td id="total-cheque-net" class="amount-col" style="font-weight:700; color:#107c41;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td id="total-cheque-ded" class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
-{% endif %}
 
-<div id="preselectedReportType" data-value="{{ preselected_report_type|default:'' }}" data-auto-open="{% if preselected_report_type %}1{% else %}0{% endif %}" style="display:none;"></div>
+{# ═══════════ RADAI TAB ═══════════ #}
+<div class="tab-panel" id="tab-radai">
+    <div class="rm-filter-bar">
+        <div class="rm-filter-group"><label>Search:</label><input type="text" id="radaiSearch" placeholder="Search payee, serial..." oninput="if(!this.value){document.getElementById('radaiUacsFilter').value='';document.getElementById('radaiAccountTitleFilter').value='';document.getElementById('radaiAccountTitleFilter').disabled=false;document.getElementById('radaiUacsFilter').disabled=false;}filterRadai()" style="min-width:160px;"></div>
+        <div class="rm-filter-group"><label>FC:</label><select id="radaiFundFilter" onchange="filterRadai()"><option value="">All</option>{% for fc in fund_clusters %}<option value="{{ fc.code }}">{{ fc.code }}</option>{% endfor %}</select></div>
+        <div class="rm-filter-group">
+            <label>Duration:</label>
+            <select id="radaiDuration" onchange="radaiDurationChange()"><option value="" selected>Default</option><option value="daily">Daily</option><option value="monthly">Monthly</option><option value="annual">Annual</option></select>
+            <select id="radaiMonthYear" onchange="populateRadaiMonths();filterRadai()" style="display:none;"></select>
+            <select id="radaiMonth" onchange="filterRadai()" style="display:none;"><option value="">Month</option><option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option><option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option><option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option><option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option></select>
+            <select id="radaiYear" onchange="filterRadai()" style="display:none;"></select>
+        </div>
+        <div class="rm-filter-group">
+            <label>Account Title:</label>
+            <select id="radaiAccountTitleFilter" onchange="filterRadaiAccountTitle()" style="max-width:180px;"><option value="">Select Account Title</option>{% for g in account_title_groups %}{% for t in g.titles %}<option value="{{ t.uacs }}" data-uacs="{{ t.uacs }}">{{ t.value }}</option>{% endfor %}{% endfor %}</select>
+        </div>
+        <div class="rm-filter-group">
+            <label>UACS Code:</label>
+            <input type="text" id="radaiUacsFilter" placeholder="Enter UACS code" oninput="this.value=this.value.replace(/[^0-9]/g,''); filterRadaiUacsInput()" style="width:100px;" inputmode="numeric" pattern="[0-9]*">
+        </div>
+        <div class="rm-filter-group"><label>Sort:</label><select id="radaiSortFilter" onchange="filterRadai()"><option value="">Default</option><option value="payee_az">Payee A-Z</option><option value="payee_za">Payee Z-A</option><option value="date_new">Date Newest</option><option value="date_old">Date Oldest</option><option value="amount_hi">Amount High-Low</option><option value="amount_lo">Amount Low-High</option></select></div>
+        <div class="rm-right">
+            <label class="rm-count" id="radaiCount">{{ radai_all|length }} record(s)</label>
+            <button type="button" class="rm-print-btn" onclick="printRadaiRecords()"><i class="fas fa-print"></i> Print</button>
+            <button type="button" class="rm-print-btn" onclick="exportRadaiExcel()" style="background:#107c41;"><i class="fas fa-file-excel"></i> Export Excel</button>
+        </div>
+    </div>
+    <div class="rm-data-wrap">
+        <table>
+            <thead><tr>
+                <th style="width:30px;">#</th><th>ADA Date</th><th>Serial No.</th><th>DV/Payroll No.</th><th>ORS/BURS No.</th><th>Payee</th><th>UACS Code</th><th>Nature of Payment</th><th style="text-align:right;">Gross Amount</th><th style="text-align:right;">Professional Tax</th><th style="text-align:right;">Total per ADA</th><th>Fund Cluster</th>
+            </tr></thead>
+            <tbody id="radaiBody">
+                {% for r in radai_all %}
+                <tr data-fund="{{ r.fund_cluster.code|default:'' }}" data-uacs="{{ r.uacs_code|default:'' }}" data-date="{{ r.date|date:'Y-m-d' }}" data-search="{{ r.account_name|lower }} {{ r.mr_or|lower }} {{ r.nature_of_collections|lower }} {{ r.reference_code|lower }}">
+                    <td class="row-num"></td>
+                    <td>{{ r.display_date }}</td><td>{{ r.mr_or }}</td><td>{{ r.dv_payroll }}</td><td>{{ r.reference_code }}</td>
+                    <td class="payee-cell"><strong>{{ r.account_name }}</strong></td><td>{{ r.uacs_code }}</td><td class="wrap-cell">{{ r.nature_of_collections }}</td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if r.amount %}{{ r.amount|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if r.prof_tax %}{{ r.prof_tax|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td class="amount-col"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">{% if r.total_ada %}{{ r.total_ada|floatformat:2|intcomma }}{% else %}0.00{% endif %}</span></div></td>
+                    <td>{{ r.fund_cluster.code|default:"--" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="12"><div class="empty-state"><i class="fas fa-database"></i><p>No RADAI records found.</p></div></td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot id="radaiFoot">
+                <tr style="font-weight:700; background:#f8fafc; border-top:2px solid #0f3d2e;">
+                    <td colspan="8" style="text-align:right!important; font-weight:700; padding:6px 10px;">Total:</td>
+                    <td id="total-radai-gross" class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td id="total-radai-prof" class="amount-col" style="font-weight:700;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td id="total-radai-ada" class="amount-col" style="font-weight:700; color:#107c41;"><div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">0.00</span></div></td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
 
 <script>
-function openGenerateModal() {
-    document.getElementById('genModal').style.display = 'flex';
-    syncReportTypeFields();
-    var preselected = document.getElementById('preselectedReportType');
-    if (preselected && preselected.dataset.value) {
-        var sel = document.getElementById('genReportType');
-        if (sel) sel.value = preselected.dataset.value;
-        syncReportTypeFields();
+var certName='{{ certification_name|escapejs }}';
+var entityName='{{ system_setting.entity_name|escapejs }}';
+var fundClusterCode='{% for fc in fund_clusters %}{% if forloop.first %}{{ fc.code|escapejs }}{% endif %}{% endfor %}';
+var bankAccount='{% for fc in fund_clusters %}{% if forloop.first %}{{ fc.account_number|default:fc.bank_name|escapejs }}{% endif %}{% endfor %}';
+
+function cleanBankAcct(str) {
+    if (!str) return '—';
+    var s = str.trim();
+    if (s.indexOf(' / ') !== -1) return s.split(' / ')[1].trim();
+    if (s.indexOf('/') !== -1) return s.split('/')[1].trim();
+    return s;
+}
+
+function switchTab(tab){document.querySelectorAll('.reports-tab').forEach(function(t){t.classList.remove('active');});document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});document.querySelector('[data-tab="'+tab+'"]').classList.add('active');document.getElementById('tab-'+tab).classList.add('active');}
+
+/* ── Row numbering: newest first, 1 at bottom ── */
+function renumberRows(bodyId){var rows=document.querySelectorAll('#'+bodyId+' tr[data-search]'),vis=0;rows.forEach(function(r){if(r.style.display!=='none')vis++;});rows.forEach(function(r){if(r.style.display!=='none'){r.cells[0].textContent=vis--;}else{r.cells[0].textContent='';}});}
+
+/* ── Sort table rows by column ── */
+var originalRowOrder = {};
+function saveOriginalOrder(bodyId) {
+    var tbody = document.getElementById(bodyId);
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-search]'));
+    originalRowOrder[bodyId] = rows.map(function(r) { return r; });
+}
+function sortTableRows(bodyId, sortBy, colIndex, amountCol) {
+    var tbody = document.getElementById(bodyId);
+    var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-search]'));
+    if (!rows.length) return;
+    if (!sortBy) {
+        var orig = originalRowOrder[bodyId];
+        if (orig) orig.forEach(function(r) { tbody.appendChild(r); });
+        return;
     }
-    applyGenerateEditMode();
-    loadGeneratePreview();
+    rows.sort(function(a, b) {
+        var va, vb;
+        if (sortBy === 'payee_az' || sortBy === 'payee_za') {
+            va = (a.cells[colIndex] ? a.cells[colIndex].textContent.trim() : '').toLowerCase();
+            vb = (b.cells[colIndex] ? b.cells[colIndex].textContent.trim() : '').toLowerCase();
+            if (sortBy === 'payee_az') return va.localeCompare(vb);
+            return vb.localeCompare(va);
+        } else if (sortBy === 'date_new' || sortBy === 'date_old') {
+            va = a.dataset.date || '';
+            vb = b.dataset.date || '';
+            if (sortBy === 'date_new') return vb.localeCompare(va);
+            return va.localeCompare(vb);
+        } else if (sortBy === 'amount_hi' || sortBy === 'amount_lo') {
+            va = parseReportAmount((a.cells[amountCol] ? a.cells[amountCol].textContent : ''));
+            vb = parseReportAmount((b.cells[amountCol] ? b.cells[amountCol].textContent : ''));
+            if (sortBy === 'amount_hi') return vb - va;
+            return va - vb;
+        }
+        return 0;
+    });
+    rows.forEach(function(r) { tbody.appendChild(r); });
 }
 
-function closeGenerateModal() {
-    document.getElementById('genModal').style.display = 'none';
+function parseReportAmount(str) {
+    if (!str) return 0;
+    var clean = str.toString().replace(/[₱P,\s]/g, '').trim();
+    var val = parseFloat(clean);
+    return isNaN(val) ? 0 : val;
 }
 
-function openExportModal() {
-    document.getElementById('exportModal').style.display = 'flex';
-    syncReportTypeFields();
-    loadReportPreview();
+function formatReportAmount(num) {
+    var s = (num || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '<div class="amt-box"><span class="amt-p">₱</span><span class="amt-v">' + s + '</span></div>';
 }
 
-function closeExportModal() {
-    document.getElementById('exportModal').style.display = 'none';
-}
-
-let genPreviewRowCount = 0;
-
-/**
- * Dynamically scrapes payee names from a loaded table preview body
- * and rebuilds the dropdown select choices in real-time.
- */
-function updateDynamicPayeeDropdown(bodyElementId, dropdownSelectId, payeeColumnIndex = 4) {
-    const tableBody = document.getElementById(bodyElementId);
-    const dropdown = document.getElementById(dropdownSelectId);
-    if (!tableBody || !dropdown) return;
-
-    // Read the current chosen option value to preserve user choice during refresh
-    const previouslySelectedValue = dropdown.value;
-
-    // Clear dropdown but keep default/All choice
-    dropdown.innerHTML = '';
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = dropdownSelectId.includes('export') ? '-- All Payees --' : '-- All Payees --';
-    dropdown.appendChild(defaultOption);
-
-    // Scrape values from the specified column index
-    const detectedPayees = new Set();
-    const rows = tableBody.querySelectorAll('tr');
-
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        // If it's a real data row and not an empty warning placeholder
-        if (cells.length > payeeColumnIndex) {
-            let payeeText = cells[payeeColumnIndex].textContent.trim();
-            if (payeeText && payeeText !== '—' && payeeText !== 'No rows found for this report range.') {
-                detectedPayees.add(payeeText);
-            }
+function updateRadaiTotals() {
+    var visRows = document.querySelectorAll('#radaiBody tr[data-search]:not([style*="display: none"])');
+    var gross = 0, prof = 0, totalAda = 0;
+    visRows.forEach(function(r) {
+        var tds = r.querySelectorAll('td');
+        if (tds.length >= 12) {
+            gross    += parseReportAmount(tds[8].textContent);
+            prof     += parseReportAmount(tds[9].textContent);
+            totalAda += parseReportAmount(tds[10].textContent);
         }
     });
+    var elGross = document.getElementById('total-radai-gross');
+    if (elGross) elGross.innerHTML = formatReportAmount(gross);
+    var elProf = document.getElementById('total-radai-prof');
+    if (elProf) elProf.innerHTML = formatReportAmount(prof);
+    var elAda = document.getElementById('total-radai-ada');
+    if (elAda) elAda.innerHTML = formatReportAmount(totalAda);
+}
 
-    // Populate dropdown with unique scraped values sorted alphabetically
-    Array.from(detectedPayees).sort().forEach(payeeName => {
-        const option = document.createElement('option');
-        option.value = payeeName;
-        option.textContent = payeeName;
-        dropdown.appendChild(option);
+function updateChequeTotals() {
+    var visRows = document.querySelectorAll('#chequeBody tr[data-search]:not([style*="display: none"])');
+    var gross = 0, prof = 0, tax53 = 0, tax31 = 0, net = 0, ded = 0;
+    visRows.forEach(function(r) {
+        var tds = r.querySelectorAll('td');
+        if (tds.length >= 18) {
+            gross += parseReportAmount(tds[10].textContent);
+            prof  += parseReportAmount(tds[11].textContent);
+            tax53 += parseReportAmount(tds[12].textContent);
+            tax31 += parseReportAmount(tds[13].textContent);
+            net   += parseReportAmount(tds[14].textContent);
+            ded   += parseReportAmount(tds[15].textContent);
+        }
     });
+    var elGross = document.getElementById('total-cheque-gross');
+    if (elGross) elGross.innerHTML = formatReportAmount(gross);
+    var elProf = document.getElementById('total-cheque-prof');
+    if (elProf) elProf.innerHTML = formatReportAmount(prof);
+    var elTax53 = document.getElementById('total-cheque-tax53');
+    if (elTax53) elTax53.innerHTML = formatReportAmount(tax53);
+    var elTax31 = document.getElementById('total-cheque-tax31');
+    if (elTax31) elTax31.innerHTML = formatReportAmount(tax31);
+    var elNet = document.getElementById('total-cheque-net');
+    if (elNet) elNet.innerHTML = formatReportAmount(net);
+    var elDed = document.getElementById('total-cheque-ded');
+    if (elDed) elDed.innerHTML = formatReportAmount(ded);
+}
 
-    // Restore the select index value if it is still available in the new collection
-    if (Array.from(detectedPayees).includes(previouslySelectedValue)) {
-        dropdown.value = previouslySelectedValue;
+document.addEventListener('DOMContentLoaded', function() {
+    var fab = document.getElementById('a11yFab'); if (fab) fab.remove();
+    var panel = document.getElementById('a11yPanel'); if (panel) panel.remove();
+    updateRadaiTotals();
+    updateChequeTotals();
+    renumberRows('radaiBody');
+    renumberRows('chequeBody');
+    saveOriginalOrder('radaiBody');
+    saveOriginalOrder('chequeBody');
+    sortTableRows('radaiBody', document.getElementById('radaiSortFilter').value || '', 5, 8);
+    sortTableRows('chequeBody', document.getElementById('chequeSortFilter').value || '', 3, 10);
+    var cd = document.getElementById('chequeDuration');
+    var rd = document.getElementById('radaiDuration');
+    if (cd) cd.value = '';
+    if (rd) rd.value = '';
+    chequeDurationChange();
+    radaiDurationChange();
+});
+
+/* ── RADAI duration helpers ── */
+function radaiDurationChange(){
+    var d=document.getElementById('radaiDuration').value;
+    document.getElementById('radaiMonthYear').style.display='none';
+    document.getElementById('radaiMonth').style.display='none';
+    document.getElementById('radaiYear').style.display='none';
+    if(d==='monthly'){populateRadaiYears();document.getElementById('radaiMonthYear').style.display='';document.getElementById('radaiMonth').style.display='';populateRadaiMonths();}
+    else if(d==='annual'){populateRadaiYears();document.getElementById('radaiYear').style.display='';}
+    filterRadai();
+}
+function reportTodayYmd(){
+    var t=new Date();
+    var m=String(t.getMonth()+1); if(m.length<2)m='0'+m;
+    var d=String(t.getDate()); if(d.length<2)d='0'+d;
+    return t.getFullYear()+'-'+m+'-'+d;
+}
+function populateRadaiMonths(){
+    var sel = document.getElementById('radaiMonth');
+    var yrSel = document.getElementById('radaiMonthYear');
+    var selYear = yrSel ? yrSel.value : '';
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">Month</option>';
+    var monthMap = {};
+    document.querySelectorAll('#radaiBody tr[data-search]').forEach(function(r){
+        var d = r.dataset.date;
+        if (d && d.indexOf('-') !== -1) {
+            var parts = d.split('-');
+            var y = parts[0];
+            var m = parseInt(parts[1], 10);
+            if (!selYear || y === selYear) monthMap[m] = true;
+        }
+    });
+    var monthNums = Object.keys(monthMap).map(Number).sort(function(a,b){ return a - b; });
+    if (monthNums.length > 0) {
+        monthNums.forEach(function(m){
+            var mStr = (m < 10 ? '0' : '') + m;
+            sel.innerHTML += '<option value="' + mStr + '">' + months[m - 1] + '</option>';
+        });
     } else {
-        dropdown.value = '';
+        for (var i = 1; i <= 12; i++) {
+            var mStr = (i < 10 ? '0' : '') + i;
+            sel.innerHTML += '<option value="' + mStr + '">' + months[i - 1] + '</option>';
+        }
     }
+    if (prev && sel.querySelector('option[value="' + prev + '"]')) sel.value = prev;
+    else sel.value = '';
 }
-
-function buildExportQuery() {
-    const reportType = document.getElementById('exportReportType').value;
-    const dateFrom = document.getElementById('exportDateFrom').value;
-    const dateTo = document.getElementById('exportDateTo').value;
-    const params = new URLSearchParams();
-    params.set('report_type', reportType);
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo) params.set('date_to', dateTo);
-    
-    const entity = document.getElementById('exportEntityName')?.value || '';
-    const fundSelect = document.getElementById('exportFundCluster');
-    const fund = (reportType === 'cheque_summary' || reportType === 'radai_summary') ? (fundSelect?.value || '') : '';
-    const bank = document.getElementById('exportBankAccount')?.value || '';
-    const reportNo = document.getElementById('exportReportNo')?.value || '';
-    const sheets = document.getElementById('exportSheets')?.value || '';
-    if (entity) params.set('entity_name', entity);
-    if (fund) params.set('fund_cluster', fund);
-    if (bank) params.set('bank_account', bank);
-    if (reportNo) params.set('report_no', reportNo);
-    if (sheets) params.set('sheets', sheets);
-    
-    const statusEl = document.getElementById('exportChequeStatus');
-    if (reportType === 'cheque_summary' && statusEl?.value) {
-        params.set('cheque_status', statusEl.value);
-    }
-
-    const payeeEl = document.getElementById('exportPayeeSelect');
-    if (payeeEl && payeeEl.value) {
-        params.set('payee', payeeEl.value);
-    }
-    return params;
-}
-
-function buildGenerateQuery() {
-    const reportType = document.getElementById('genReportType').value;
-    const dateFrom = document.getElementById('genDateFrom')?.value || '';
-    const dateTo = document.getElementById('genDateTo')?.value || '';
-    const params = new URLSearchParams();
-    params.set('report_type', reportType);
-    if (dateFrom) params.set('date_from', dateFrom);
-    if (dateTo) params.set('date_to', dateTo);
-    
-    const fundCluster = document.getElementById('genFundCluster');
-    if ((reportType === 'cheque_summary' || reportType === 'radai_summary') && fundCluster?.value) {
-        params.set('fund_cluster', fundCluster.value);
-    }
-    
-    const chequeStatus = document.getElementById('genChequeStatus');
-    if (reportType === 'cheque_summary' && chequeStatus?.value) {
-        params.set('cheque_status', chequeStatus.value);
-    }
-
-    const dynamicPayee = document.getElementById('genPayee');
-    if (dynamicPayee && dynamicPayee.value) {
-        params.set('payee', dynamicPayee.value);
-    }
-    
-    const editMeta = document.getElementById('editReportMeta');
-    if (editMeta?.dataset.reportId) {
-        params.set('edit_report_id', editMeta.dataset.reportId);
-    }
-    return params;
-}
-
-function syncGenerateSelectedRows() {
-    const selected = Array.from(document.querySelectorAll('#genPreviewBody input[type="checkbox"][data-row-id]'))
-        .filter((checkbox) => checkbox.checked)
-        .map((checkbox) => checkbox.dataset.rowId);
-    document.getElementById('genSelectedRows').value = selected.join(',');
-    const countField = document.getElementById('genSelectedCount');
-    if (countField) {
-        countField.textContent = `${selected.length} selected`;
-    }
-    const selectAll = document.getElementById('genSelectAll');
-    if (selectAll) {
-        const allBoxes = Array.from(document.querySelectorAll('#genPreviewBody input[type="checkbox"][data-row-id]'));
-        selectAll.checked = allBoxes.length > 0 && allBoxes.every((checkbox) => checkbox.checked);
-        selectAll.indeterminate = allBoxes.some((checkbox) => checkbox.checked) && !selectAll.checked;
-    }
-}
-
-function toggleGenerateSelectAll(checked) {
-    document.querySelectorAll('#genPreviewBody input[type="checkbox"][data-row-id]').forEach((checkbox) => {
-        checkbox.checked = checked;
+function populateRadaiYears(){
+    var sel1=document.getElementById('radaiMonthYear'),sel2=document.getElementById('radaiYear');
+    var cur1 = sel1.value, cur2 = sel2.value;
+    sel1.innerHTML='<option value="">Year</option>';sel2.innerHTML='<option value="">Year</option>';
+    var years=[];
+    document.querySelectorAll('#radaiBody tr[data-search]').forEach(function(r){
+        var d=r.dataset.date;
+        if(d && d.indexOf('-') !== -1){
+            var y=d.split('-')[0];
+            if(years.indexOf(y)===-1) years.push(y);
+        }
     });
-    syncGenerateSelectedRows();
+    years.sort(function(a,b){return b-a;});
+    if(!years.length){var cy=new Date().getFullYear();for(var i=0;i<5;i++)years.push(String(cy-i));}
+    years.forEach(function(y){sel1.innerHTML+='<option value="'+y+'">'+y+'</option>';sel2.innerHTML+='<option value="'+y+'">'+y+'</option>';});
+    if(cur1 && sel1.querySelector('option[value="'+cur1+'"]')) sel1.value = cur1;
+    if(cur2 && sel2.querySelector('option[value="'+cur2+'"]')) sel2.value = cur2;
 }
 
-async function loadGeneratePreview() {
-    const meta = document.getElementById('genPreviewMeta');
-    const head = document.getElementById('genPreviewHead');
-    const body = document.getElementById('genPreviewBody');
-    const payeeDropdown = document.getElementById('genPayee');
-
-    meta.textContent = 'Loading preview...';
-    head.innerHTML = '';
-    body.innerHTML = '';
-
-    try {
-        const params = buildGenerateQuery();
-        const url = '{% url "report_export_preview" %}?' + params.toString();
-        const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
-        let data;
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            data = await response.json();
-        } else {
-            const text = await response.text();
-            throw new Error(`Server returned non-JSON response (${response.status}) - ${text.slice(0,200)}`);
-        }
-
-        if (!response.ok || !data.ok) {
-            throw new Error(data && data.error ? data.error : 'Failed to load preview');
-        }
-
-        // --- DYNAMIC PAYEE DROPDOWN POPULATION FROM RAW BACKEND DATA ---
-        if (payeeDropdown) {
-            const previouslySelected = payeeDropdown.value;
-            payeeDropdown.innerHTML = '<option value="">-- All Payees --</option>';
-            
-            const uniquePayees = new Set();
-            
-            // Extract from preview_items if structured object array exists
-            if (Array.isArray(data.preview_items)) {
-                data.preview_items.forEach(item => {
-                    // Check standard locations for payee name string
-                    if (item.payee) uniquePayees.add(item.payee.trim());
-                    else if (item.cells && item.cells[4]) uniquePayees.add(item.cells[4].trim());
-                });
-            } 
-            // Fallback: Scrape from flat array data rows
-            else if (Array.isArray(data.preview_rows)) {
-                data.preview_rows.forEach(row => {
-                    // In RADAI/Cheque layouts, the payee name typically lives at index 4
-                    if (row && row[4]) uniquePayees.add(row[4].trim());
-                });
-            }
-
-            // Append alphabetical sorted options
-            Array.from(uniquePayees).sort().forEach(name => {
-                if(name && name !== '—') {
-                    const opt = document.createElement('option');
-                    opt.value = name;
-                    opt.textContent = name;
-                    payeeDropdown.appendChild(opt);
+/* ── RADAI filter ── */
+function filterRadai(){
+    var s=document.getElementById('radaiSearch').value.toLowerCase(),
+        f=document.getElementById('radaiFundFilter').value,
+        uacs=document.getElementById('radaiUacsFilter').value.trim().toLowerCase(),
+        dur=document.getElementById('radaiDuration').value,
+        rows=document.querySelectorAll('#radaiBody tr[data-search]');
+    rows.forEach(function(r){
+        var ms=!s||r.dataset.search.indexOf(s)!==-1,
+            mf=!f||r.dataset.fund===f,
+            mu=!uacs||r.dataset.uacs.toLowerCase().indexOf(uacs)!==-1,
+            md=true;
+        if (dur && r.dataset.date) {
+            var dParts = r.dataset.date.split('-');
+            if (dParts.length === 3) {
+                var recYr = parseInt(dParts[0], 10);
+                var recMo = parseInt(dParts[1], 10);
+                if (dur === 'daily') {
+                    if (r.dataset.date !== reportTodayYmd()) md = false;
+                } else if (dur === 'annual') {
+                    var yr = document.getElementById('radaiYear').value;
+                    if (yr && recYr !== parseInt(yr, 10)) md = false;
+                } else if (dur === 'monthly') {
+                    var myr = document.getElementById('radaiMonthYear').value;
+                    var mm = document.getElementById('radaiMonth').value;
+                    if (myr && recYr !== parseInt(myr, 10)) md = false;
+                    if (mm && recMo !== parseInt(mm, 10)) md = false;
                 }
-            });
+            } else md = false;
+        } else if (dur) md = false;
+        r.style.display=(ms&&mf&&mu&&md)?'':'none';
+    });
+    renumberRows('radaiBody');
+    sortTableRows('radaiBody', document.getElementById('radaiSortFilter').value, 5, 8);
+    var visRows=document.querySelectorAll('#radaiBody tr[data-search]:not([style*="display: none"])');
+    var vis=visRows.length;
+    document.getElementById('radaiCount').textContent=vis+' record(s)';
+    var radaiTabBadge=document.querySelector('.reports-tab[data-tab="radai"] .tab-count');
+    if (radaiTabBadge) radaiTabBadge.textContent=vis;
 
-            // Keep the selected filter active without resetting selection layout state
-            if (Array.from(uniquePayees).includes(previouslySelected)) {
-                payeeDropdown.value = previouslySelected;
+    updateRadaiTotals();
+}
+
+/* ── Cheque duration helpers ── */
+function chequeDurationChange(){
+    var d=document.getElementById('chequeDuration').value;
+    document.getElementById('chequeWeek').style.display='none';
+    document.getElementById('chequeMonthYear').style.display='none';
+    document.getElementById('chequeMonth').style.display='none';
+    document.getElementById('chequeYear').style.display='none';
+    if(d==='weekly'){populateChequeWeeks();document.getElementById('chequeWeek').style.display='';}
+    else if(d==='monthly'){populateChequeYears();document.getElementById('chequeMonthYear').style.display='';document.getElementById('chequeMonth').style.display='';populateChequeMonths();}
+    else if(d==='annual'){populateChequeYears();document.getElementById('chequeYear').style.display='';}
+    filterCheque();
+}
+function populateChequeMonths(){
+    var sel = document.getElementById('chequeMonth');
+    var yrSel = document.getElementById('chequeMonthYear');
+    var selYear = yrSel ? yrSel.value : '';
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">Month</option>';
+
+    var monthMap = {};
+    document.querySelectorAll('#chequeBody tr[data-search]').forEach(function(r){
+        var d = r.dataset.date;
+        if (d && d.indexOf('-') !== -1) {
+            var parts = d.split('-');
+            var y = parts[0];
+            var m = parseInt(parts[1], 10);
+            if (!selYear || y === selYear) {
+                monthMap[m] = true;
             }
         }
-        // ----------------------------------------------------------------
+    });
 
-        const headerRow = document.createElement('tr');
-        const selectTh = document.createElement('th');
-        selectTh.style.width = '48px';
-        selectTh.style.padding = '8px';
-        selectTh.style.borderBottom = '1px solid #e5e7eb';
-        selectTh.style.background = '#f8fafc';
-        selectTh.style.textAlign = 'center';
-        selectTh.innerHTML = '<input type="checkbox" id="genSelectAllHeader" checked style="width:16px; height:16px;">';
-        headerRow.appendChild(selectTh);
-
-        (data.headers || []).forEach((text) => {
-            const th = document.createElement('th');
-            th.textContent = text;
-            th.style.textAlign = 'center';
-            th.style.padding = '8px';
-            th.style.borderBottom = '1px solid #e5e7eb';
-            th.style.background = '#f8fafc';
-            headerRow.appendChild(th);
+    var monthNums = Object.keys(monthMap).map(Number).sort(function(a,b){ return a - b; });
+    if (monthNums.length > 0) {
+        monthNums.forEach(function(m){
+            var mStr = (m < 10 ? '0' : '') + m;
+            sel.innerHTML += '<option value="' + mStr + '">' + months[m - 1] + '</option>';
         });
-        head.appendChild(headerRow);
-
-        let items = Array.isArray(data.preview_items) ? data.preview_items.slice() : [];
-        if ((!items || items.length === 0) && Array.isArray(data.preview_rows) && data.preview_rows.length) {
-            items = data.preview_rows.map((cells, idx) => ({ id: `row-${idx}`, cells }));
+    } else {
+        for (var i = 1; i <= 12; i++) {
+            var mStr = (i < 10 ? '0' : '') + i;
+            sel.innerHTML += '<option value="' + mStr + '">' + months[i - 1] + '</option>';
         }
-        const selectedIds = new Set((data.selected_row_ids || []).map(String));
-        items.forEach((item) => {
-            const tr = document.createElement('tr');
-            const tdSelect = document.createElement('td');
-            tdSelect.style.padding = '8px';
-            tdSelect.style.borderBottom = '1px solid #f3f4f6';
-            tdSelect.style.textAlign = 'center';
-            const cb = document.createElement('input');
-            cb.type = 'checkbox';
-            cb.checked = selectedIds.size ? selectedIds.has(String(item.id)) : true;
-            cb.dataset.rowId = item.id;
-            cb.style.width = '16px';
-            cb.style.height = '16px';
-            cb.addEventListener('change', syncGenerateSelectedRows);
-            tdSelect.appendChild(cb);
-            tr.appendChild(tdSelect);
+    }
 
-            const cells = Array.isArray(item.cells) ? item.cells : (item.cells ? [item.cells] : []);
-            const expected = Math.max((data.headers || []).length, cells.length);
-            for (let i = 0; i < expected; i++) {
-                const value = i < cells.length ? cells[i] : '';
-                const td = document.createElement('td');
-                td.textContent = value ?? '';
-                td.style.fontSize = '13px';
-                td.style.padding = '8px';
-                td.style.textAlign = 'center';
-                td.style.borderBottom = '1px solid #f3f4f6';
-                tr.appendChild(td);
+    if (prev && sel.querySelector('option[value="' + prev + '"]')) {
+        sel.value = prev;
+    } else {
+        sel.value = '';
+    }
+}
+function populateChequeWeeks(){
+    var sel = document.getElementById('chequeWeek');
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">All Weeks</option>';
+    
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var weekMap = {};
+
+    document.querySelectorAll('#chequeBody tr[data-search]').forEach(function(r){
+        var d = r.dataset.date;
+        if (d && d.indexOf('-') !== -1) {
+            var parts = d.split('-');
+            if (parts.length === 3) {
+                var y = parseInt(parts[0], 10);
+                var m = parseInt(parts[1], 10);
+                var day = parseInt(parts[2], 10);
+                var w = Math.ceil(day / 7);
+                var val = y + '-' + (m < 10 ? '0' : '') + m + '-w' + w;
+                var lbl = 'Week ' + w + ' of ' + monthNames[m - 1] + ' ' + y;
+
+                if (!weekMap[val]) {
+                    weekMap[val] = {
+                        val: val,
+                        lbl: lbl,
+                        year: y,
+                        month: m,
+                        week: w
+                    };
+                }
             }
-            body.appendChild(tr);
-        });
-
-        if (items.length === 0) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = Math.max((data.headers || []).length + 1, 1);
-            td.textContent = 'No rows found for this report range.';
-            td.style.padding = '18px';
-            td.style.textAlign = 'center';
-            td.style.color = '#6b7280';
-            tr.appendChild(td);
-            body.appendChild(tr);
         }
+    });
 
-        const selectAll = document.getElementById('genSelectAll');
-        const selectAllHeader = document.getElementById('genSelectAllHeader');
-        if (selectAll && selectAllHeader) {
-            selectAll.checked = true;
-            selectAll.indeterminate = false;
-            selectAll.onclick = () => toggleGenerateSelectAll(selectAll.checked);
-            selectAllHeader.checked = true;
-            selectAllHeader.indeterminate = false;
-            selectAllHeader.onclick = () => toggleGenerateSelectAll(selectAllHeader.checked);
+    var entries = Object.values(weekMap);
+    entries.sort(function(a, b){
+        if (b.year !== a.year) return b.year - a.year;
+        if (b.month !== a.month) return b.month - a.month;
+        return b.week - a.week;
+    });
+
+    entries.forEach(function(e){
+        sel.innerHTML += '<option value="' + e.val + '">' + e.lbl + '</option>';
+    });
+
+    if (prev && sel.querySelector('option[value="' + prev + '"]')) {
+        sel.value = prev;
+    } else {
+        sel.value = '';
+    }
+}
+function populateChequeYears(){
+    var sel1=document.getElementById('chequeMonthYear'),sel2=document.getElementById('chequeYear');
+    var cur1 = sel1.value;
+    var cur2 = sel2.value;
+    sel1.innerHTML='<option value="">Year</option>';sel2.innerHTML='<option value="">Year</option>';
+    var years=[];
+    document.querySelectorAll('#chequeBody tr[data-search]').forEach(function(r){
+        var d=r.dataset.date;
+        if(d && d.indexOf('-') !== -1){
+            var y=d.split('-')[0];
+            if(years.indexOf(y)===-1) years.push(y);
         }
+    });
+    years.sort(function(a,b){return b-a;});
+    if(!years.length){var cy=new Date().getFullYear();for(var i=0;i<5;i++)years.push(String(cy-i));}
+    years.forEach(function(y){sel1.innerHTML+='<option value="'+y+'">'+y+'</option>';sel2.innerHTML+='<option value="'+y+'">'+y+'</option>';});
+    if(cur1 && sel1.querySelector('option[value="'+cur1+'"]')) sel1.value = cur1;
+    if(cur2 && sel2.querySelector('option[value="'+cur2+'"]')) sel2.value = cur2;
+}
 
-        meta.innerHTML = `${data.report_label} preview: <span id="genSelectedCount">${selectedIds.size ? selectedIds.size : items.length} selected</span> • ${data.row_count} row(s) available.`;
-        document.getElementById('genSelectedRows').value = (items || [])
-            .filter((item) => selectedIds.size ? selectedIds.has(String(item.id)) : true)
-            .map((item) => item.id)
-            .join(',');
-        genPreviewRowCount = items.length;
-        updateGenerateButtonState();
-        syncGenerateSelectedRows();
+/* ── Account Title / UACS linked filters ── */
+function filterChequeAccountTitle(){
+    var uacs=document.getElementById('chequeAccountTitleFilter').value;
+    document.getElementById('chequeUacsFilter').value=uacs;
+    document.getElementById('chequeUacsFilter').disabled=!!uacs;
+    filterCheque();
+}
+function filterChequeUacsInput(){
+    var val=document.getElementById('chequeUacsFilter').value.trim().toLowerCase();
+    var sel=document.getElementById('chequeAccountTitleFilter');
+    if(val){sel.value='';sel.disabled=true;}else{sel.disabled=false;}
+    filterCheque();
+}
+function syncChequeAccountTitleFilter(){
+    var visRows=document.querySelectorAll('#chequeBody tr[data-search]:not([style*="display: none"])');
+    var titles={};
+    visRows.forEach(function(r){
+        var uacs=r.dataset.uacs||'';
+        var tds=r.querySelectorAll('td');
+        var title=tds[8]?tds[8].textContent.trim():'';
+        if(uacs&&title&&title!=='--') titles[uacs]=title;
+    });
+    var sel=document.getElementById('chequeAccountTitleFilter');
+    var cur=sel.value;
+    sel.innerHTML='<option value="">Select Account Title</option>';
+    Object.keys(titles).sort(function(a,b){return titles[a].localeCompare(titles[b]);}).forEach(function(uacs){
+        var opt=document.createElement('option');
+        opt.value=uacs;opt.textContent=titles[uacs];
+        sel.appendChild(opt);
+    });
+    if(cur&&titles[cur]) sel.value=cur;
+    var keys=Object.keys(titles);
+    if(keys.length===1){sel.value=keys[0];document.getElementById('chequeUacsFilter').value=keys[0];document.getElementById('chequeUacsFilter').disabled=true;filterCheque();}
+    else if(keys.length===0){sel.value='';document.getElementById('chequeUacsFilter').value='';document.getElementById('chequeUacsFilter').disabled=false;}
+}
+function filterRadaiAccountTitle(){
+    var uacs=document.getElementById('radaiAccountTitleFilter').value;
+    document.getElementById('radaiUacsFilter').value=uacs;
+    document.getElementById('radaiUacsFilter').disabled=!!uacs;
+    filterRadai();
+}
+function filterRadaiUacsInput(){
+    var val=document.getElementById('radaiUacsFilter').value.trim().toLowerCase();
+    var sel=document.getElementById('radaiAccountTitleFilter');
+    if(val){sel.value='';sel.disabled=true;}else{sel.disabled=false;}
+    filterRadai();
+}
+function syncRadaiAccountTitleFilter(){
+    var visRows=document.querySelectorAll('#radaiBody tr[data-search]:not([style*="display: none"])');
+    var titles={};
+    visRows.forEach(function(r){
+        var uacs=r.dataset.uacs||'';
+        var tds=r.querySelectorAll('td');
+        var title=tds[6]?tds[6].textContent.trim():'';
+        if(uacs&&title&&title!=='--') titles[uacs]=title;
+    });
+    var sel=document.getElementById('radaiAccountTitleFilter');
+    var cur=sel.value;
+    sel.innerHTML='<option value="">Select Account Title</option>';
+    Object.keys(titles).sort(function(a,b){return titles[a].localeCompare(titles[b]);}).forEach(function(uacs){
+        var opt=document.createElement('option');
+        opt.value=uacs;opt.textContent=titles[uacs];
+        sel.appendChild(opt);
+    });
+    if(cur&&titles[cur]) sel.value=cur;
+    var keys=Object.keys(titles);
+    if(keys.length===1){sel.value=keys[0];document.getElementById('radaiUacsFilter').value=keys[0];document.getElementById('radaiUacsFilter').disabled=true;filterRadai();}
+    else if(keys.length===0){sel.value='';document.getElementById('radaiUacsFilter').value='';document.getElementById('radaiUacsFilter').disabled=false;}
+}
 
-    } catch (error) {
-        genPreviewRowCount = 0;
-        updateGenerateButtonState();
-        meta.textContent = `Preview failed: ${error.message}`;
+/* ── Main cheque filter ── */
+function filterCheque(){
+    var s=document.getElementById('chequeSearch').value.toLowerCase(),
+        f=document.getElementById('chequeFundFilter')?document.getElementById('chequeFundFilter').value:'',
+        st=document.getElementById('chequeStatusFilter').value,
+        dur=document.getElementById('chequeDuration').value,
+        uacs=document.getElementById('chequeUacsFilter').value.trim().toLowerCase(),
+        rows=document.querySelectorAll('#chequeBody tr[data-search]');
+    rows.forEach(function(r){
+        var ms=!s||r.dataset.search.indexOf(s)!==-1,
+            mf=!f||r.dataset.fund===f,
+            mu=!uacs||r.dataset.uacs.toLowerCase().indexOf(uacs)!==-1,
+            mt=!st||(r.dataset.status===st||(st==='unreleased'&&(r.dataset.status==='draft'||r.dataset.status==='pending'||r.dataset.status==='voided'))),
+            md=true;
+        if (dur && r.dataset.date) {
+            var dParts = r.dataset.date.split('-');
+            if (dParts.length === 3) {
+                var recYr = parseInt(dParts[0], 10);
+                var recMo = parseInt(dParts[1], 10);
+                var recDay = parseInt(dParts[2], 10);
+
+                if (dur === 'daily') {
+                    if (r.dataset.date !== reportTodayYmd()) md = false;
+                } else if (dur === 'annual') {
+                    var yr = document.getElementById('chequeYear').value;
+                    if (yr && recYr !== parseInt(yr, 10)) md = false;
+                } else if (dur === 'monthly') {
+                    var myr = document.getElementById('chequeMonthYear').value;
+                    var mm = document.getElementById('chequeMonth').value;
+                    if (myr && recYr !== parseInt(myr, 10)) md = false;
+                    if (mm && recMo !== parseInt(mm, 10)) md = false;
+                } else if (dur === 'weekly') {
+                    var wkVal = document.getElementById('chequeWeek').value;
+                    if (wkVal) {
+                        var wkParts = wkVal.split('-w');
+                        if (wkParts.length === 2) {
+                            var ymParts = wkParts[0].split('-');
+                            var wkYear = parseInt(ymParts[0], 10);
+                            var wkMonth = parseInt(ymParts[1], 10);
+                            var wkNum = parseInt(wkParts[1], 10);
+                            if (recYr !== wkYear || recMo !== wkMonth) {
+                                md = false;
+                            } else {
+                                var daysInMonth = new Date(wkYear, wkMonth, 0).getDate();
+                                var startDay = (wkNum - 1) * 7 + 1;
+                                var endDay = Math.min(wkNum * 7, daysInMonth);
+                                if (recDay < startDay || recDay > endDay) md = false;
+                            }
+                        }
+                    }
+                }
+            } else {
+                md = false;
+            }
+        } else if (dur) {
+            md = false;
+        }
+        r.style.display=(ms&&mf&&mt&&mu&&md)?'':'none';
+    });
+    renumberRows('chequeBody');
+    sortTableRows('chequeBody', document.getElementById('chequeSortFilter').value, 3, 10);
+    var visRows=document.querySelectorAll('#chequeBody tr[data-search]:not([style*="display: none"])');
+    var vis=visRows.length;
+    document.getElementById('chequeCount').textContent=vis+' record(s)';
+    var cheqTabBadge=document.querySelector('.reports-tab[data-tab="cheque"] .tab-count');
+    if (cheqTabBadge) cheqTabBadge.textContent=vis;
+
+    updateChequeTotals();
+}
+
+var _nextReportNoBase = "{{ system_setting.next_report_number|escapejs }}";
+var _reportPrintSeq = 1;
+if (_nextReportNoBase && _nextReportNoBase.indexOf('-') !== -1) {
+    var _parts = _nextReportNoBase.split('-');
+    var _yr = _parts[0].trim();
+    var _currentYr = new Date().getFullYear().toString();
+    if (_yr === _currentYr) {
+        var _parsedSeq = parseInt(_parts[1].trim(), 10);
+        if (!isNaN(_parsedSeq) && _parsedSeq > 0) {
+            _reportPrintSeq = _parsedSeq;
+        }
     }
 }
 
-async function loadReportPreview() {
-    const meta = document.getElementById('previewMeta');
-    const head = document.getElementById('reportPreviewHead');
-    const body = document.getElementById('reportPreviewBody');
-    const exportBtn = document.getElementById('exportPdfBtn');
-
-    meta.textContent = 'Loading preview...';
-    head.innerHTML = '';
-    body.innerHTML = '';
-
+function generateReportNo() {
+    var yr = new Date().getFullYear();
+    var seqStr = _reportPrintSeq < 10 ? '0' + _reportPrintSeq : '' + _reportPrintSeq;
+    var repNo = yr + ' - ' + seqStr;
+    _reportPrintSeq++;
     try {
-        const params = buildExportQuery();
-        const url = '{% url "report_export_preview" %}?' + params.toString();
-        const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
-        let data;
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            data = await response.json();
-        } else {
-            const text = await response.text();
-            throw new Error(`Server returned non-JSON response (${response.status}) - ${text.slice(0,200)}`);
-        }
+        var formData = new FormData();
+        formData.append('report_no', repNo);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+        fetch('/api/record-report-number/', { method: 'POST', body: formData });
+    } catch(e) {}
+    return repNo;
+}
 
-        if (!response.ok || !data.ok) {
-            throw new Error(data && data.error ? data.error : 'Failed to load preview');
-        }
+/* ── Print RADAI: exact report_detail.html layout (Appendix 13) ── */
+function printRadaiRecords(){
+    var rows=document.querySelectorAll('#radaiBody tr[data-search]:not([style*="display: none"])');
+    if(!rows.length)return;
+    var now=new Date();
+    var monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var totalGross=0,totalProf=0,totalADA=0;
+    var firstSerial='',lastSerial='';
+    var dataRowList=[];
+    var rowDates=[];
+    var allPayeesLbp = true;
 
-        const headerRow = document.createElement('tr');
-        (data.headers || []).forEach((text) => {
-            const th = document.createElement('th');
-            th.textContent = text;
-            th.style.textAlign = 'center';
-            th.style.padding = '8px';
-            th.style.borderBottom = '1px solid #e5e7eb';
-            th.style.background = '#f8fafc';
-            headerRow.appendChild(th);
-        });
-        head.appendChild(headerRow);
-
-        const rows = data.preview_rows || [];
-        rows.forEach((row) => {
-            const tr = document.createElement('tr');
-            row.forEach((value) => {
-                const td = document.createElement('td');
-                td.textContent = value ?? '';
-                td.style.fontSize = '13px';
-                td.style.padding = '8px';
-                td.style.textAlign = 'center';
-                td.style.borderBottom = '1px solid #f3f4f6';
-                tr.appendChild(td);
-            });
-            body.appendChild(tr);
-        });
-
-        if (rows.length === 0) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = Math.max((data.headers || []).length, 1);
-            td.textContent = 'No rows found for this report range.';
-            td.style.padding = '18px';
-            td.style.textAlign = 'center';
-            td.style.color = '#6b7280';
-            tr.appendChild(td);
-            body.appendChild(tr);
-        }
-
-        let metaText = `${data.report_label} preview: ${data.row_count} row(s).`;
-        if (data.report_type === 'supplier_summary') {
-            metaText += ` Showing all rows.`;
-        } else {
-            metaText += ` Showing up to 500 rows.`;
-        }
-        if (data.entity_name) metaText = `Entity: ${data.entity_name} • ` + metaText;
-        if (data.fund_cluster) metaText = `Fund: ${data.fund_cluster} • ` + metaText;
-        if (data.bank_account) metaText += ` • Bank: ${data.bank_account}`;
-        meta.textContent = metaText;
-        document.getElementById('exportReportNo').value = data.report_no || '';
-        document.getElementById('exportSheets').value = data.sheets || '';
-        if (data.entity_name && !document.getElementById('exportEntityName').value) {
-            document.getElementById('exportEntityName').value = data.entity_name;
-        }
-        if (data.bank_account) {
-            document.getElementById('exportBankAccount').value = data.bank_account;
-        }
-        exportBtn.href = '{% url "export_report_pdf" %}?' + params.toString();
-        exportBtn.style.pointerEvents = 'auto';
-        exportBtn.style.opacity = '1';
-    } catch (error) {
-        meta.textContent = `Preview failed: ${error.message}`;
-        exportBtn.href = '#';
-        exportBtn.style.pointerEvents = 'none';
-        exportBtn.style.opacity = '0.5';
+    function fmtRadaiAmt(val, isBold) {
+        var s = (val || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        var fw = isBold ? 'font-weight:700;' : 'font-weight:normal;';
+        return '<div style="display:flex;justify-content:space-between;align-items:baseline;width:100%;box-sizing:border-box;font-size:7.5pt;' + fw + '">'
+            + '<span style="flex-shrink:0;text-align:left;padding-right:1px;">₱</span>'
+            + '<span style="flex:1 1 auto;text-align:right;white-space:nowrap;margin-left:auto;font-variant-numeric:tabular-nums;">' + s + '</span>'
+            + '</div>';
     }
-}
 
-const genModalForm = document.querySelector('#genModal form');
-if (genModalForm) {
-    genModalForm.addEventListener('submit', () => {
-        syncGenerateSelectedRows();
+    var payeeSet = {};
+    rows.forEach(function(r){var tds=r.querySelectorAll('td');
+        var date=tds[1].textContent.trim();
+        var serial=tds[2].textContent.trim();
+        var dv=tds[3].textContent.trim();
+        var ors=tds[4].textContent.trim();
+        var payee=tds[5].textContent.trim();
+        var uacs=tds[6].textContent.trim();
+        var nature=tds[7].textContent.trim();
+        var gross=parseFloat(tds[8].textContent.replace(/[₱P,\s]/g,''))||0;
+        var prof=parseFloat(tds[9].textContent.replace(/[₱P,\s]/g,''))||0;
+        var tada=parseFloat(tds[10].textContent.replace(/[₱P,\s]/g,''))||0;
+
+        if (payee && payee !== '—' && payee !== '--') {
+            payeeSet[payee] = true;
+        }
+
+        var payeeUpper = payee.toUpperCase();
+        if (payeeUpper && !(payeeUpper === 'LBP' || payeeUpper.includes('LAND BANK') || payeeUpper.includes('LANDBANK'))) {
+            allPayeesLbp = false;
+        }
+
+        if (date && date !== '—' && date !== '') {
+            rowDates.push(date);
+        }
+
+        totalGross+=gross;totalProf+=prof;
+        if(tada)totalADA+=tada;else totalADA+=gross;
+        if(!firstSerial&&serial)firstSerial=serial;
+        if(serial)lastSerial=serial;
     });
-}
 
-const genReportTypeField = document.getElementById('genReportType');
-if (genReportTypeField) {
-    genReportTypeField.addEventListener('change', () => {
-        syncReportTypeFields();
-        loadGeneratePreview();
+    rows.forEach(function(r){var tds=r.querySelectorAll('td');
+        var date=tds[1].textContent.trim();
+        var serial=tds[2].textContent.trim();
+        var dv=tds[3].textContent.trim();
+        var ors=tds[4].textContent.trim();
+        var payee=tds[5].textContent.trim();
+        var uacs=tds[6].textContent.trim();
+        var nature=tds[7].textContent.trim();
+        var gross=parseFloat(tds[8].textContent.replace(/[₱P,\s]/g,''))||0;
+        var prof=parseFloat(tds[9].textContent.replace(/[₱P,\s]/g,''))||0;
+        var tada=parseFloat(tds[10].textContent.replace(/[₱P,\s]/g,''))||0;
+
+        if (allPayeesLbp) {
+            dataRowList.push('<tr>'
+                +'<td>'+date+'</td>'
+                +'<td>'+serial+'</td>'
+                +'<td>'+dv+'</td>'
+                +'<td>'+ors+'</td>'
+                +'<td style="font-weight:700;">'+payee+'</td>'
+                +'<td>'+uacs+'</td>'
+                +'<td style="white-space:normal;word-break:break-word;">'+nature+'</td>'
+                +'<td style="padding:2px 3px;">'+fmtRadaiAmt(gross)+'</td>'
+                +'<td style="padding:2px 3px;">'+fmtRadaiAmt(prof)+'</td>'
+                +'<td style="padding:2px 3px;">'+fmtRadaiAmt(tada, true)+'</td>'
+                +'</tr>');
+        } else {
+            var rowAmt = gross || tada;
+            dataRowList.push('<tr>'
+                +'<td>'+date+'</td>'
+                +'<td>'+serial+'</td>'
+                +'<td>'+dv+'</td>'
+                +'<td>'+ors+'</td>'
+                +'<td style="font-weight:700;">'+payee+'</td>'
+                +'<td>'+uacs+'</td>'
+                +'<td style="white-space:normal;word-break:break-word;">'+nature+'</td>'
+                +'<td style="padding:2px 3px;">'+fmtRadaiAmt(rowAmt, true)+'</td>'
+                +'</tr>');
+        }
     });
-}
 
-// Event listener tracking on select changes for generating previews
-const genPayeeField = document.getElementById('genPayee');
-if (genPayeeField) {
-    genPayeeField.addEventListener('change', () => {
-        loadGeneratePreview();
-    });
-}
+    var period = '';
+    if (!rowDates.length) {
+        period = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+    } else {
+        var parsedRowDates = [];
+        rowDates.forEach(function(dStr) {
+            var dt = new Date(dStr);
+            if (!isNaN(dt.getTime())) parsedRowDates.push(dt);
+        });
+        if (parsedRowDates.length) {
+            parsedRowDates.sort(function(a, b) { return a - b; });
+            var d1 = parsedRowDates[0];
+            var d2 = parsedRowDates[parsedRowDates.length - 1];
+            var y1 = d1.getFullYear(), m1 = d1.getMonth(), day1 = d1.getDate();
+            var y2 = d2.getFullYear(), m2 = d2.getMonth(), day2 = d2.getDate();
 
-['#genFundCluster', '#genModal input[name="date_from"]', '#genModal input[name="date_to"]'].forEach((selector) => {
-    const field = document.querySelector(selector);
-    if (field) {
-        field.addEventListener('change', () => {
-            if (field.id === 'genFundCluster') {
-                updateGenerateButtonState();
+            if (d1.getTime() === d2.getTime() || (y1 === y2 && m1 === m2 && day1 === day2)) {
+                period = monthNames[m1] + ' ' + day1 + ', ' + y1;
+            } else if (y1 === y2 && m1 === m2) {
+                var lastDayOfMonth = new Date(y1, m1 + 1, 0).getDate();
+                if (day1 === 1 && day2 === lastDayOfMonth) {
+                    period = monthNames[m1] + ' ' + y1;
+                } else {
+                    period = monthNames[m1] + ' ' + day1 + ' - ' + day2 + ', ' + y1;
+                }
+            } else if (y1 === y2) {
+                period = monthNames[m1] + ' ' + day1 + ' - ' + monthNames[m2] + ' ' + day2 + ', ' + y1;
+            } else {
+                period = monthNames[m1] + ' ' + day1 + ', ' + y1 + ' - ' + monthNames[m2] + ' ' + day2 + ', ' + y2;
             }
-            if (field.id === 'genDateFrom' || field.id === 'genDateTo') {
-                normalizeGenDateRange();
-            }
-            loadGeneratePreview();
-        });
-    }
-});
-
-const genChequeStatusField = document.getElementById('genChequeStatus');
-if (genChequeStatusField) {
-    genChequeStatusField.addEventListener('change', () => {
-        loadGeneratePreview();
-    });
-}
-
-const exportChequeStatusField = document.getElementById('exportChequeStatus');
-if (exportChequeStatusField) {
-    exportChequeStatusField.addEventListener('change', () => {
-        loadReportPreview();
-    });
-}
-
-document.getElementById('exportDateFrom').addEventListener('change', () => {
-    normalizeExportDateRange();
-    loadReportPreview();
-});
-document.getElementById('exportDateTo').addEventListener('change', () => {
-    normalizeExportDateRange();
-    loadReportPreview();
-});
-document.getElementById('exportEntityName').addEventListener('change', loadReportPreview);
-document.getElementById('exportReportNo').addEventListener('change', loadReportPreview);
-document.getElementById('exportSheets').addEventListener('change', loadReportPreview);
-
-function updateGenerateButtonState() {
-    const submitButton = document.querySelector('#genModal button[type="submit"]');
-    if (!submitButton) return;
-
-    const genType = document.getElementById('genReportType');
-    const fundCluster = document.getElementById('genFundCluster');
-    const requiresFundCluster = genType && genType.value === 'cheque_summary';
-    const hasFundCluster = fundCluster && fundCluster.value;
-    const disabled = requiresFundCluster && !hasFundCluster;
-
-    submitButton.disabled = disabled;
-    submitButton.style.pointerEvents = disabled ? 'none' : '';
-    submitButton.style.opacity = disabled ? '0.65' : '';
-}
-
-function normalizeGenDateRange() {
-    const fromField = document.getElementById('genDateFrom');
-    const toField = document.getElementById('genDateTo');
-    if (!fromField || !toField) return;
-
-    if (fromField.value && toField.value && fromField.value > toField.value) {
-        toField.value = fromField.value;
-    }
-}
-
-function normalizeExportDateRange() {
-    const fromField = document.getElementById('exportDateFrom');
-    const toField = document.getElementById('exportDateTo');
-    if (!fromField || !toField) return;
-
-    if (fromField.value && toField.value && fromField.value > toField.value) {
-        toField.value = fromField.value;
-    }
-}
-
-function syncReportTypeFields() {
-    const genType = document.getElementById('genReportType');
-    const genWrap = document.getElementById('genFundClusterWrap');
-    const genStatusWrap = document.getElementById('genChequeStatusWrap');
-    const genPayeeWrap = document.getElementById('genPayeeWrap');
-    const exportType = document.getElementById('exportReportType');
-    const exportWrap = document.getElementById('exportFundClusterWrap');
-
-    const needsFundCluster = (t) => t === 'cheque_summary' || t === 'radai_summary';
-
-    if (genType && genWrap) {
-        const show = needsFundCluster(genType.value);
-        genWrap.style.display = show ? 'block' : 'none';
-        if (genStatusWrap) genStatusWrap.style.display = genType.value === 'cheque_summary' ? 'block' : 'none';
-        if (genPayeeWrap) genPayeeWrap.style.display = genType.value === 'radai_summary' ? 'block' : 'none';
-        if (!show) {
-            const genSelect = document.getElementById('genFundCluster');
-            if (genSelect) genSelect.value = '';
-            const genStatus = document.getElementById('genChequeStatus');
-            if (genStatus) genStatus.value = '';
-            const genPayee = document.getElementById('genPayee');
-            if (genPayee) genPayee.value = '';
-        }
-    }
-
-    if (exportType && exportWrap) {
-        const show = needsFundCluster(exportType.value);
-        exportWrap.style.display = show ? 'block' : 'none';
-        const exportStatusWrap = document.getElementById('exportChequeStatusWrap');
-        if (exportStatusWrap) exportStatusWrap.style.display = exportType.value === 'cheque_summary' ? 'block' : 'none';
-        if (!show) {
-            const exportSelect = document.getElementById('exportFundCluster');
-            const bankField = document.getElementById('exportBankAccount');
-            if (exportSelect) exportSelect.value = '';
-            if (bankField) bankField.value = '';
-            const exportStatus = document.getElementById('exportChequeStatus');
-            if (exportStatus) exportStatus.value = '';
-        }
-    }
-
-    updateGenerateButtonState();
-}
-
-const genReportType = document.getElementById('genReportType');
-if (genReportType) {
-    genReportType.addEventListener('change', syncReportTypeFields);
-    syncReportTypeFields();
-}
-
-if (document.getElementById('exportReportType')) {
-    document.getElementById('exportReportType').addEventListener('change', function () {
-        syncReportTypeFields();
-        loadReportPreview();
-    });
-}
-
-function applyGenerateEditMode() {
-    const meta = document.getElementById('editReportMeta');
-    if (!meta) return;
-
-    const snapshotScript = document.getElementById('edit-report-snapshot');
-    let snapshot = null;
-    try {
-        snapshot = snapshotScript ? JSON.parse(snapshotScript.textContent || '{}') : null;
-    } catch (error) {
-        snapshot = null;
-    }
-
-    const reportType = meta.dataset.reportType || '';
-    const dateFrom = meta.dataset.dateFrom || '';
-    const dateTo = meta.dataset.dateTo || '';
-    const fundClusterId = meta.dataset.fundClusterId || '';
-    const notes = meta.dataset.notes || '';
-
-    if (!reportType) return;
-
-    const reportTypeField = document.getElementById('genReportType');
-    const dateFromField = document.getElementById('genDateFrom');
-    const dateToField = document.getElementById('genDateTo');
-    const fundClusterField = document.getElementById('genFundCluster');
-    const notesField = document.querySelector('#genModal textarea[name="notes"]');
-    const reportIdField = document.getElementById('genReportId');
-
-    if (reportTypeField) reportTypeField.value = reportType;
-    if (dateFromField) dateFromField.value = dateFrom;
-    if (dateToField) dateToField.value = dateTo;
-    if (fundClusterField) fundClusterField.value = fundClusterId;
-    if (notesField) notesField.value = notes;
-    if (reportIdField) reportIdField.value = meta.dataset.reportId || '';
-    if (reportTypeField) reportTypeField.disabled = true;
-    if (dateFromField) dateFromField.disabled = true;
-    if (dateToField) dateToField.disabled = true;
-    if (fundClusterField) fundClusterField.disabled = true;
-    syncReportTypeFields();
-
-    const submitButton = document.querySelector('#genModal button[type="submit"]');
-    if (submitButton) submitButton.innerHTML = '<i class="fas fa-floppy-disk"></i> Update Report';
-    const title = document.querySelector('#genModal h3');
-    if (title) title.innerHTML = '<i class="fas fa-pen"></i> Edit Report';
-
-    const selectedRowIds = Array.isArray(snapshot?.selected_row_ids) ? snapshot.selected_row_ids.map(String) : [];
-    if (!selectedRowIds.length && Array.isArray(snapshot?.rows)) {
-        selectedRowIds.push(...snapshot.rows.map((row) => String(row.id)).filter(Boolean));
-    }
-
-    const selectedCheckboxes = Array.from(document.querySelectorAll('#genPreviewBody input[type="checkbox"][data-row-id]'));
-    if (selectedCheckboxes.length) {
-        selectedCheckboxes.forEach((checkbox) => {
-            checkbox.checked = selectedRowIds.length ? selectedRowIds.includes(String(checkbox.dataset.rowId)) : true;
-        });
-        syncGenerateSelectedRows();
-    }
-}
-
-const editReportMeta = document.getElementById('editReportMeta');
-if (editReportMeta) {
-    window.addEventListener('load', () => {
-        openGenerateModal();
-    });
-}
-
-const preselectedDiv = document.getElementById('preselectedReportType');
-if (preselectedDiv && preselectedDiv.dataset.autoOpen === '1') {
-    window.addEventListener('load', () => {
-        openGenerateModal();
-    });
-}
-
-document.getElementById('exportFundCluster').addEventListener('change', async function (ev) {
-    const sel = ev.target;
-    const fc_id = sel.value;
-    const bankField = document.getElementById('exportBankAccount');
-    bankField.value = '';
-    if (!fc_id) return loadReportPreview();
-    try {
-        const params = new URLSearchParams();
-        params.set('fc_id', fc_id);
-        const url = '{% url "fund_cluster_info" %}?' + params.toString();
-        const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
-        const ct = resp.headers.get('content-type') || '';
-        let data;
-        if (ct.includes('application/json')) {
-            data = await resp.json();
         } else {
-            const text = await resp.text();
-            throw new Error(`Server returned non-JSON response (${resp.status}) - ${text.slice(0,200)}`);
+            period = rowDates[0];
         }
-        if (data.ok) {
-            const bank = (data.bank_name || '') + (data.account_number ? (' / ' + data.account_number) : '');
-            bankField.value = bank;
-        }
-    } catch (e) {
-        console.warn('failed to fetch fund cluster info', e);
     }
-    loadReportPreview();
-});
 
-function validateGenForm(e) {
-    const statusWrap = document.getElementById('genChequeStatusWrap');
-    const statusField = document.getElementById('genChequeStatus');
-    if (statusWrap && statusWrap.style.display !== 'none') {
-        if (!statusField || !statusField.value) {
-            showToast('warning', 'Missing Status', 'Please select a Cheque Status.');
-            return false;
+    var reportTitle = "REPORT OF ADVICE TO DEBIT ACCOUNT ISSUED";
+    var payeeList = Object.keys(payeeSet);
+    if (allPayeesLbp) {
+        reportTitle += " - LBP";
+    } else if (payeeList.length === 1) {
+        reportTitle += " - " + payeeList[0];
+    } else if (payeeList.length > 1 && payeeList.length <= 3) {
+        reportTitle += " - " + payeeList.join(', ');
+    } else if (payeeList.length > 3) {
+        reportTitle += " - VARIOUS";
+    }
+
+    var certSerialText = '';
+    if (!firstSerial) {
+        certSerialText = 'ADA Nos. <strong>________________</strong> inclusive';
+    } else if (firstSerial === lastSerial) {
+        certSerialText = 'ADA No. <strong>' + firstSerial + '</strong>';
+    } else {
+        certSerialText = 'ADA Nos. <strong>' + firstSerial + '</strong> to <strong>' + lastSerial + '</strong> inclusive';
+    }
+
+    var radaiEntName = entityName || 'Department of Agriculture';
+    var radaiFundSel = document.getElementById('radaiFundFilter');
+    var radaiFundVal;
+    if (radaiFundSel && radaiFundSel.value) {
+        radaiFundVal = radaiFundSel.options[radaiFundSel.selectedIndex].text || fundClusterCode;
+    } else {
+        var rFcSet = {};
+        rows.forEach(function(r) { var fc = r.dataset.fund; if (fc) rFcSet[fc] = true; });
+        var rFcList = Object.keys(rFcSet).sort();
+        radaiFundVal = rFcList.length ? rFcList.join(', ') : (fundClusterCode || '—');
+    }
+    var radaiBankVal = cleanBankAcct(bankAccount);
+    var css=''
+        +'@page{size:A4 landscape;margin:6mm 6mm;}'
+        +'*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}'
+        +'html,body{margin:0;padding:0;width:100%;height:100%;}'
+        +'body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#000;background:#fff;}'
+        +'.report-sheet{background:#fff;color:#000;width:100%;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;}'
+        +'.report-sheet-header-container{display:flex;justify-content:space-between;align-items:flex-start;width:100%;margin-bottom:4px;color:#000;}'
+        +'.report-sheet-titlewrap{flex:1;text-align:center;color:#000;}'
+        +'.report-sheet-appendix{font-style:italic;font-size:10px;font-weight:600;text-align:right;white-space:nowrap;color:#000;}'
+        +'.report-sheet-title{font-size:15px;font-weight:700;letter-spacing:0.02em;color:#000;}'
+        +'.report-sheet-period{font-size:10px;margin-top:1px;color:#000;}'
+        +'.report-meta-grid{display:grid;grid-template-columns:1.2fr 1.7fr;gap:1px;align-items:start;margin-top:8px;margin-bottom:6px;}'
+        +'.report-meta-left,.report-meta-right{font-size:10px;}'
+        +'.report-meta-left .row,.report-meta-right .row{display:flex;gap:1px;align-items:baseline;line-height:1.1;margin-bottom:1px;}'
+        +'.report-meta-left .label,.report-meta-right .label{font-weight:700;white-space:nowrap;flex:0 0 90px;}'
+        +'.report-meta-left .value,.report-meta-right .value{display:inline-block;flex:0 0 auto;min-height:12px;border-bottom:1px solid #444;padding-left:2px;padding-right:2px;min-width:40px;max-width:520px;}'
+        +'.report-meta-right{justify-self:end;text-align:left;width:360px;}'
+        +'.report-table-wrap{margin-top:4px;width:100%;overflow:visible;}'
+        +'.report-table{width:100%;border-collapse:collapse;table-layout:auto;white-space:nowrap;}'
+        +'.report-table th,.report-table td{border:1px solid #222;padding:2px 4px;font-size:8.5px;line-height:1.1;vertical-align:middle;text-align:center;}'
+        +'.report-table thead tr:first-child th{background:#e5e7eb;color:#000;text-align:center;font-weight:700;}'
+        +'.report-table thead tr:nth-child(2) th{background:#f3f4f6;color:#000;text-align:center;font-weight:700;}'
+        +'.nothing-follows-row td{text-align:center;font-style:italic;font-weight:600;letter-spacing:0.1em;color:#4b5563;padding:4px;}'
+        +'.report-cert{border:1px solid #222;margin-top:8px;padding:8px 14px 6px;text-align:center;page-break-inside:avoid;}'
+        +'.report-cert-title{text-align:center;font-size:14px;font-weight:700;margin-bottom:4px;}'
+        +'.report-cert-body{text-align:center;font-size:10px;line-height:1.3;max-width:860px;margin:0 auto;}'
+        +'.report-cert-sign{margin-top:18px;display:flex;justify-content:center;}'
+        +'.report-cert-sign .name{font-size:10px;font-weight:700;line-height:1.1;}'
+        +'.report-cert-sign .role{font-size:9px;line-height:1.2;}'
+        +'.report-cert-sign>div{text-align:center;}'
+    var css=''
+        +'@page{size:A4 landscape;margin:6mm 6mm;}'
+        +'*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}'
+        +'html,body{margin:0;padding:0;width:100%;height:auto;overflow:visible;}'
+        +'body{font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#000;background:#fff;}'
+        +'.report-sheet{background:#fff;color:#000;width:100%;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:12px;}'
+        +'.report-sheet-header-container{display:flex;justify-content:space-between;align-items:flex-start;width:100%;margin-bottom:4px;color:#000;}'
+        +'.report-sheet-titlewrap{flex:1;text-align:center;color:#000;}'
+        +'.report-sheet-appendix{font-style:italic;font-size:10px;font-weight:600;text-align:right;white-space:nowrap;color:#000;}'
+        +'.report-sheet-title{font-size:15px;font-weight:700;letter-spacing:0.02em;color:#000;}'
+        +'.report-sheet-period{font-size:10px;margin-top:1px;color:#000;}'
+        +'.report-meta-grid{display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;margin-bottom:6px;width:100%;}'
+        +'.report-meta-left{flex:1;max-width:62%;font-size:10px;}'
+        +'.report-meta-right{flex:0 0 280px;font-size:10px;text-align:left;}'
+        +'.report-meta-left .row,.report-meta-right .row{display:flex;gap:4px;align-items:baseline;line-height:1.2;margin-bottom:2px;}'
+        +'.report-meta-left .label{font-weight:700;white-space:nowrap;width:105px;flex-shrink:0;}'
+        +'.report-meta-right .label{font-weight:700;white-space:nowrap;width:95px;flex-shrink:0;}'
+        +'.report-meta-left .value,.report-meta-right .value{display:inline-block;flex:0 0 auto;width:fit-content;max-width:100%;min-height:13px;border-bottom:1px solid #000;padding-left:2px;padding-right:4px;white-space:nowrap;}'
+        +'.report-table-wrap{margin-top:4px;width:100%;overflow:visible;}'
+        +'.report-table{width:100%;border-collapse:collapse;table-layout:fixed;}'
+        +'.report-table th,.report-table td{border:1px solid #222;padding:2px 4px;font-size:8.5px;line-height:1.1;vertical-align:middle;text-align:center;overflow-wrap:anywhere;word-break:break-word;}'
+        +'.report-table th{white-space:normal;}'
+        +'.report-table thead{display:table-header-group;}'
+        +'.report-table tbody tr{page-break-inside:avoid;break-inside:avoid;}'
+        +'.report-table thead tr:first-child th{background:#e5e7eb;color:#000;text-align:center;font-weight:700;}'
+        +'.report-table thead tr:nth-child(2) th{background:#f3f4f6;color:#000;text-align:center;font-weight:700;}'
+        +'.nothing-follows-row td{text-align:center;font-style:italic;font-weight:600;letter-spacing:0.1em;color:#4b5563;padding:4px;}'
+        +'.report-cert{border:1px solid #222;margin-top:8px;padding:8px 14px 6px;text-align:center;page-break-inside:avoid;break-inside:avoid;}'
+        +'.report-cert-title{text-align:center;font-size:14px;font-weight:700;margin-bottom:4px;}'
+        +'.report-cert-body{text-align:center;font-size:10px;line-height:1.3;max-width:860px;margin:0 auto;}'
+        +'.report-cert-sign{margin-top:18px;display:flex;justify-content:center;}'
+        +'.report-cert-sign .name{font-size:10px;font-weight:700;line-height:1.1;}'
+        +'.report-cert-sign .role{font-size:9px;line-height:1.2;}'
+        +'.report-cert-sign>div{text-align:center;}'
+        +'@media print{html,body{margin:0;padding:0;width:100%;height:auto;overflow:visible;}body{font-size:8.5pt;}.report-sheet{padding:0;}.report-table th,.report-table td{font-size:7.5pt;padding:1.5px 3px;}.report-meta-left,.report-meta-right{font-size:9pt;}.report-sheet-title{font-size:12pt;}.report-sheet-period,.report-sheet-appendix{font-size:9pt;}.report-cert-body{font-size:9pt;}.report-cert-sign .name,.report-cert-sign .role{font-size:8pt;}.report-cert-title{font-size:11pt;}}';
+    var estimatedSheets = Math.ceil(dataRowList.length / 15) || 1;
+    var reportNo = generateReportNo();
+
+    var tableHeaderHtml = allPayeesLbp ? (
+        '<colgroup>'
+        +'<col style="width:8%">'
+        +'<col style="width:6%">'
+        +'<col style="width:9%">'
+        +'<col style="width:18%">'
+        +'<col style="width:17%">'
+        +'<col style="width:11%">'
+        +'<col style="width:14%">'
+        +'<col style="width:6%">'
+        +'<col style="width:5%">'
+        +'<col style="width:6%">'
+        +'</colgroup>'
+        +'<thead><tr>'
+        +'<th colspan="2">ADA</th>'
+        +'<th rowspan="2">DV/Payroll No.</th>'
+        +'<th rowspan="2">ORS/BURS No. | Responsibility Center Code</th>'
+        +'<th rowspan="2">Payee</th>'
+        +'<th rowspan="2">UACS Object Code</th>'
+        +'<th rowspan="2">Nature of Payment</th>'
+        +'<th rowspan="2">Gross Amount<br>(as per voucher)</th>'
+        +'<th rowspan="2">Professional Tax</th>'
+        +'<th rowspan="2">Total<br>(as per ADA)</th>'
+        +'</tr><tr>'
+        +'<th>Date</th><th>Serial No.</th>'
+        +'</tr></thead>'
+    ) : (
+        '<colgroup>'
+        +'<col style="width:8%">'
+        +'<col style="width:6%">'
+        +'<col style="width:9%">'
+        +'<col style="width:18%">'
+        +'<col style="width:22%">'
+        +'<col style="width:11%">'
+        +'<col style="width:16%">'
+        +'<col style="width:10%">'
+        +'</colgroup>'
+        +'<thead><tr>'
+        +'<th colspan="2">ADA</th>'
+        +'<th rowspan="2">DV/Payroll No.</th>'
+        +'<th rowspan="2">ORS/BURS No. | Responsibility Center Code</th>'
+        +'<th rowspan="2">Payee</th>'
+        +'<th rowspan="2">UACS Object Code</th>'
+        +'<th rowspan="2">Nature of Payment</th>'
+        +'<th rowspan="2">Amount</th>'
+        +'</tr><tr>'
+        +'<th>Date</th><th>Serial No.</th>'
+        +'</tr></thead>'
+    );
+
+    var tableFooterHtml = allPayeesLbp ? (
+        '<tr class="nothing-follows-row"><td colspan="10" style="text-align:center;font-style:italic;font-weight:600;letter-spacing:0.1em;color:#4b5563;padding:4px;">*** Nothing Follows ***</td></tr>'
+        +'<tr style="font-weight:700;background:#f8fafc;">'
+        +'<td colspan="7" style="text-align:right;font-weight:700;padding:4px;">Total:</td>'
+        +'<td style="padding:2px 3px;">'+fmtRadaiAmt(totalGross, true)+'</td>'
+        +'<td style="padding:2px 3px;">'+fmtRadaiAmt(totalProf, true)+'</td>'
+        +'<td style="padding:2px 3px;">'+fmtRadaiAmt(totalADA, true)+'</td>'
+        +'</tr>'
+    ) : (
+        '<tr class="nothing-follows-row"><td colspan="8" style="text-align:center;font-style:italic;font-weight:600;letter-spacing:0.1em;color:#4b5563;padding:4px;">*** Nothing Follows ***</td></tr>'
+        +'<tr style="font-weight:700;background:#f8fafc;">'
+        +'<td colspan="7" style="text-align:right;font-weight:700;padding:4px;">Total:</td>'
+        +'<td style="padding:2px 3px;">'+fmtRadaiAmt(totalADA, true)+'</td>'
+        +'</tr>'
+    );
+
+    var pageSheetsHtml = '<div class="report-sheet">'
+        +'<div class="report-sheet-header-container">'
+        +'<div style="width:80px;" aria-hidden="true"></div>'
+        +'<div class="report-sheet-titlewrap">'
+        +'<div class="report-sheet-title">'+reportTitle+'</div>'
+        +'<div class="report-sheet-period">Period Covered: '+period+'</div>'
+        +'</div>'
+        +'<div class="report-sheet-appendix">Appendix 13</div>'
+        +'</div>'
+        +'<div class="report-meta-grid">'
+        +'<div class="report-meta-left">'
+        +'<div class="row"><div class="label">Entity Name</div><div class="value">'+radaiEntName+'</div></div>'
+        +'<div class="row"><div class="label">Fund Cluster</div><div class="value">'+radaiFundVal+'</div></div>'
+        +'<div class="row"><div class="label">Bank Account/No.</div><div class="value">'+radaiBankVal+'</div></div>'
+        +'</div>'
+        +'<div class="report-meta-right">'
+        +'<div class="row"><div class="label">Report No.</div><div class="value">'+reportNo+'</div></div>'
+        +'<div class="row"><div class="label">No. Of Sheets</div><div class="value">'+estimatedSheets+'</div></div>'
+        +'</div>'
+        +'</div>'
+        +'<div class="report-table-wrap">'
+        +'<table class="report-table">'
+        +tableHeaderHtml
+        +'<tbody>'
+        +dataRowList.join('')
+        +tableFooterHtml
+        +'</tbody></table></div>'
+        +'<div class="report-cert">'
+        +'<div class="report-cert-title">CERTIFICATION</div>'
+        +'<div class="report-cert-body">I hereby certify on my official oath that the above is a true statement of all ADAs issued by me during the period stated above for which '+certSerialText+', were actually issued by me in the amounts shown thereon.</div>'
+        +'<div class="report-cert-sign"><div><div class="name" style="display:inline-block;border-bottom:1px solid #000;padding-bottom:2px;">'+certName+'</div><div class="role">Name and Signature of Disbursing Officer / Cashier</div></div></div>'
+        +'</div>'
+        +'</div>';
+
+    var html='<html><head><meta charset="utf-8"><title>RADAI Summary</title><style>'+css+'</style></head><body>' + pageSheetsHtml + '</body></html>';
+    var printWin=window.open('','_blank','width=1200,height=800');
+    printWin.document.write(html);printWin.document.close();setTimeout(function(){printWin.print();},500);
+}
+
+/* ── Print Cheques: exact report_detail.html layout (Appendix 35) ── */
+function printAllCheques(){
+    var rows=document.querySelectorAll('#chequeBody tr[data-search]:not([style*="display: none"])');
+    if(!rows.length)return;
+    var now=new Date();
+    var monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var totalGross=0,totalProf=0,totalTax53=0,totalTax21=0,totalNet=0,totalDed=0;
+    var firstSerial='',lastSerial='';
+    var dataRowList=[];
+    var rowDates=[];
+
+    function fmtAmt(val, isBold) {
+        var s = (val || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        var fw = isBold ? 'font-weight:700;' : 'font-weight:normal;';
+        return '<div style="display:flex;justify-content:space-between;align-items:baseline;width:100%;box-sizing:border-box;font-size:7pt;' + fw + '">'
+            + '<span style="flex-shrink:0;text-align:left;padding-right:1px;">₱</span>'
+            + '<span style="flex:1 1 auto;text-align:right;white-space:nowrap;margin-left:auto;font-variant-numeric:tabular-nums;">' + s + '</span>'
+            + '</div>';
+    }
+
+    rows.forEach(function(r){var tds=r.querySelectorAll('td');
+        var serial=tds[1].textContent.trim();
+        var chkDate=tds[2].textContent.trim();
+        if(r.dataset.date && rowDates.indexOf(r.dataset.date) === -1) rowDates.push(r.dataset.date);
+        var payee=tds[3].textContent.trim();
+        var dv=tds[4].textContent.trim();
+        var ors=tds[5].textContent.trim();
+        var resp=tds[6].textContent.trim();
+        var uacs=tds[7].textContent.trim();
+        var acctTitle=tds[8].textContent.trim();
+        var nature=tds[9].textContent.trim();
+        var gross=parseFloat(tds[10].textContent.replace(/[₱P,\s]/g,''))||0;
+        var prof=parseFloat(tds[11].textContent.replace(/[₱P,\s]/g,''))||0;
+        var t53=parseFloat(tds[12].textContent.replace(/[₱P,\s]/g,''))||0;
+        var t21=parseFloat(tds[13].textContent.replace(/[₱P,\s]/g,''))||0;
+        var net=parseFloat(tds[14].textContent.replace(/[₱P,\s]/g,''))||0;
+        var ded=parseFloat(tds[15].textContent.replace(/[₱P,\s]/g,''))||0;
+        var remarks=tds[17]?tds[17].textContent.trim():'';
+        totalGross+=gross;totalProf+=prof;totalTax53+=t53;totalTax21+=t21;totalNet+=net;totalDed+=ded;
+        if(!firstSerial&&serial)firstSerial=serial;
+        if(serial)lastSerial=serial;
+        dataRowList.push('<tr>'
+            +'<td style="font-size:7pt;">'+chkDate+'</td>'
+            +'<td style="font-size:7pt;">'+serial+'</td>'
+            +'<td style="font-size:7pt;word-break:break-all;">'+dv+'</td>'
+            +'<td style="font-size:7pt;word-break:break-all;">'+ors+'</td>'
+            +'<td style="font-size:7pt;">'+resp+'</td>'
+            +'<td style="white-space:normal;word-break:break-word;overflow-wrap:break-word;text-align:left;font-weight:700;font-size:7pt;">'+payee+'</td>'
+            +'<td style="font-size:7pt;">'+uacs+'</td>'
+            +'<td style="white-space:normal;word-break:break-word;overflow-wrap:break-word;text-align:left;font-size:7pt;line-height:1.2;padding:2px 4px;">'+nature+'</td>'
+            +'<td style="padding:1.5px 2px;">'+fmtAmt(gross)+'</td>'
+            +'<td style="padding:1.5px 2px;">'+fmtAmt(prof)+'</td>'
+            +'<td style="padding:1.5px 2px;">'+fmtAmt(t53)+'</td>'
+            +'<td style="padding:1.5px 2px;">'+fmtAmt(t21)+'</td>'
+            +'<td style="padding:1.5px 2px;">'+fmtAmt(net, true)+'</td>'
+            +'<td style="padding:1.5px 2px;">'+fmtAmt(ded)+'</td>'
+            +'<td style="white-space:normal;word-break:break-word;overflow-wrap:break-word;font-size:7pt;">'+remarks+'</td>'
+            +'</tr>');
+    });
+
+    var dur = document.getElementById('chequeDuration') ? document.getElementById('chequeDuration').value : '';
+    var mVal = document.getElementById('chequeMonth') ? document.getElementById('chequeMonth').value : '';
+    var mYrVal = document.getElementById('chequeMonthYear') ? document.getElementById('chequeMonthYear').value : '';
+    var yrVal = document.getElementById('chequeYear') ? document.getElementById('chequeYear').value : '';
+    
+    var period = '';
+    if (dur === 'annual' && yrVal) {
+        period = yrVal;
+    } else if (dur === 'monthly' && mVal && mYrVal) {
+        var mIdx = parseInt(mVal, 10) - 1;
+        if (mIdx >= 0 && mIdx < 12) period = monthNames[mIdx] + ' ' + mYrVal;
+    }
+    
+    if (!period) {
+        if (!rowDates.length) {
+            period = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+        } else if (rowDates.length === 1) {
+            var p = rowDates[0].split('-');
+            if (p.length === 3) {
+                var mIdx = parseInt(p[1], 10) - 1;
+                period = monthNames[mIdx] + ' ' + parseInt(p[2], 10) + ', ' + p[0];
+            } else {
+                period = rowDates[0];
+            }
+        } else {
+            rowDates.sort();
+            var p1 = rowDates[0].split('-');
+            var p2 = rowDates[rowDates.length - 1].split('-');
+            if (p1.length === 3 && p2.length === 3) {
+                var y1 = p1[0], m1 = parseInt(p1[1], 10) - 1, d1 = parseInt(p1[2], 10);
+                var y2 = p2[0], m2 = parseInt(p2[1], 10) - 1, d2 = parseInt(p2[2], 10);
+                if (y1 === y2 && m1 === m2) {
+                    if (d1 === d2) {
+                        period = monthNames[m1] + ' ' + d1 + ', ' + y1;
+                    } else if (dur === 'monthly') {
+                        period = monthNames[m1] + ' ' + y1;
+                    } else {
+                        period = monthNames[m1] + ' ' + d1 + ' - ' + d2 + ', ' + y1;
+                    }
+                } else if (y1 === y2) {
+                    if (dur === 'annual') {
+                        period = y1;
+                    } else {
+                        period = monthNames[m1] + ' ' + d1 + ' - ' + monthNames[m2] + ' ' + d2 + ', ' + y1;
+                    }
+                } else {
+                    period = monthNames[m1] + ' ' + d1 + ', ' + y1 + ' - ' + monthNames[m2] + ' ' + d2 + ', ' + y2;
+                }
+            } else {
+                period = rowDates[0] + ' - ' + rowDates[rowDates.length - 1];
+            }
         }
     }
-    return true;
+
+    var serialText = '';
+    if (!firstSerial) {
+        serialText = '________________';
+    } else if (firstSerial === lastSerial) {
+        serialText = '<strong>' + firstSerial + '</strong>';
+    } else {
+        serialText = '<strong>' + firstSerial + '</strong> to <strong>' + lastSerial + '</strong>';
+    }
+
+    var entName = entityName || 'Department of Agriculture';
+    var fundSel = document.getElementById('chequeFundFilter');
+    var fundClusterVal;
+    if (fundSel && fundSel.value) {
+        fundClusterVal = fundSel.options[fundSel.selectedIndex].text || fundClusterCode;
+    } else {
+        var fcSet = {};
+        rows.forEach(function(r) { var fc = r.dataset.fund; if (fc) fcSet[fc] = true; });
+        var fcList = Object.keys(fcSet).sort();
+        fundClusterVal = fcList.length ? fcList.join(', ') : (fundClusterCode || '—');
+    }
+    var bankAccountVal = cleanBankAcct(bankAccount);
+    var css=''
+        +'@page{size:A4 landscape;margin:5mm 6mm;}'
+        +'*{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}'
+        +'html,body{margin:0;padding:0;width:100%;height:auto;overflow:visible;}'
+        +'body{font-family:Arial,Helvetica,sans-serif;font-size:10px;color:#000;background:#fff;}'
+        +'.report-sheet{background:#fff;color:#000;width:100%;padding:0;font-family:Arial,Helvetica,sans-serif;font-size:10px;}'
+        +'.report-sheet-header-container{display:flex;justify-content:space-between;align-items:flex-start;width:100%;margin-bottom:4px;color:#000;}'
+        +'.report-sheet-titlewrap{flex:1;text-align:center;color:#000;}'
+        +'.report-sheet-appendix{font-style:italic;font-size:10px;font-weight:600;text-align:right;white-space:nowrap;color:#000;}'
+        +'.report-sheet-title{font-size:15px;font-weight:700;letter-spacing:0.02em;color:#000;}'
+        +'.report-sheet-period{font-size:10px;margin-top:1px;color:#000;}'
+        +'.report-meta-grid{display:flex;justify-content:space-between;align-items:flex-start;margin-top:6px;margin-bottom:6px;width:100%;}'
+        +'.report-meta-left{flex:1;max-width:62%;font-size:10px;}'
+        +'.report-meta-right{flex:0 0 280px;font-size:10px;text-align:left;}'
+        +'.report-meta-left .row,.report-meta-right .row{display:flex;gap:4px;align-items:baseline;line-height:1.2;margin-bottom:2px;}'
+        +'.report-meta-left .label{font-weight:700;white-space:nowrap;width:105px;flex-shrink:0;}'
+        +'.report-meta-right .label{font-weight:700;white-space:nowrap;width:95px;flex-shrink:0;}'
+        +'.report-meta-left .value,.report-meta-right .value{display:inline-block;flex:0 0 auto;width:fit-content;max-width:100%;min-height:13px;border-bottom:1px solid #000;padding-left:2px;padding-right:4px;white-space:nowrap;}'
+        +'.report-table-wrap{margin-top:4px;width:100%;overflow:visible;}'
+        +'.report-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:7.5pt;}'
+        +'.report-table th,.report-table td{border:1px solid #222;padding:1.5px 2px;font-size:7.5pt;line-height:1.15;vertical-align:middle;text-align:center;box-sizing:border-box;word-wrap:break-word;overflow-wrap:break-word;}'
+        +'.report-table th{font-weight:700;}'
+        +'.report-table thead{display:table-header-group;}'
+        +'.report-table tbody tr{page-break-inside:avoid;break-inside:avoid;}'
+        +'.report-table thead tr:first-child th{background:#e5e7eb;color:#000;text-align:center;}'
+        +'.report-table thead tr:nth-child(2) th{background:#f3f4f6;color:#000;text-align:center;}'
+        +'.nothing-follows-row td{text-align:center;font-style:italic;font-weight:600;letter-spacing:0.1em;color:#4b5563;padding:4px;}'
+        +'.report-cert{border:1px solid #222;margin-top:8px;padding:8px 14px 6px;text-align:center;page-break-inside:avoid;break-inside:avoid;}'
+        +'.report-cert-title{text-align:center;font-size:13px;font-weight:700;margin-bottom:4px;}'
+        +'.report-cert-body{text-align:center;font-size:9.5px;line-height:1.3;max-width:860px;margin:0 auto;}'
+        +'.report-cert-sign{margin-top:16px;display:flex;justify-content:center;}'
+        +'.report-cert-sign .name{font-size:10px;font-weight:700;line-height:1.1;}'
+        +'.report-cert-sign .role{font-size:9px;line-height:1.2;}'
+        +'.report-cert-sign>div{text-align:center;}'
+        +'@media print{html,body{margin:0;padding:0;width:100%;height:auto;overflow:visible;}body{font-size:8pt;}.report-sheet{padding:0;}.report-table th,.report-table td{font-size:7pt;padding:1px 2px;}.report-meta-left,.report-meta-right{font-size:8.5pt;}.report-sheet-title{font-size:11pt;}.report-sheet-period,.report-sheet-appendix{font-size:8.5pt;}.report-cert-body{font-size:8.5pt;}.report-cert-sign .name,.report-cert-sign .role{font-size:7.5pt;}.report-cert-title{font-size:10pt;}}';
+    var estimatedSheets = Math.ceil(dataRowList.length / 15) || 1;
+    var reportNo = generateReportNo();
+    var sheetCertText = estimatedSheets === 1 ? 'one (1) sheet' : estimatedSheets + ' sheets';
+
+    var pageSheetsHtml = '<div class="report-sheet">'
+        +'<div class="report-sheet-header-container">'
+        +'<div style="width:80px;" aria-hidden="true"></div>'
+        +'<div class="report-sheet-titlewrap">'
+        +'<div class="report-sheet-title">REPORTS OF CHECK ISSUED</div>'
+        +'<div class="report-sheet-period">Period Covered: '+period+'</div>'
+        +'</div>'
+        +'<div class="report-sheet-appendix">Appendix 35</div>'
+        +'</div>'
+        +'<div class="report-meta-grid">'
+        +'<div class="report-meta-left">'
+        +'<div class="row"><div class="label">Entity Name</div><div class="value">'+entName+'</div></div>'
+        +'<div class="row"><div class="label">Fund Cluster</div><div class="value">'+fundClusterVal+'</div></div>'
+        +'<div class="row"><div class="label">Bank Account/No.</div><div class="value">'+bankAccountVal+'</div></div>'
+        +'</div>'
+        +'<div class="report-meta-right">'
+        +'<div class="row"><div class="label">Report No.</div><div class="value">'+reportNo+'</div></div>'
+        +'<div class="row"><div class="label">No. Of Sheets</div><div class="value">'+estimatedSheets+'</div></div>'
+        +'</div>'
+        +'</div>'
+        +'<div class="report-table-wrap">'
+        +'<table class="report-table">'
+        +'<colgroup>'
+        +'<col style="width:4.5%;"><col style="width:4.5%;"><col style="width:5.5%;"><col style="width:6.5%;">'
+        +'<col style="width:4.0%;"><col style="width:13.0%;"><col style="width:5.0%;"><col style="width:15.0%;">'
+        +'<col style="width:8.0%;"><col style="width:5.5%;"><col style="width:5.0%;"><col style="width:5.0%;">'
+        +'<col style="width:8.0%;"><col style="width:6.0%;"><col style="width:4.5%;">'
+        +'</colgroup>'
+        +'<thead><tr>'
+        +'<th colspan="2" style="text-align:center;">Check</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">DV/Payroll No.</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">ORS/BURS No.</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Responsibility<br>Center</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Payee</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">UACS Object<br>Code</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Nature of<br>Payments</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Gross<br>Amount</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Professional<br>Tax</th>'
+        +'<th colspan="2" style="text-align:center;">Tax</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Amount</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Other<br>Deductions</th>'
+        +'<th rowspan="2" style="vertical-align:middle;text-align:center;">Remarks</th>'
+        +'</tr><tr>'
+        +'<th style="text-align:center;">Check Date</th>'
+        +'<th style="text-align:center;">Serial No.</th>'
+        +'<th style="text-align:center;">5% / 3%</th>'
+        +'<th style="text-align:center;">2% / 1%</th>'
+        +'</tr></thead>'
+        +'<tbody>'
+        +dataRowList.join('')
+        +'<tr class="nothing-follows-row"><td colspan="15" style="text-align:center;font-style:italic;font-weight:600;letter-spacing:0.1em;color:#4b5563;padding:4px;">*** Nothing Follows ***</td></tr>'
+        +'<tr style="font-weight:700;background:#f8fafc;">'
+        +'<td colspan="8" style="text-align:right;font-weight:700;padding:4px 6px;">Total:</td>'
+        +'<td style="padding:2px 3px;">'+fmtAmt(totalGross, true)+'</td>'
+        +'<td style="padding:2px 3px;">'+fmtAmt(totalProf, true)+'</td>'
+        +'<td style="padding:2px 3px;">'+fmtAmt(totalTax53, true)+'</td>'
+        +'<td style="padding:2px 3px;">'+fmtAmt(totalTax21, true)+'</td>'
+        +'<td style="padding:2px 3px;">'+fmtAmt(totalNet, true)+'</td>'
+        +'<td style="padding:2px 3px;">'+fmtAmt(totalDed, true)+'</td>'
+        +'<td></td>'
+        +'</tr>'
+        +'</tbody></table></div>'
+        +'<div class="report-cert">'
+        +'<div class="report-cert-title">CERTIFICATION</div>'
+        +'<div class="report-cert-body">I hereby certify on my official oath that this Report of Checks issued in '+sheetCertText+' is a full, true and correct statement of all checks issued by me during the period stated above for which Check No. '+serialText+' inclusive were actually issued by me in payment of obligations shown in the attached disbursement vouchers/payroll.</div>'
+        +'<div class="report-cert-sign"><div><div class="name" style="display:inline-block;border-bottom:1px solid #000;padding-bottom:2px;">'+certName+'</div><div class="role">Name and Signature of Disbursing Officer/Cashier</div></div></div>'
+        +'</div>'
+        +'</div>';
+
+    var html='<html><head><meta charset="utf-8"><title>Cheque Summary</title><style>'+css+'</style></head><body>' + pageSheetsHtml + '</body></html>';
+    var printWin=window.open('','_blank','width=1200,height=800');
+    printWin.document.write(html);printWin.document.close();setTimeout(function(){printWin.print();},500);
+}
+
+function exportRadaiExcel() {
+    var fundSel = document.getElementById('radaiFundFilter');
+    var fundVal = (fundSel && fundSel.value) ? fundSel.value : '';
+    var searchVal = document.getElementById('radaiSearch') ? document.getElementById('radaiSearch').value.trim() : '';
+    var url = "{% url 'export_report_excel' %}?report_type=radai_summary";
+    if (fundVal) url += "&fund_cluster=" + encodeURIComponent(fundVal);
+    if (searchVal) url += "&search=" + encodeURIComponent(searchVal);
+    window.location.href = url;
+}
+
+function exportChequeExcel() {
+    var fundSel = document.getElementById('chequeFundFilter');
+    var fundVal = (fundSel && fundSel.value) ? fundSel.value : '';
+    var statusSel = document.getElementById('chequeStatusFilter');
+    var statusVal = (statusSel && statusSel.value) ? statusSel.value : '';
+    var searchVal = document.getElementById('chequeSearch') ? document.getElementById('chequeSearch').value.trim() : '';
+    var url = "{% url 'export_report_excel' %}?report_type=cheque_summary";
+    if (fundVal) url += "&fund_cluster=" + encodeURIComponent(fundVal);
+    if (statusVal) url += "&cheque_status=" + encodeURIComponent(statusVal);
+    if (searchVal) url += "&search=" + encodeURIComponent(searchVal);
+    window.location.href = url;
+}
+
+function exportRadaiPDF() {
+    var fundSel = document.getElementById('radaiFundFilter');
+    var fundVal = (fundSel && fundSel.value) ? fundSel.value : '';
+    var searchVal = document.getElementById('radaiSearch') ? document.getElementById('radaiSearch').value.trim() : '';
+    var url = "{% url 'export_report_pdf' %}?report_type=radai_summary";
+    if (fundVal) url += "&fund_cluster=" + encodeURIComponent(fundVal);
+    if (searchVal) url += "&search=" + encodeURIComponent(searchVal);
+    window.open(url, '_blank');
+}
+
+function exportChequePDF() {
+    var fundSel = document.getElementById('chequeFundFilter');
+    var fundVal = (fundSel && fundSel.value) ? fundSel.value : '';
+    var statusSel = document.getElementById('chequeStatusFilter');
+    var statusVal = (statusSel && statusSel.value) ? statusSel.value : '';
+    var searchVal = document.getElementById('chequeSearch') ? document.getElementById('chequeSearch').value.trim() : '';
+    var url = "{% url 'export_report_pdf' %}?report_type=cheque_summary";
+    if (fundVal) url += "&fund_cluster=" + encodeURIComponent(fundVal);
+    if (statusVal) url += "&cheque_status=" + encodeURIComponent(statusVal);
+    if (searchVal) url += "&search=" + encodeURIComponent(searchVal);
+    window.open(url, '_blank');
 }
 </script>
 {% endblock %}

@@ -710,6 +710,46 @@
     <script>document.addEventListener('DOMContentLoaded',function(){showToast('success','Success','{{ success|escapejs }}');});</script>
   {% endif %}
 
+  <!-- 5-DAY AUTO-BACKUP STATUS BANNER -->
+  <div class="auto-backup-banner" style="background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; margin-bottom: 24px; text-align: left; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">
+        <i class="fas fa-calendar-check"></i>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <strong style="font-size: 15px; color: var(--text);">Automated 5-Day Backup</strong>
+          <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600;">
+            <i class="fas fa-circle" style="font-size: 8px; margin-right: 4px;"></i> Active (Every 5 Days)
+          </span>
+          {% if system_setting.auto_backup_to_downloads %}
+          <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: 600;" title="{{ downloads_folder }}">
+            <i class="fas fa-folder-arrow-down" style="margin-right: 4px;"></i> Saves to Downloads
+          </span>
+          {% endif %}
+        </div>
+        <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+          {% if system_setting.last_auto_backup %}
+            Last backup: <strong>{{ system_setting.last_auto_backup|date:"M d, Y h:i A" }}</strong>
+            {% if days_until_next_backup is not None %}
+              &bull; Next backup in: <strong>{{ days_until_next_backup }} day{% if days_until_next_backup != 1 %}s{% endif %}</strong>
+            {% endif %}
+          {% else %}
+            Status: <strong>First automated run pending</strong>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <form method="post" style="margin: 0; display: flex; gap: 8px; align-items: center;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="trigger_auto_backup">
+      <input type="password" name="admin_password" class="form-control" placeholder="Admin password" style="width: 150px; padding: 7px 10px; font-size: 12px;" required>
+      <button type="submit" class="btn btn-primary" style="padding: 8px 14px; font-size: 12px; white-space: nowrap;">
+        <i class="fas fa-play"></i> Run Backup Now
+      </button>
+    </form>
+  </div>
+
   <div class="accordion-list">
 
     <!-- ACCORDION CARD 1: CREATE BACKUP -->
@@ -720,7 +760,7 @@
         </div>
         <div class="accordion-info">
           <div class="accordion-title">Create Backup</div>
-          <div class="accordion-desc">Package database, media files, and settings into a download archive.</div>
+          <div class="accordion-desc">Package database (incl. Activity Log), media, and settings as BAK, JSON, or SQL — or download the app source code as a system files ZIP.</div>
         </div>
         <div class="accordion-chevron">
           <i class="fas fa-chevron-down"></i>
@@ -732,6 +772,32 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="download">
             <div class="form-group">
+              <label>Backup Format</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;" role="radiogroup" aria-label="Backup format">
+                <label style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: #f8fafc;">
+                  <span style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--text);">
+                    <input type="radio" name="backup_format" value="bak" checked>
+                    <i class="fas fa-file-zipper" style="color: #16a34a;"></i> BAK (Full)
+                  </span>
+                  <span style="font-size: 11px; color: var(--muted); line-height: 1.4;">Database + media + settings archive. Recommended.</span>
+                </label>
+                <label style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: #f8fafc;">
+                  <span style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--text);">
+                    <input type="radio" name="backup_format" value="json">
+                    <i class="fas fa-file-code" style="color: #2563eb;"></i> JSON
+                  </span>
+                  <span style="font-size: 11px; color: var(--muted); line-height: 1.4;">All tables including Activity Log as JSON data.</span>
+                </label>
+                <label style="flex: 1 1 140px; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: #f8fafc;">
+                  <span style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13px; color: var(--text);">
+                    <input type="radio" name="backup_format" value="sql">
+                    <i class="fas fa-database" style="color: #7c3aed;"></i> SQL
+                  </span>
+                  <span style="font-size: 11px; color: var(--muted); line-height: 1.4;">Portable SQL script of all table data.</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
               <label>Confirm Admin Password</label>
               <input
                 type="password"
@@ -741,15 +807,91 @@
                 required
               >
             </div>
-            <div style="display: flex; gap: 10px; margin-top: 14px;">
-              <button class="btn btn-primary" type="submit">
-                <i class="fas fa-download"></i> Create & Download
+            <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+              <button class="btn btn-primary" type="submit" id="backupSubmitBtn">
+                <i class="fas fa-eye"></i> Preview & Create Backup
+              </button>
+              <button class="btn btn-secondary" type="button" id="systemFilesBtn" onclick="downloadSystemFilesBackup()" title="Download the application source code (no database, no media)">
+                <i class="fas fa-code"></i> Download System Files (.zip)
               </button>
               <button class="btn btn-secondary" type="button" onclick="showRetentionInfo()">
                 <i class="fas fa-circle-info"></i> Retention Info
               </button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCORDION CARD: SAVED SYSTEM BACKUPS & DOWNLOADS HISTORY -->
+    <div class="accordion-card" id="card-server-backups">
+      <div class="accordion-header">
+        <div class="accordion-icon" style="background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe;">
+          <i class="fas fa-box-archive"></i>
+        </div>
+        <div class="accordion-info">
+          <div class="accordion-title">Saved Backups & Downloads History ({{ server_backups|length }})</div>
+          <div class="accordion-desc">Manage 5-day automated backups stored in system repository and Downloads.</div>
+        </div>
+        <div class="accordion-chevron">
+          <i class="fas fa-chevron-down"></i>
+        </div>
+      </div>
+      <div class="accordion-content">
+        <div class="accordion-inner" style="padding-left: 24px;">
+          {% if server_backups %}
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+                <thead>
+                  <tr style="border-bottom: 2px solid var(--line); color: var(--muted);">
+                    <th style="padding: 10px 8px;">Backup File</th>
+                    <th style="padding: 10px 8px;">Size</th>
+                    <th style="padding: 10px 8px;">Created At</th>
+                    <th style="padding: 10px 8px; text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for b in server_backups %}
+                  <tr style="border-bottom: 1px solid var(--line);">
+                    <td style="padding: 12px 8px;">
+                      <div style="font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px;">
+                        <i class="fas fa-file-zipper" style="color: #64748b;"></i>
+                        <code style="font-size: 12px;">{{ b.filename }}</code>
+                        {% if b.is_latest_auto %}
+                        <span class="badge" style="background: #ecfdf5; color: #059669; font-size: 10px; padding: 2px 6px; border-radius: 4px;">Latest Auto</span>
+                        {% endif %}
+                      </div>
+                    </td>
+                    <td style="padding: 12px 8px; color: var(--muted); font-size: 12px;">
+                      {{ b.size }}
+                    </td>
+                    <td style="padding: 12px 8px; color: var(--muted); font-size: 12px;">
+                      {{ b.created_at_str }}
+                    </td>
+                    <td style="padding: 12px 8px; text-align: right; white-space: nowrap;">
+                      <a href="?action=download_server&filename={{ b.filename }}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" title="Download to PC">
+                        <i class="fas fa-download"></i> Download
+                      </a>
+                      {% if '_CODE' not in b.filename %}
+                      <button type="button" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;" onclick="promptServerRestore('{{ b.filename }}')" title="Restore this backup">
+                        <i class="fas fa-rotate-left"></i> Restore
+                      </button>
+                      {% endif %}
+                      <button type="button" class="btn btn-danger" style="padding: 5px 8px; font-size: 12px;" onclick="promptServerDelete('{{ b.filename }}')" title="Delete backup">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div style="text-align: center; padding: 30px 10px; color: var(--muted);">
+              <i class="fas fa-box-open" style="font-size: 32px; margin-bottom: 8px; opacity: 0.5;"></i>
+              <p style="margin: 0; font-size: 13px;">No backups stored on server yet. Click <strong>Run Backup Now</strong> above or <strong>Create & Download</strong> to generate one.</p>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -762,7 +904,7 @@
         </div>
         <div class="accordion-info">
           <div class="accordion-title">Restore Backup</div>
-          <div class="accordion-desc">Upload a previous backup archive file to restore system database tables.</div>
+          <div class="accordion-desc">Upload a .bak, .json, or .sql backup to restore the full system including Activity Log.</div>
         </div>
         <div class="accordion-chevron">
           <i class="fas fa-chevron-down"></i>
@@ -776,12 +918,12 @@
               {% csrf_token %}
               <input type="hidden" name="action" value="preview">
               <div class="form-group">
-                <label>Select Backup File (.bak, .zip)</label>
+                <label>Select Backup File (.bak, .zip, .json, .sql)</label>
                 <input
                   type="file"
                   name="backup_file"
                   class="form-control"
-                  accept=".bak,.zip"
+                  accept=".bak,.zip,.json,.sql"
                   required
                 >
               </div>
@@ -922,6 +1064,69 @@
 
   </div>
 
+  <!-- CREATE BACKUP DATA PREVIEW MODAL -->
+  <div class="modal" id="createBackupPreviewModal">
+    <div class="preview-modal-content">
+
+      <!-- MODAL HEADER -->
+      <div class="preview-modal-header">
+        <div style="display: flex; flex-direction: column; gap: 4px; text-align: left;">
+          <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-database" style="color: var(--primary);"></i> Backup Data Preview
+          </h3>
+          <span style="font-size: 12px; color: var(--muted);">
+            Review all records that will be included before creating the backup.
+          </span>
+        </div>
+        <button type="button" onclick="closeModal('createBackupPreviewModal')" style="border: none; background: transparent; cursor: pointer; color: var(--muted); font-size: 16px;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- METADATA & BADGES BAR -->
+      <div style="background: #f8fafc; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--line); margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; text-align: left;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+          <div>
+            <span style="display: block; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px;">Backup Date Created</span>
+            <strong style="font-size: 13px; color: var(--text);" id="createPreviewCreatedAt">—</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px;">Created By User</span>
+            <strong style="font-size: 13px; color: var(--text);" id="createPreviewCreatedBy">—</strong>
+          </div>
+          <div>
+            <span style="display: block; font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 2px;">Format</span>
+            <strong style="font-size: 13px; color: var(--text);" id="createPreviewFormat">—</strong>
+          </div>
+        </div>
+        <div class="badges" id="createPreviewBadges" style="margin-top: 0; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+      </div>
+
+      <!-- TABS NAVIGATION -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 12px;">
+        <div class="preview-tabs-nav" id="createPreviewTabs" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0; display: flex; flex-wrap: wrap; gap: 4px;"></div>
+        <div style="position: relative; min-width: 200px;">
+          <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 12px;"></i>
+          <input type="text" id="createPreviewSearch" placeholder="Search preview..." onkeyup="filterCreatePreviewData()" style="width: 100%; padding: 8px 12px 8px 30px; border-radius: 8px; border: 1px solid var(--line); outline: none; font-size: 13px;">
+        </div>
+      </div>
+
+      <!-- TAB PANES -->
+      <div id="createPreviewPanes" style="flex: 1; min-height: 0; overflow-y: auto;"></div>
+
+      <!-- FOOTER ACTIONS -->
+      <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line);">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('createBackupPreviewModal')">
+          <i class="fas fa-xmark"></i> Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="confirmCreateBackupBtn" onclick="confirmCreateBackup()">
+          <i class="fas fa-download"></i> Confirm & Download Backup
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   {% if restore_preview %}
   <!-- BACKUP PREVIEW MODAL -->
   <div class="modal" id="backupPreviewModal">
@@ -984,6 +1189,9 @@
           <button class="preview-tab-btn" onclick="switchPreviewTab('cheques')">
             <i class="fas fa-money-check-alt"></i> Cheques ({{ restore_preview.data_preview.cheques|length }})
           </button>
+          <button class="preview-tab-btn" onclick="switchPreviewTab('radai')">
+            <i class="fas fa-database"></i> RADAI ({{ restore_preview.data_preview.radai|length }})
+          </button>
         </div>
         <div style="position: relative; min-width: 200px;">
           <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 12px;"></i>
@@ -1003,7 +1211,7 @@
                   <th>Code</th>
                   <th>Name</th>
                   <th>Description</th>
-                  <th>Balance</th>
+                  <th>Disbursed</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -1013,9 +1221,11 @@
                   <td><strong>{{ fc.code }}</strong></td>
                   <td>{{ fc.name }}</td>
                   <td>{{ fc.description|default:"-" }}</td>
-                  <td>₱{{ fc.balance }}</td>
+                  <td>₱{{ fc.disbursed|default:"0.00" }}</td>
                   <td>
-                    {% if fc.is_active %}
+                    {% if fc.is_archived %}
+                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px;">Archived</span>
+                    {% elif fc.is_active %}
                     <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Active</span>
                     {% else %}
                     <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">Inactive</span>
@@ -1038,35 +1248,53 @@
         <!-- SUPPLIERS -->
         <div class="preview-tab-content" id="suppliers-pane">
           <div class="preview-table-container" style="overflow-x: auto;">
-            <table style="min-width: 1200px; width: 100%;">
+            <table style="min-width: 1600px; width: 100%;">
               <thead>
                 <tr>
-                  <th>Account Name</th>
-                  <th>Code Line</th>
-                  <th>Line</th>
-                  <th>Nature of Collections</th>
-                  <th>Amount</th>
+                  <th>Serial No.</th>
+                  <th>Check Date</th>
+                  <th>Payee</th>
+                  <th>DV/Payroll No.</th>
+                  <th>ORS/BURS No.</th>
+                  <th>Responsibility Center</th>
+                  <th>UACS Object Code</th>
+                  <th>Account Title</th>
+                  <th>Nature of Payments</th>
+                  <th>Gross Amount</th>
+                  <th>Professional Tax</th>
+                  <th>Tax 1</th>
+                  <th>Tax 2</th>
+                  <th>Net Amount</th>
+                  <th>Other Deductions</th>
+                  <th>Fund Cluster</th>
                   <th>Remarks</th>
-                  <th>Address</th>
-                  <th>TIN</th>
                   <th>Status</th>
-                  <th>OR Number</th>
-                  <th>Date</th>
                 </tr>
               </thead>
               <tbody class="searchable-rows">
                 {% for s in restore_preview.data_preview.suppliers %}
                 <tr>
+                  <td><code>{{ s.mr_or|default:"-" }}</code></td>
+                  <td>{{ s.date|default:"-" }}</td>
                   <td><strong>{{ s.account_name }}</strong></td>
-                  <td>{{ s.code_line|default:"-" }}</td>
-                  <td>{{ s.line|default:"-" }}</td>
+                  <td>{{ s.dv_payroll|default:"-" }}</td>
+                  <td>{{ s.ors_burs|default:"-" }}</td>
+                  <td>{{ s.responsibility_center|default:"-" }}</td>
+                  <td>{{ s.uacs|default:"-" }}</td>
+                  <td>{{ s.account_title|default:"-" }}</td>
                   <td>{{ s.nature_of_collections|default:"-" }}</td>
+                  <td>{% if s.gross_amount %}<strong>₱{{ s.gross_amount }}</strong>{% else %}-{% endif %}</td>
+                  <td>{% if s.professional_tax and s.professional_tax != "0" and s.professional_tax != "0.00" %}₱{{ s.professional_tax }}{% else %}-{% endif %}</td>
+                  <td>{% if s.tax_5 and s.tax_5 != "0" and s.tax_5 != "0.00" %}₱{{ s.tax_5 }}{% else %}-{% endif %}</td>
+                  <td>{% if s.tax_2 and s.tax_2 != "0" and s.tax_2 != "0.00" %}₱{{ s.tax_2 }}{% else %}-{% endif %}</td>
                   <td><strong>₱{{ s.amount }}</strong></td>
+                  <td>{{ s.other_deductions|default:"0" }}</td>
+                  <td>{{ s.fund_cluster|default:"-" }}</td>
                   <td>{{ s.remarks|default:"-" }}</td>
-                  <td>{{ s.address|default:"-" }}</td>
-                  <td>{{ s.tin|default:"-" }}</td>
                   <td>
-                    {% if s.status == 'active' %}
+                    {% if s.is_archived %}
+                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px;">Archived</span>
+                    {% elif s.status == 'active' %}
                     <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Active</span>
                     {% elif s.status == 'inactive' %}
                     <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">Inactive</span>
@@ -1076,12 +1304,10 @@
                     <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px;">{{ s.status }}</span>
                     {% endif %}
                   </td>
-                  <td>{{ s.or_number|default:"-" }}</td>
-                  <td>{{ s.date|default:"-" }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                  <td colspan="11" class="preview-empty-state">
+                  <td colspan="18" class="preview-empty-state">
                     <i class="fas fa-building"></i>
                     <p>No Suppliers in this backup</p>
                   </td>
@@ -1191,8 +1417,13 @@
               <tbody class="searchable-rows">
                 {% for r in restore_preview.data_preview.reports %}
                 <tr>
-                  <td><strong>{{ r.title }}</strong></td>
-                  <td><span class="badge" style="text-transform: uppercase; background: #fef3c7; color: #92400e; font-size: 11px;">{{ r.report_type }}</span></td>
+                  <td>
+                    <strong>{{ r.title }}</strong>
+                    {% if r.is_archived %}
+                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 10px; margin-left: 6px;">Archived</span>
+                    {% endif %}
+                  </td>
+                  <td><span class="badge" style="text-transform: uppercase; background: #e0f2fe; color: #0369a1; font-size: 11px;">{{ r.report_type }}</span></td>
                   <td>
                     {% if r.date_from and r.date_to %}
                       {{ r.date_from }} to {{ r.date_to }}
@@ -1240,16 +1471,16 @@
                   <td>{{ c.purpose|default:"-" }}</td>
                   <td>{{ c.bank_name|default:"-" }}</td>
                   <td>
-                    {% if c.status == 'released' %}
+                    {% if c.is_archived %}
+                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px;">Archived</span>
+                    {% elif c.status == 'released' %}
                     <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Released</span>
-                    {% elif c.status == 'pending' %}
-                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px;">Pending</span>
                     {% elif c.status == 'voided' %}
                     <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">Voided</span>
                     {% elif c.status == 'stale' %}
                     <span class="badge" style="background: #f3f4f6; color: #374151; font-size: 11px;">Stale</span>
                     {% else %}
-                    <span class="badge" style="background: #e2e8f0; color: #475569; font-size: 11px;">Draft</span>
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px;">Unreleased</span>
                     {% endif %}
                   </td>
                 </tr>
@@ -1258,6 +1489,63 @@
                   <td colspan="7" class="preview-empty-state">
                     <i class="fas fa-money-check-alt"></i>
                     <p>No Cheques in this backup</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RADAI -->
+        <div class="preview-tab-content" id="radai-pane">
+          <div class="preview-table-container" style="overflow-x: auto;">
+            <table style="min-width: 1400px; width: 100%;">
+              <thead>
+                <tr>
+                  <th>ADA Date</th>
+                  <th>ADA Serial No.</th>
+                  <th>DV/Payroll No.</th>
+                  <th>ORS/BURS No. | Resp. Center</th>
+                  <th>Payee</th>
+                  <th>UACS Object Code</th>
+                  <th>Nature of Payment</th>
+                  <th>Gross Amount</th>
+                  <th>Professional Tax</th>
+                  <th>Total per ADA</th>
+                  <th>Fund Cluster</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody class="searchable-rows">
+                {% for r in restore_preview.data_preview.radai %}
+                <tr>
+                  <td>{{ r.date|default:"-" }}</td>
+                  <td><code>{{ r.serial_no|default:"-" }}</code></td>
+                  <td>{{ r.dv_payroll|default:"-" }}</td>
+                  <td>{{ r.reference_code|default:"-" }}</td>
+                  <td><strong>{{ r.payee_name|default:"-" }}</strong></td>
+                  <td>{{ r.uacs_code|default:"-" }}</td>
+                  <td>{{ r.nature_of_collections|default:"-" }}</td>
+                  <td>{% if r.gross_amount %}₱{{ r.gross_amount }}{% elif r.amount %}₱{{ r.amount }}{% else %}-{% endif %}</td>
+                  <td>{% if r.prof_tax and r.prof_tax != "0" and r.prof_tax != "0.00" %}₱{{ r.prof_tax }}{% else %}-{% endif %}</td>
+                  <td>{% if r.total_ada %}₱{{ r.total_ada }}{% else %}-{% endif %}</td>
+                  <td>{{ r.fund_cluster|default:"-" }}</td>
+                  <td>
+                    {% if r.is_archived %}
+                    <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px;">Archived</span>
+                    {% elif r.status == 'active' %}
+                    <span class="badge" style="background: #d1fae5; color: #065f46; font-size: 11px;">Active</span>
+                    {% else %}
+                    <span class="badge" style="background: #fee2e2; color: #991b1b; font-size: 11px;">{{ r.status|default:"Inactive" }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="12" class="preview-empty-state">
+                    <i class="fas fa-database"></i>
+                    <p>No RADAI records in this backup</p>
                   </td>
                 </tr>
                 {% endfor %}
@@ -1374,7 +1662,81 @@
   </div>
 </div>
 
+<!-- MODAL: RESTORE SERVER BACKUP CONFIRMATION -->
+<div class="modal" id="serverRestoreModal">
+  <div class="retention-modal-content" style="max-width: 440px;">
+    <div class="retention-header">
+      <div class="retention-icon" style="background: #eff6ff; color: #2563eb;">
+        <i class="fas fa-rotate-left"></i>
+      </div>
+      <div class="retention-header-text">
+        <h3>Restore Server Backup</h3>
+        <p id="serverRestoreFilename" style="word-break: break-all; font-family: monospace; font-size: 12px;"></p>
+      </div>
+    </div>
+    <form id="serverRestoreForm" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="restore_server_backup">
+      <input type="hidden" name="filename" id="serverRestoreInputFilename">
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px; text-align: left;">
+        This will inspect the server backup and load the preview before restoring.
+      </p>
+      <div class="form-group" style="text-align: left;">
+        <label>Confirm Admin Password</label>
+        <input type="password" name="admin_password" class="form-control" placeholder="Enter admin password" required>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 18px;">
+        <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeModal('serverRestoreModal')">Cancel</button>
+        <button type="submit" class="btn btn-primary" style="flex: 1;">Preview & Restore</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: DELETE SERVER BACKUP CONFIRMATION -->
+<div class="modal" id="serverDeleteModal">
+  <div class="retention-modal-content" style="max-width: 440px;">
+    <div class="retention-header">
+      <div class="retention-icon" style="background: #fef2f2; color: #dc2626;">
+        <i class="fas fa-trash-can"></i>
+      </div>
+      <div class="retention-header-text">
+        <h3>Delete Server Backup</h3>
+        <p id="serverDeleteFilename" style="word-break: break-all; font-family: monospace; font-size: 12px;"></p>
+      </div>
+    </div>
+    <form id="serverDeleteForm" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete_server_backup">
+      <input type="hidden" name="filename" id="serverDeleteInputFilename">
+      <p style="font-size: 13px; color: var(--muted); margin-bottom: 14px; text-align: left;">
+        Are you sure you want to permanently delete this backup from the server? This action cannot be undone.
+      </p>
+      <div class="form-group" style="text-align: left;">
+        <label>Confirm Admin Password</label>
+        <input type="password" name="admin_password" class="form-control" placeholder="Enter admin password" required>
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 18px;">
+        <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="closeModal('serverDeleteModal')">Cancel</button>
+        <button type="submit" class="btn btn-danger" style="flex: 1;">Delete Backup</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
+function promptServerRestore(filename) {
+  document.getElementById('serverRestoreFilename').textContent = filename;
+  document.getElementById('serverRestoreInputFilename').value = filename;
+  document.getElementById('serverRestoreModal').style.display = 'flex';
+}
+
+function promptServerDelete(filename) {
+  document.getElementById('serverDeleteFilename').textContent = filename;
+  document.getElementById('serverDeleteInputFilename').value = filename;
+  document.getElementById('serverDeleteModal').style.display = 'flex';
+}
+
 // Accordion Toggle Logic
 document.querySelectorAll('.accordion-header').forEach(header => {
   header.addEventListener('click', () => {
@@ -1425,76 +1787,297 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 });
 
-// AJAX/Fetch Form Submit Handler for Creating & Downloading Backups (No stuck loader!)
+// Create Backup: first fetch data preview modal, then download on confirm
 const backupForm = document.getElementById('backupDownloadForm');
+let createPreviewPayload = null;
+
+function escHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function statusBadge(status, archived) {
+  if (archived) return '<span class="badge" style="background:#fef3c7;color:#92400e;font-size:11px;">Archived</span>';
+  const map = {
+    active: ['#d1fae5', '#065f46'], released: ['#d1fae5', '#065f46'],
+    unreleased: ['#e0f2fe', '#0369a1'], pending: ['#e0f2fe', '#0369a1'],
+    draft: ['#e0f2fe', '#0369a1'], voided: ['#fee2e2', '#991b1b'],
+    stale: ['#f3f4f6', '#374151'], inactive: ['#fee2e2', '#991b1b'],
+    blacklisted: ['#1a1a1a', '#f9fafb'],
+  };
+  const [bg, fg] = map[(status || '').toLowerCase()] || ['#e2e8f0', '#475569'];
+  return `<span class="badge" style="background:${bg};color:${fg};font-size:11px;text-transform:capitalize;">${escHtml(status || '—')}</span>`;
+}
+
+function createPreviewColumns(key, rows) {
+  const cols = {
+    fund_clusters: [
+      { h: 'Code', f: r => `<strong>${escHtml(r.code)}</strong>` },
+      { h: 'Name', f: r => escHtml(r.name) },
+      { h: 'Description', f: r => escHtml(r.description || '-') },
+      { h: 'Disbursed', f: r => `₱${escHtml(r.disbursed || '0.00')}` },
+      { h: 'Status', f: r => statusBadge(r.is_active ? 'active' : 'inactive', r.is_archived) },
+    ],
+    suppliers: [
+      { h: 'Serial No.', f: r => `<code>${escHtml(r.mr_or || '-')}</code>` },
+      { h: 'Check Date', f: r => escHtml(r.date || '-') },
+      { h: 'Payee', f: r => `<strong>${escHtml(r.account_name)}</strong>` },
+      { h: 'DV/Payroll No.', f: r => escHtml(r.dv_payroll || '-') },
+      { h: 'ORS/BURS No.', f: r => escHtml(r.ors_burs || '-') },
+      { h: 'Responsibility Center', f: r => escHtml(r.responsibility_center || '-') },
+      { h: 'UACS Object Code', f: r => escHtml(r.uacs || '-') },
+      { h: 'Account Title', f: r => escHtml(r.account_title || '-') },
+      { h: 'Nature of Payments', f: r => escHtml(r.nature_of_collections || '-') },
+      { h: 'Gross Amount', f: r => r.gross_amount ? `<strong>₱${escHtml(r.gross_amount)}</strong>` : '-' },
+      { h: 'Professional Tax', f: r => r.professional_tax && r.professional_tax !== '0' && r.professional_tax !== '0.00' ? `₱${escHtml(r.professional_tax)}` : '-' },
+      { h: 'Tax 1', f: r => r.tax_5 && r.tax_5 !== '0' && r.tax_5 !== '0.00' ? `₱${escHtml(r.tax_5)}` : '-' },
+      { h: 'Tax 2', f: r => r.tax_2 && r.tax_2 !== '0' && r.tax_2 !== '0.00' ? `₱${escHtml(r.tax_2)}` : '-' },
+      { h: 'Net Amount', f: r => `<strong>₱${escHtml(r.amount)}</strong>` },
+      { h: 'Other Deductions', f: r => escHtml(r.other_deductions || '0') },
+      { h: 'Fund Cluster', f: r => escHtml(r.fund_cluster || '-') },
+      { h: 'Remarks', f: r => escHtml(r.remarks || '-') },
+      { h: 'Status', f: r => statusBadge(r.status, r.is_archived) },
+    ],
+    users: [
+      { h: 'Employee ID', f: r => `<code>${escHtml(r.employee_id || '-')}</code>` },
+      { h: 'Full Name', f: r => `<strong>${escHtml(r.full_name || r.username)}</strong>` },
+      { h: 'Username', f: r => escHtml(r.username) },
+      { h: 'Email', f: r => escHtml(r.email || '-') },
+      { h: 'Role', f: r => statusBadge(r.role || '—', false) },
+      { h: 'Dept / Position', f: r => `${escHtml(r.department || '-')} / ${escHtml(r.position || '-')}` },
+      { h: 'Status', f: r => statusBadge(r.status, false) },
+    ],
+    account_titles: [
+      { h: 'Account Title', f: r => `<strong>${escHtml(r.value)}</strong>` },
+      { h: 'UACS Code', f: r => `<code>${escHtml(r.uacs || '-')}</code>` },
+      { h: 'Group', f: r => escHtml(r.group_name || '-') },
+      { h: 'Status', f: r => statusBadge(r.is_active ? 'active' : 'inactive', false) },
+    ],
+    reports: [
+      { h: 'Title', f: r => `<strong>${escHtml(r.title)}</strong>` },
+      { h: 'Type', f: r => statusBadge(r.report_type, false) },
+      { h: 'Date Covered', f: r => (r.date_from && r.date_to) ? `${escHtml(r.date_from)} to ${escHtml(r.date_to)}` : '-' },
+      { h: 'Generated At', f: r => escHtml(r.generated_at || '-') },
+    ],
+    cheques: [
+      { h: 'Cheque Number', f: r => `<code>${escHtml(r.cheque_number)}</code>` },
+      { h: 'Payee', f: r => `<strong>${escHtml(r.payee_name || r.payee)}</strong>` },
+      { h: 'Amount', f: r => `₱${escHtml(r.amount)}` },
+      { h: 'Date', f: r => escHtml(r.date || '-') },
+      { h: 'Purpose', f: r => escHtml(r.purpose || '-') },
+      { h: 'Bank', f: r => escHtml(r.bank_name || '-') },
+      { h: 'Status', f: r => statusBadge(r.status, r.is_archived) },
+    ],
+    radai: [
+      { h: 'ADA Date', f: r => escHtml(r.date || '-') },
+      { h: 'ADA Serial No.', f: r => `<code>${escHtml(r.serial_no || r.mr_or || '-')}</code>` },
+      { h: 'DV/Payroll No.', f: r => escHtml(r.dv_payroll || '-') },
+      { h: 'ORS/BURS No. | Resp. Center', f: r => escHtml(r.reference_code || '-') },
+      { h: 'Payee', f: r => `<strong>${escHtml(r.payee_name || r.account_name || '-')}</strong>` },
+      { h: 'UACS Object Code', f: r => escHtml(r.uacs_code || r.uacs || '-') },
+      { h: 'Nature of Payment', f: r => escHtml(r.nature_of_collections || '-') },
+      { h: 'Gross Amount', f: r => r.gross_amount ? `₱${escHtml(r.gross_amount)}` : (r.amount ? `₱${escHtml(r.amount)}` : '-') },
+      { h: 'Professional Tax', f: r => r.prof_tax && r.prof_tax !== '0' && r.prof_tax !== '0.00' ? `₱${escHtml(r.prof_tax)}` : '-' },
+      { h: 'Total per ADA', f: r => r.total_ada ? `₱${escHtml(r.total_ada)}` : '-' },
+      { h: 'Fund Cluster', f: r => escHtml(r.fund_cluster || '-') },
+      { h: 'Status', f: r => statusBadge(r.status, r.is_archived) },
+    ],
+  };
+  return cols[key] || [];
+}
+
+function createPreviewMeta(key) {
+  const map = {
+    fund_clusters: { label: 'Clusters', icon: 'fa-folder-open', empty: 'No Fund Clusters' },
+    suppliers: { label: 'Suppliers', icon: 'fa-building', empty: 'No Suppliers' },
+    users: { label: 'Users', icon: 'fa-users', empty: 'No Users' },
+    account_titles: { label: 'Account Titles', icon: 'fa-list-ol', empty: 'No Account Titles' },
+    reports: { label: 'Reports', icon: 'fa-file-invoice-dollar', empty: 'No Reports' },
+    cheques: { label: 'Cheques', icon: 'fa-money-check-alt', empty: 'No Cheques' },
+    radai: { label: 'RADAI', icon: 'fa-database', empty: 'No RADAI records' },
+  };
+  return map[key] || { label: key, icon: 'fa-table', empty: 'No records' };
+}
+
+function renderCreatePreview(data) {
+  createPreviewPayload = data;
+  document.getElementById('createPreviewCreatedAt').textContent = data.created_at || '—';
+  document.getElementById('createPreviewCreatedBy').textContent = data.created_by_username || '—';
+  document.getElementById('createPreviewFormat').textContent = (data.format || 'bak').toUpperCase();
+
+  const badges = document.getElementById('createPreviewBadges');
+  badges.innerHTML = Object.entries(data.counts || {}).map(([k, v]) =>
+    `<div class="badge" style="background:#e2e8f0;color:#475569;font-size:11px;padding:4px 10px;">${escHtml(k)}: ${escHtml(v)}</div>`
+  ).join('');
+
+  const keys = ['fund_clusters', 'suppliers', 'users', 'account_titles', 'reports', 'cheques', 'radai'];
+  const tabsEl = document.getElementById('createPreviewTabs');
+  const panesEl = document.getElementById('createPreviewPanes');
+  tabsEl.innerHTML = '';
+  panesEl.innerHTML = '';
+
+  keys.forEach((key, idx) => {
+    const rows = (data.data_preview && data.data_preview[key]) || [];
+    const meta = createPreviewMeta(key);
+    const tab = document.createElement('button');
+    tab.className = 'preview-tab-btn' + (idx === 0 ? ' active' : '');
+    tab.type = 'button';
+    tab.setAttribute('data-tab', key);
+    tab.onclick = () => switchCreatePreviewTab(key);
+    tab.innerHTML = `<i class="fas ${meta.icon}"></i> ${meta.label} (${rows.length})`;
+    tabsEl.appendChild(tab);
+
+    const cols = createPreviewColumns(key, rows);
+    const pane = document.createElement('div');
+    pane.className = 'preview-tab-content' + (idx === 0 ? ' active' : '');
+    pane.id = 'create-' + key + '-pane';
+    let body;
+    if (!rows.length) {
+      body = `<tr><td colspan="${cols.length || 1}" class="preview-empty-state"><i class="fas ${meta.icon}"></i><p>${meta.empty} in this backup</p></td></tr>`;
+    } else {
+      body = rows.map(r => '<tr>' + cols.map(c => `<td>${c.f(r)}</td>`).join('') + '</tr>').join('');
+    }
+    pane.innerHTML = `
+      <div class="preview-table-container" style="overflow-x:auto;">
+        <table style="width:100%;">
+          <thead><tr>${cols.map(c => `<th>${c.h}</th>`).join('')}</tr></thead>
+          <tbody class="searchable-rows">${body}</tbody>
+        </table>
+      </div>`;
+    panesEl.appendChild(pane);
+  });
+}
+
+function switchCreatePreviewTab(key) {
+  document.querySelectorAll('#createPreviewPanes .preview-tab-content').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#createPreviewTabs .preview-tab-btn').forEach(b => b.classList.remove('active'));
+  const pane = document.getElementById('create-' + key + '-pane');
+  if (pane) pane.classList.add('active');
+  const btn = document.querySelector(`#createPreviewTabs .preview-tab-btn[data-tab="${key}"]`);
+  if (btn) btn.classList.add('active');
+  filterCreatePreviewData();
+}
+
+function filterCreatePreviewData() {
+  const q = (document.getElementById('createPreviewSearch').value || '').toLowerCase().trim();
+  const activePane = document.querySelector('#createPreviewPanes .preview-tab-content.active');
+  if (!activePane) return;
+  const rows = activePane.querySelectorAll('.searchable-rows tr');
+  rows.forEach(row => {
+    if (row.querySelector('.preview-empty-state')) return;
+    row.style.display = (!q || row.textContent.toLowerCase().includes(q)) ? '' : 'none';
+  });
+}
+
+function downloadBackupBlob(formData, loadingTitle, loadingMsg) {
+  window.showLoading(loadingTitle || 'Creating Backup...', loadingMsg || 'Packaging your database for download');
+  return fetch(window.location.href, {
+    method: 'POST',
+    body: formData,
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(async response => {
+    if (!response.ok) {
+      let errMsg = 'Backup failed';
+      try {
+        const data = await response.json();
+        errMsg = data.error || errMsg;
+      } catch (err) {}
+      throw new Error(errMsg);
+    }
+    let filename = 'system_backup.bak';
+    const disposition = response.headers.get('Content-Disposition');
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+      const matches = filenameRegex.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+    return response.blob().then(blob => ({ blob, filename }));
+  })
+  .then(({ blob, filename }) => {
+    const bar = document.getElementById('loadingBar');
+    const pct = document.getElementById('loadingPercent');
+    if (bar) bar.style.width = '100%';
+    if (pct) pct.textContent = '100%';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setTimeout(() => {
+      window.hideLoading();
+      backupForm.reset();
+      showToast('success', 'Success', 'Backup created and downloaded successfully!');
+    }, 1000);
+  })
+  .catch(err => {
+    window.hideLoading();
+    showToast('error', 'Error', err.message);
+    throw err;
+  });
+}
+
+function downloadSystemFilesBackup() {
+  if (!backupForm) return;
+  const fd = new FormData(backupForm);
+  fd.set('action', 'download_code');
+  downloadBackupBlob(fd, 'Packaging System Files...', 'Zipping application source code (no database, no media)');
+}
+
+function confirmCreateBackup() {
+  if (!backupForm) return;
+  const btn = document.getElementById('confirmCreateBackupBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...'; }
+  closeModal('createBackupPreviewModal');
+  const formData = new FormData(backupForm);
+  formData.set('action', 'download');
+  downloadBackupBlob(formData)
+    .finally(() => {
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download"></i> Confirm & Download Backup'; }
+      createPreviewPayload = null;
+    });
+}
+
 if (backupForm) {
   backupForm.addEventListener('submit', function(e) {
     e.preventDefault();
-    
-    // Show global loading progress overlay
-    window.showLoading('Creating Backup...', 'Packaging your database for download');
-    
+    const btn = document.getElementById('backupSubmitBtn');
+    window.showLoading('Loading Preview...', 'Gathering all tables for review');
     const formData = new FormData(backupForm);
-    
+    formData.set('action', 'preview_create');
     fetch(window.location.href, {
       method: 'POST',
       body: formData,
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(async response => {
-      if (!response.ok) {
-        let errMsg = 'Backup failed';
-        try {
-          const data = await response.json();
-          errMsg = data.error || errMsg;
-        } catch (err) {}
-        throw new Error(errMsg);
-      }
-      
-      // Try to parse filename from headers
-      let filename = 'system_backup.bak';
-      const disposition = response.headers.get('Content-Disposition');
-      if (disposition && disposition.indexOf('attachment') !== -1) {
-        const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-        const matches = filenameRegex.exec(disposition);
-        if (matches != null && matches[1]) {
-          filename = matches[1].replace(/['"]/g, '');
-        }
-      }
-      
-      return response.blob().then(blob => ({ blob, filename }));
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to load backup preview');
+      return data;
     })
-    .then(({ blob, filename }) => {
-      // Complete progress loader bar to 100%
-      const bar = document.getElementById('loadingBar');
-      const pct = document.getElementById('loadingPercent');
-      if (bar) bar.style.width = '100%';
-      if (pct) pct.textContent = '100%';
-      
-      // Trigger instant browser download dialog
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
-      // Hide the loader panel and clear input field after 1 second
-      setTimeout(() => {
-        window.hideLoading();
-        backupForm.reset();
-        showToast('success', 'Success', 'Backup created and downloaded successfully!');
-      }, 1000);
+    .then(data => {
+      window.hideLoading();
+      renderCreatePreview(data);
+      openCreateBackupPreviewModal();
+      if (btn) btn.innerHTML = '<i class="fas fa-eye"></i> Preview & Create Backup';
     })
     .catch(err => {
       window.hideLoading();
       showToast('error', 'Error', err.message);
+      if (btn) btn.innerHTML = '<i class="fas fa-eye"></i> Preview & Create Backup';
     });
   });
+}
+
+function openCreateBackupPreviewModal(){
+  const modal = document.getElementById('createBackupPreviewModal');
+  if (modal) modal.style.display = 'flex';
 }
 
 function openPreviewModal(){
