@@ -1,3 +1,4 @@
+from django.core.cache import cache
 from django.db import models
 
 
@@ -22,6 +23,13 @@ class SystemSetting(models.Model):
 	retention_max_count = models.IntegerField(default=10, help_text="Maximum number of backups to keep (0 = unlimited)")
 	retention_auto_delete = models.BooleanField(default=False, help_text="Automatically delete old backups based on policy")
 
+	# Automated 5-Day Backup settings
+	auto_backup_enabled = models.BooleanField(default=True, help_text="Enable automatic 5-day backup")
+	auto_backup_interval_days = models.IntegerField(default=5, help_text="Frequency of automatic backups in days")
+	auto_backup_to_downloads = models.BooleanField(default=True, help_text="Copy backup to user's local Downloads folder")
+	last_auto_backup = models.DateTimeField(null=True, blank=True, help_text="Timestamp of last automatic backup")
+	last_auto_backup_file = models.CharField(max_length=255, blank=True, default='', help_text="Filename of the last automatic backup")
+
 	# Email / SMTP settings
 	email_backend = models.CharField(max_length=200, blank=True, default='django.core.mail.backends.smtp.EmailBackend', help_text="Django email backend class")
 	email_host = models.CharField(max_length=200, blank=True, default='smtp.gmail.com', help_text="SMTP server host")
@@ -33,6 +41,14 @@ class SystemSetting(models.Model):
 
 	def __str__(self):
 		return self.system_name
+
+	def save(self, *args, **kwargs):
+		super().save(*args, **kwargs)
+		cache.delete('system_settings_obj')
+
+	def delete(self, *args, **kwargs):
+		super().delete(*args, **kwargs)
+		cache.delete('system_settings_obj')
 
 	@classmethod
 	def get_settings(cls):
@@ -46,24 +62,59 @@ class SystemSetting(models.Model):
 			"retention_max_age_days": 90,
 			"retention_max_count": 10,
 			"retention_auto_delete": False,
+			"auto_backup_enabled": True,
+			"auto_backup_interval_days": 5,
+			"auto_backup_to_downloads": True,
 		})
 		return settings_obj
 
 	@classmethod
 	def next_report_number(cls, prefix=None):
 		from django.utils import timezone
+		import re
 
 		settings_obj = cls.get_settings()
-		if not prefix:
-			prefix = timezone.localdate().strftime("%Y-%m")
+		if prefix and len(prefix) >= 4 and prefix[:4].isdigit():
+			year_str = prefix[:4]
+		else:
+			year_str = timezone.localdate().strftime("%Y")
+
 		current = (settings_obj.last_report_number or '').strip()
 		sequence = 0
-		if current.startswith(prefix) and '-' in current:
-			try:
-				sequence = int(current.rsplit('-', 1)[-1])
-			except Exception:
-				sequence = 0
-		return f"{prefix}-{sequence + 1:04d}"
+
+		# Check existing saved Report objects in database for highest sequence for year_str
+		try:
+			from cashier.models import Report
+			highest_db_seq = 0
+			for rep in Report.objects.filter(is_archived=False):
+				snap = rep.data_snapshot or {}
+				rep_no = snap.get('report_no', '')
+				if rep_no and rep_no.startswith(year_str):
+					digits = re.findall(r'\d+', rep_no[len(year_str):])
+					if digits:
+						try:
+							seq = int(digits[-1])
+							if seq > highest_db_seq:
+								highest_db_seq = seq
+						except Exception:
+							pass
+			sequence = max(sequence, highest_db_seq)
+		except Exception:
+			pass
+
+		if current and current.startswith(year_str):
+			after_year = current[len(year_str):]
+			digits = re.findall(r'\d+', after_year)
+			if digits:
+				try:
+					seq = int(digits[-1])
+					if seq > sequence:
+						sequence = seq
+				except Exception:
+					pass
+
+		next_seq = sequence + 1
+		return f"{year_str} - {next_seq:02d}"
 
 	@classmethod
 	def record_report_number(cls, report_number):
@@ -190,10 +241,12 @@ class ManagementOption(models.Model):
 	CATEGORY_ACCOUNT_TITLE = 'account_title'
 	CATEGORY_REMARK = 'remark'
 	CATEGORY_TAX = 'tax'
+	CATEGORY_GOODS_SERVICE = 'goods_service'
 	CATEGORY_CHOICES = (
 		(CATEGORY_ACCOUNT_TITLE, 'Account Title'),
 		(CATEGORY_REMARK, 'Remark'),
 		(CATEGORY_TAX, 'Tax'),
+		(CATEGORY_GOODS_SERVICE, 'Goods / Services'),
 	)
 
 	category   = models.CharField(max_length=40, choices=CATEGORY_CHOICES, db_index=True)

@@ -1,0 +1,72 @@
+{
+  "name": "registry",
+  "version": "1.0.0",
+  "description": "Registry System - Desktop Application",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "cross-env NODE_ENV=development electron .",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --win --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.amadeus.registry",
+    "productName": "Registry",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "electron-main.js",
+      "electron-preload.js",
+      "static/**/*",
+      "templates/**/*",
+      "media/**/*",
+      "registry/**/*",
+      "admin_panel/**/*",
+      "cashier/**/*",
+      "scripts/**/*",
+      "manage.py",
+      "db.sqlite3",
+      "requirements.txt",
+      "!**/.venv/**",
+      "!**/__pycache__/**",
+      "!**/*.pyc",
+      "!**/dist_electron/**",
+      "!**/.git/**"
+    ],
+
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "static/icon.ico",
+      "artifactName": "${productName}-${version}-setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Registry",
+      "installerIcon": "static/icon.ico",
+      "uninstallerIcon": "static/icon.ico",
+      "installerHeaderIcon": "static/icon.ico"
+    },
+    "portable": {
+      "artifactName": "${productName}-${version}-portable.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.0.0",
+    "cross-env": "^7.0.3"
+  }
+}

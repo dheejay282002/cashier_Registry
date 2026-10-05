@@ -61,6 +61,43 @@
         color: #94a3b8 !important;
     }
 
+    .serial-feedback {
+        display: none;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+        margin-top: 2px;
+    }
+
+    .serial-feedback.show {
+        display: block;
+    }
+
+    .serial-feedback.is-error {
+        color: #dc2626;
+    }
+
+    .serial-feedback.is-ok {
+        color: #15803d;
+    }
+
+    [data-theme="dark"] .serial-feedback.is-error {
+        color: #f87171;
+    }
+
+    [data-theme="dark"] .serial-feedback.is-ok {
+        color: #4ade80;
+    }
+
+    .radai-field input.serial-invalid {
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+    }
+
+    .radai-field input.serial-valid {
+        border-color: #16a34a !important;
+    }
+
     @media (max-width:700px) { .radai-grid, .radai-grid-3 { grid-template-columns:1fr; } }
 </style>
 
@@ -71,7 +108,7 @@
             <button type="button" class="btn btn-secondary btn-sm" onclick="closeRadaiModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="radai-modal-body">
-            <form method="post" id="radaiForm">
+            <form method="post" action="{% url 'radai' %}" id="radaiForm">
                 {% csrf_token %}
                 <input type="hidden" name="action" id="radaiAction" value="create">
                 <input type="hidden" name="radai_id" id="radaiId" value="">
@@ -80,12 +117,13 @@
                     <h4>Record Details</h4>
                     <div class="radai-grid">
                         <div class="radai-field">
-                            <label>Date</label>
-                            <input type="date" name="date" id="radaiFieldDate">
+                            <label>Date *</label>
+                            <input type="date" name="date" id="radaiFieldDate" required>
                         </div>
                     <div class="radai-field">
-                        <label>Serial No.</label>
-                        <input type="text" name="check_serial" id="radaiFieldSerial" placeholder="Auto-generated" autocomplete="off"">
+                        <label>Serial No./Reference Number *</label>
+                        <input type="text" name="check_serial" id="radaiFieldSerial" placeholder="Auto-generated" autocomplete="off" required>
+                        <span id="radaiFieldSerialFeedback" class="serial-feedback" aria-live="polite"></span>
                     </div>
                     </div>
                     <div class="radai-grid" style="margin-top:12px;">
@@ -99,14 +137,26 @@
                             </datalist>
                         </div>
                     <div class="radai-field">
-                        <label>Amount (₱)</label>
-                        <input type="number" name="amount" id="radaiFieldAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+                        <label id="radaiAmountLabel">Amount (₱) *</label>
+                        <input type="number" name="amount" id="radaiFieldAmount" placeholder="0.00" step="0.01" min="0" inputmode="decimal" required>
                     </div>
+                    </div>
+                    <div id="radaiLbpFields" style="display:none; margin-top:12px;">
+                        <div class="radai-grid">
+                            <div class="radai-field">
+                                <label id="radaiProfTaxLabel">Professional Tax (₱)</label>
+                                <input type="number" name="professional_tax" id="radaiFieldProfTax" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+                            </div>
+                            <div class="radai-field">
+                                <label id="radaiTotalAdaLabel">Total as per ADA (₱)</label>
+                                <input type="number" name="total_ada" id="radaiFieldTotalAda" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
+                            </div>
+                        </div>
                     </div>
                     <div class="radai-grid" style="margin-top:12px;">
                         <div class="radai-field" style="grid-column:span 2;">
-                            <label>Nature of Payment</label>
-                            <input type="text" name="nature_of_payments" id="radaiFieldNature" placeholder="e.g. Payment for services" autocomplete="off">
+                            <label>Nature of Payment *</label>
+                            <input type="text" name="nature_of_payments" id="radaiFieldNature" placeholder="e.g. Payment for services" autocomplete="off" required>
                         </div>
                     </div>
                 </div>
@@ -115,18 +165,48 @@
                     <h4>Document Reference</h4>
                     <div class="radai-grid">
                         <div class="radai-field">
-                            <label>DV/Payroll No.</label>
-                            <input type="text" name="dv_payroll" id="radaiFieldDvPayroll" placeholder="e.g. DV-2024-001" autocomplete="off">
+                            <label>DV/Payroll No. *</label>
+                            <input type="text" name="dv_payroll" id="radaiFieldDvPayroll" placeholder="e.g. DV-2024-001" autocomplete="off" required>
                         </div>
                         <div class="radai-field">
-                            <label>UACS Object Code</label>
-                            <input type="text" name="uacs" id="radaiFieldUacs" placeholder="e.g. 50201010" autocomplete="off">
+                            <label>UACS Object Code *</label>
+                            <input type="text" name="uacs" id="radaiFieldUacs" placeholder="e.g. 50201010" autocomplete="off" required
+                                inputmode="numeric" pattern="[0-9]*"
+                                oninput="this.value=this.value.replace(/[^0-9]/g,''); autoFillRadaiTitleFromUacs(this)"
+                                onchange="this.value=this.value.replace(/[^0-9]/g,''); autoFillRadaiTitleFromUacs(this)"
+                                onkeypress="return /[0-9]/.test(String.fromCharCode(event.which))"
+                                onpaste="setTimeout(function(el){ el.value=el.value.replace(/[^0-9]/g,''); autoFillRadaiTitleFromUacs(el); }, 0, this)"
+                                list="radaiUacsChoices">
+                            <datalist id="radaiUacsChoices">
+                                {% for group in account_title_groups %}
+                                    {% if group.uacs %}<option value="{{ group.uacs|escape }}" data-title="{{ group.name|escape }}"></option>{% endif %}
+                                    {% for title in group.titles %}
+                                        {% if title.uacs %}<option value="{{ title.uacs|escape }}" data-title="{{ title.value|escape }}"></option>{% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            </datalist>
                         </div>
                     </div>
                     <div class="radai-grid" style="margin-top:12px;">
                         <div class="radai-field" style="grid-column:span 2;">
-                            <label>ORS/BURS No. &amp; Responsibility Center</label>
-                            <input type="text" name="reference_code" id="radaiFieldReference" placeholder="e.g. ORS-2024-001 | RC-CODE" autocomplete="off">
+                            <label>Account Title *</label>
+                            <input type="text" name="account_title" id="radaiFieldAccountTitle" list="radaiAccountTitleChoices" required
+                                onchange="autoFillRadaiUacsFromTitle(this)" oninput="autoFillRadaiUacsFromTitle(this)"
+                                placeholder="Type or select account title..." autocomplete="off">
+                            <datalist id="radaiAccountTitleChoices">
+                                {% for group in account_title_groups %}
+                                    <option value="{{ group.name|escape }}" data-uacs="{{ group.uacs|default:'' }}"></option>
+                                    {% for title in group.titles %}
+                                        <option value="{{ title.value|escape }}" data-uacs="{{ title.uacs|default:'' }}"></option>
+                                    {% endfor %}
+                                {% endfor %}
+                            </datalist>
+                        </div>
+                    </div>
+                    <div class="radai-grid" style="margin-top:12px;">
+                        <div class="radai-field" style="grid-column:span 2;">
+                            <label>ORS/BURS No. &amp; Responsibility Center *</label>
+                            <input type="text" name="reference_code" id="radaiFieldReference" placeholder="e.g. ORS-2024-001 | RC-CODE" autocomplete="off" required>
                         </div>
                     </div>
                 </div>
@@ -134,21 +214,13 @@
                 <div class="radai-section">
                     <h4>Other</h4>
                     <div class="radai-grid">
-                        <div class="radai-field">
-                            <label>Fund Cluster</label>
-                            <select name="fund_cluster" id="radaiFieldFundCluster">
+                        <div class="radai-field" style="grid-column:span 2;">
+                            <label>Fund Cluster *</label>
+                            <select name="fund_cluster" id="radaiFieldFundCluster" required>
                                 <option value="">-- select fund cluster --</option>
                                 {% for fc in fund_clusters %}
                                 <option value="{{ fc.pk }}">{{ fc.code }} — {{ fc.name }}</option>
                                 {% endfor %}
-                            </select>
-                        </div>
-                        <div class="radai-field">
-                            <label>Status</label>
-                            <select name="status" id="radaiFieldStatus">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="blacklisted">Blacklisted</option>
                             </select>
                         </div>
                     </div>
@@ -204,6 +276,9 @@
 
     function computeRadaiDefaults() {
         DEFAULT_RADAI_VALUES.check_serial = getNextRadaiSequence(2, '', 3);
+        if (!document.querySelectorAll('#radaiTableBody tr').length && window.RADAI_SERVER_SERIAL) {
+            DEFAULT_RADAI_VALUES.check_serial = window.RADAI_SERVER_SERIAL;
+        }
         DEFAULT_RADAI_VALUES.dv_payroll = getNextRadaiSequence(3, 'DV-', 3);
         var lastRef = getNextRadaiSequence(4, '', 4);
         if (lastRef && lastRef !== '0001' && lastRef !== '0') {
@@ -215,11 +290,30 @@
         function pad2(n) { return (n < 10 ? '0' + n : String(n)); }
         try {
             const now = new Date();
-            const isoDate = now.toISOString().slice(0, 10);
+            const isoDate = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
             if (!DEFAULT_RADAI_VALUES.date) DEFAULT_RADAI_VALUES.date = isoDate;
             computeRadaiDefaults();
         } catch (e) {}
     })();
+
+    function toggleRadaiLbpFields() {
+        const payee = (document.getElementById('radaiFieldPayee')?.value || '').trim().toUpperCase();
+        const isLbp = payee === 'LBP' || payee.includes('LAND BANK');
+        const lbpDiv = document.getElementById('radaiLbpFields');
+        const amountLabel = document.getElementById('radaiAmountLabel');
+        const profTaxLabel = document.getElementById('radaiProfTaxLabel');
+        const totalAdaLabel = document.getElementById('radaiTotalAdaLabel');
+        const profTaxInput = document.getElementById('radaiFieldProfTax');
+        const totalAdaInput = document.getElementById('radaiFieldTotalAda');
+
+        if (lbpDiv) lbpDiv.style.display = isLbp ? '' : 'none';
+        if (amountLabel) amountLabel.textContent = isLbp ? 'Gross Amount as per voucher (₱) *' : 'Amount (₱) *';
+        if (profTaxLabel) profTaxLabel.textContent = isLbp ? 'Professional Tax (₱) *' : 'Professional Tax (₱)';
+        if (totalAdaLabel) totalAdaLabel.textContent = isLbp ? 'Total as per ADA (₱) *' : 'Total as per ADA (₱)';
+
+        if (profTaxInput) profTaxInput.required = isLbp;
+        if (totalAdaInput) totalAdaInput.required = isLbp;
+    }
 
     function setFieldValue(id, value) {
         const f = document.getElementById(id);
@@ -243,11 +337,13 @@
             setFieldValue('radaiFieldNature', trigger.dataset.nature);
             setFieldValue('radaiFieldAmount', trigger.dataset.amount);
             setFieldValue('radaiFieldDvPayroll', trigger.dataset.dvPayroll);
-            setFieldValue('radaiFieldUacs', trigger.dataset.uacs);
+            setFieldValue('radaiFieldUacs', (trigger.dataset.uacs || '').replace(/[^0-9]/g, ''));
+            setFieldValue('radaiFieldAccountTitle', trigger.dataset.accountTitle || '');
             setFieldValue('radaiFieldFundCluster', trigger.dataset.fundCluster || '');
             setFieldValue('radaiFieldRemarks', trigger.dataset.remarks);
-            setFieldValue('radaiFieldStatus', trigger.dataset.status || 'active');
             setFieldValue('radaiFieldReference', trigger.dataset.reference || '');
+            setFieldValue('radaiFieldProfTax', trigger.dataset.profTax || '');
+            setFieldValue('radaiFieldTotalAda', trigger.dataset.totalAda || '');
         } else {
             title.innerHTML = '<i class="fas fa-plus"></i> Add RADAI Record';
             action.value = 'create';
@@ -261,13 +357,33 @@
             setFieldValue('radaiFieldAmount', '');
             setFieldValue('radaiFieldDvPayroll', DEFAULT_RADAI_VALUES.dv_payroll);
             setFieldValue('radaiFieldUacs', '');
+            setFieldValue('radaiFieldAccountTitle', '');
             setFieldValue('radaiFieldFundCluster', '');
             setFieldValue('radaiFieldRemarks', '');
-            setFieldValue('radaiFieldStatus', 'active');
             setFieldValue('radaiFieldReference', DEFAULT_RADAI_VALUES.reference_code);
+            setFieldValue('radaiFieldProfTax', '');
+            setFieldValue('radaiFieldTotalAda', '');
         }
         modal.style.display = 'flex';
         modal.setAttribute('aria-hidden', 'false');
+        toggleRadaiLbpFields();
+    }
+
+    function calcRadaiTotalAda() {
+        const grossEl = document.getElementById('radaiFieldAmount');
+        const profTaxEl = document.getElementById('radaiFieldProfTax');
+        const totalAdaEl = document.getElementById('radaiFieldTotalAda');
+        if (!grossEl || !totalAdaEl) return;
+
+        const grossVal = grossEl.value.trim();
+        const profTaxVal = profTaxEl ? profTaxEl.value.trim() : '';
+
+        if (grossVal === '' && profTaxVal === '') return;
+
+        const gross = parseFloat(grossVal) || 0;
+        const profTax = parseFloat(profTaxVal) || 0;
+        const totalAda = gross - profTax;
+        totalAdaEl.value = totalAda >= 0 ? totalAda.toFixed(2) : '0.00';
     }
 
     function closeRadaiModal() {
@@ -276,11 +392,41 @@
         modal.style.display = 'none';
         modal.setAttribute('aria-hidden', 'true');
     }
+
+    function autoFillRadaiUacsFromTitle(inputElem) {
+        const uacsField = document.getElementById('radaiFieldUacs');
+        if (!uacsField) return;
+        const dataList = document.getElementById(inputElem.getAttribute('list'));
+        if (!dataList) return;
+        const selectedOption = Array.from(dataList.options).find(opt => opt.value === inputElem.value);
+        if (selectedOption) {
+            uacsField.value = (selectedOption.getAttribute('data-uacs') || '').replace(/[^0-9]/g, '');
+        }
+    }
+
+    function autoFillRadaiTitleFromUacs(inputElem) {
+        const titleField = document.getElementById('radaiFieldAccountTitle');
+        if (!titleField) return;
+        const val = (inputElem.value || '').trim();
+        if (!val) return;
+        const dataList = document.getElementById(inputElem.getAttribute('list'));
+        if (!dataList) return;
+        const selectedOption = Array.from(dataList.options).find(opt => opt.value === val);
+        if (selectedOption) {
+            titleField.value = selectedOption.getAttribute('data-title') || '';
+        }
+    }
     document.getElementById('radaiModal')?.addEventListener('click', function(e) {
         if (e.target === this) closeRadaiModal();
     });
 
     document.getElementById('radaiForm')?.addEventListener('submit', function(e) {
+    if (!this.checkValidity()) {
+        this.reportValidity();
+        e.preventDefault();
+        return false;
+    }
+
     const payeeInput = document.getElementById('radaiFieldPayee');
     const serialInput = document.getElementById('radaiFieldSerial');
 
@@ -298,10 +444,19 @@
         serialInput.value = cleaned;
     }
 
-    // Duplicate validation for create action
+    // Serial duplicate: block submit with inline feedback (never popup)
     const action = document.getElementById('radaiAction')?.value;
+    const serialNow = document.getElementById('radaiFieldSerial')?.value.trim();
+    if (serialNow && radaiSerialState.value === serialNow && radaiSerialState.exists) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setRadaiSerialFeedback(`Serial No. ${serialNow} is already used.`, 'error');
+        document.getElementById('radaiFieldSerial')?.focus();
+        return false;
+    }
+
+    // DV / ORS duplicates: toast only (popup modal removed)
     if (action === 'create') {
-        const serial = document.getElementById('radaiFieldSerial')?.value.trim();
         const dvPayroll = document.getElementById('radaiFieldDvPayroll')?.value.trim();
         const orsBurs = document.getElementById('radaiFieldReference')?.value.trim();
 
@@ -309,23 +464,25 @@
         for (const row of rows) {
             const cells = row.querySelectorAll('td');
             if (cells.length > 4) {
-                const existingSerial = cells[2]?.textContent.trim();
                 const existingDv = cells[3]?.textContent.trim();
                 const existingOrs = cells[4]?.textContent.trim();
 
-                if (serial && existingSerial && existingSerial === serial) {
-                    e.preventDefault();
-                    showRadaiDuplicateModal('Serial No.', serial);
-                    return false;
-                }
                 if (dvPayroll && existingDv && existingDv === dvPayroll) {
                     e.preventDefault();
-                    showRadaiDuplicateModal('DV/Payroll No.', dvPayroll);
+                    e.stopImmediatePropagation();
+                    if (typeof showToast === 'function') {
+                        showToast('error', 'Duplicate', `DV/Payroll No. ${dvPayroll} already exists.`);
+                    }
+                    document.getElementById('radaiFieldDvPayroll')?.focus();
                     return false;
                 }
                 if (orsBurs && existingOrs && existingOrs === orsBurs) {
                     e.preventDefault();
-                    showRadaiDuplicateModal('ORS/BURS & Responsibility Center', orsBurs);
+                    e.stopImmediatePropagation();
+                    if (typeof showToast === 'function') {
+                        showToast('error', 'Duplicate', `ORS/BURS & Responsibility Center ${orsBurs} already exists.`);
+                    }
+                    document.getElementById('radaiFieldReference')?.focus();
                     return false;
                 }
             }
@@ -333,33 +490,91 @@
     }
 });
 
-    function showRadaiDuplicateModal(fieldName, value) {
-        let modal = document.getElementById('radaiDuplicateModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'radaiDuplicateModal';
-            modal.style.cssText = 'display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);align-items:center;justify-content:center;';
-            modal.innerHTML = `
-                <div style="background:#fff;border-radius:16px;width:420px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
-                    <div style="padding:28px 32px;text-align:center;">
-                        <div style="width:64px;height:64px;border-radius:50%;background:#fef2f2;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;">
-                            <i class="fas fa-exclamation-triangle" style="font-size:28px;color:#dc2626;"></i>
-                        </div>
-                        <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#111827;">Duplicate Entry Found</h3>
-                        <p style="margin:0 0 6px;font-size:14px;color:#6b7280;">The <strong style="color:#111827;" id="radaiDupFieldName"></strong> <strong style="color:#111827;" id="radaiDupFieldValue"></strong> already exists in the system.</p>
-                        <p style="margin:0;font-size:13px;color:#9ca3af;">Please use a different value before saving.</p>
-                    </div>
-                    <div style="padding:0 32px 24px;text-align:center;">
-                        <button onclick="document.getElementById('radaiDuplicateModal').style.display='none'" style="background:var(--nav);color:#fff;border:none;border-radius:10px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;">OK, Got it</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
+    // ── Serial No. auto-validator (inline, like Add Supplier) ─────
+    let radaiSerialTimer = null;
+    let radaiSerialSeq = 0;
+    let radaiSerialState = { value: '', exists: false };
+
+    function setRadaiSerialFeedback(message, kind) {
+        const input = document.getElementById('radaiFieldSerial');
+        const feedback = document.getElementById('radaiFieldSerialFeedback');
+        if (!input || !feedback) return;
+        input.classList.remove('serial-invalid', 'serial-valid');
+        feedback.classList.remove('show', 'is-error', 'is-ok');
+        if (!message) return;
+        feedback.textContent = message;
+        feedback.classList.add('show');
+        if (kind === 'error') {
+            feedback.classList.add('is-error');
+            input.classList.add('serial-invalid');
+        } else if (kind === 'ok') {
+            feedback.classList.add('is-ok');
+            input.classList.add('serial-valid');
         }
-        document.getElementById('radaiDupFieldName').textContent = fieldName;
-        document.getElementById('radaiDupFieldValue').textContent = value;
-        modal.style.display = 'flex';
     }
+
+    function clearRadaiSerialFeedback() {
+        radaiSerialState = { value: '', exists: false };
+        setRadaiSerialFeedback('', '');
+    }
+
+    function validateRadaiSerial(force) {
+        const input = document.getElementById('radaiFieldSerial');
+        if (!input) return Promise.resolve(false);
+        const serial = input.value.trim();
+        const action = document.getElementById('radaiAction')?.value || 'create';
+        const radaiId = document.getElementById('radaiId')?.value || '';
+
+        if (!serial) {
+            clearRadaiSerialFeedback();
+            return Promise.resolve(true);
+        }
+        if (!force && radaiSerialState.value === serial) {
+            if (radaiSerialState.exists) {
+                setRadaiSerialFeedback(`Serial No. ${serial} is already used.`, 'error');
+                return Promise.resolve(false);
+            }
+            setRadaiSerialFeedback(`Serial No. ${serial} is available.`, 'ok');
+            return Promise.resolve(true);
+        }
+
+        const seq = ++radaiSerialSeq;
+        setRadaiSerialFeedback('Checking Serial...', '');
+        const params = new URLSearchParams({ serial: serial });
+        if (action === 'edit' && radaiId) params.set('exclude_id', radaiId);
+
+        return fetch('{% url "validate_radai_serial" %}?' + params.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (seq !== radaiSerialSeq) return !data.exists;
+                radaiSerialState = { value: serial, exists: !!data.exists };
+                if (data.exists) {
+                    setRadaiSerialFeedback(`Serial No. ${serial} is already used.`, 'error');
+                    return false;
+                }
+                setRadaiSerialFeedback(`Serial No. ${serial} is available.`, 'ok');
+                return true;
+            })
+            .catch(() => {
+                if (seq !== radaiSerialSeq) return true;
+                radaiSerialState = { value: '', exists: false };
+                setRadaiSerialFeedback('', '');
+                return true;
+            });
+    }
+
+    function scheduleRadaiSerialValidation() {
+        clearTimeout(radaiSerialTimer);
+        radaiSerialTimer = setTimeout(() => validateRadaiSerial(false), 350);
+    }
+
+    document.getElementById('radaiFieldSerial')?.addEventListener('input', scheduleRadaiSerialValidation);
+    document.getElementById('radaiFieldSerial')?.addEventListener('blur', () => {
+        clearTimeout(radaiSerialTimer);
+        validateRadaiSerial(true);
+    });
 
     ['radaiFieldPayee'].forEach(function(id) {
         const input = document.getElementById(id);
@@ -419,6 +634,13 @@
     document.addEventListener('DOMContentLoaded', function() {
     const serialInput = document.getElementById('radaiFieldSerial');
     const amountInput = document.getElementById('radaiFieldAmount');
+    const profTaxInput = document.getElementById('radaiFieldProfTax');
+    const totalAdaInput = document.getElementById('radaiFieldTotalAda');
+    const payeeInput = document.getElementById('radaiFieldPayee');
+    if (payeeInput) {
+        payeeInput.addEventListener('input', toggleRadaiLbpFields);
+        payeeInput.addEventListener('blur', function() { setTimeout(toggleRadaiLbpFields, 100); });
+    }
 
     // 1. Strict formatting logic for Serial Number (allows numbers 0-9 and dashes '-' only)
     if (serialInput) {
@@ -435,22 +657,29 @@
         });
     }
 
-    // 2. Prevent invalid mathematical exponential keys (like 'e', 'E', '+', '-') in the Amount field
-    if (amountInput) {
-        amountInput.addEventListener('keydown', function(e) {
+    // 2. Prevent invalid mathematical exponential keys (like 'e', 'E', '+', '-') in numeric fields
+    [amountInput, profTaxInput, totalAdaInput].forEach(function(inp) {
+        if (!inp) return;
+        inp.addEventListener('keydown', function(e) {
             const invalidKeys = ['e', 'E', '+', '-'];
             if (invalidKeys.includes(e.key)) {
                 e.preventDefault();
             }
         });
 
-        // Prevents pasting invalid text formats into Amount
-        amountInput.addEventListener('paste', function(e) {
+        inp.addEventListener('paste', function(e) {
             const pasteData = (e.clipboardData || window.clipboardData).getData('text');
             if (isNaN(parseFloat(pasteData))) {
                 e.preventDefault();
             }
         });
-    }
+    });
+
+    // 3. Automatic calculation for Total as per ADA = Gross Amount - Professional Tax
+    [amountInput, profTaxInput].forEach(function(inp) {
+        if (!inp) return;
+        inp.addEventListener('input', calcRadaiTotalAda);
+        inp.addEventListener('change', calcRadaiTotalAda);
+    });
 });
 </script>

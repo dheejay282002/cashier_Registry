@@ -29,6 +29,8 @@
             --line: #d9e1ea;
             --brand: #2f80ed;
             --brand-deep: #1f67c2;
+            --primary: #004f11;
+            --primary-hover: #076319;
             --nav: #0e2d0a;
             --nav-soft: #031201;
             --success: #16a34a;
@@ -1261,14 +1263,14 @@
 
         .btn-secondary {
             background: #6b7280;
-            color: #ffffff !important;
+            color: #ffffff;
             border: 1px solid #4b5563;
             font-weight: 600;
         }
 
         .btn-secondary:hover {
             background: #4b5563;
-            color: #ffffff !important;
+            color: #ffffff;
         }
 
         .btn-success {
@@ -1998,7 +2000,7 @@
             {% if 'cheques' in role_permissions.navigation %}
                 <a class="mini-link {% block nav_cheques %}{% endblock %}" href="{% url 'cheque_list' %}" title="Cheques">
                     <i class="fas fa-money-check-dollar"></i>
-                    <span class="mini-label">Cheques</span>
+                    <span class="mini-label">Check</span>
                 </a>
             {% endif %}
             {% if 'system_settings' in role_permissions.navigation %}
@@ -2043,7 +2045,7 @@
             {% if 'cheques' in role_permissions.navigation %}
                 <a class="mini-link {% block nav_cheques_c %}{% endblock %}" href="{% url 'cheque_list' %}" title="Cheques">
                     <i class="fas fa-money-check-dollar"></i>
-                    <span class="mini-label">Cheques</span>
+                    <span class="mini-label">Check</span>
                 </a>
             {% endif %}
             {% if 'account_titles_management' in role_permissions.navigation %}
@@ -2241,7 +2243,7 @@
             <a href="{% url 'radai' %}" onclick="closeMenu()"><i class="fas fa-database"></i> RADAI</a>
         {% endif %}
         {% if 'cheques' in role_permissions.navigation %}
-            <a href="{% url 'cheque_list' %}" onclick="closeMenu()"><i class="fas fa-money-check-dollar"></i> Cheques</a>
+            <a href="{% url 'cheque_list' %}" onclick="closeMenu()"><i class="fas fa-money-check-dollar"></i> Check</a>
         {% endif %}
         {% if 'system_settings' in role_permissions.navigation %}
             <a href="{% url 'account_titles_management' %}" onclick="closeMenu()"><i class="fas fa-list"></i> Account Titles</a>
@@ -2261,10 +2263,10 @@
             <a href="{% url 'cashier_radai' %}" onclick="closeMenu()"><i class="fas fa-database"></i> RADAI</a>
         {% endif %}
         {% if 'cheques' in role_permissions.navigation %}
-            <a href="{% url 'cheque_list' %}" onclick="closeMenu()"><i class="fas fa-money-check-dollar"></i> Cheques</a>
+            <a href="{% url 'cheque_list' %}" onclick="closeMenu()"><i class="fas fa-money-check-dollar"></i> Checks</a>
         {% endif %}
         {% if 'cheque_create' in role_permissions.navigation %}
-            <a href="{% url 'cheque_create' %}" onclick="closeMenu()"><i class="fas fa-plus-circle"></i> New Cheque</a>
+            <a href="{% url 'cheque_create' %}" onclick="closeMenu()"><i class="fas fa-plus-circle"></i> New Check</a>
         {% endif %}
         {% if 'account_titles_management' in role_permissions.navigation %}
             <a href="{% url 'account_titles_management' %}" onclick="closeMenu()"><i class="fas fa-list"></i> Account Titles</a>
@@ -5056,6 +5058,7 @@
         color: #ffffff;
         font-weight: 700;
         font-size: 0.9375rem;
+        border: none;
         box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
         cursor: pointer;
         user-select: none;
@@ -5108,6 +5111,7 @@
         color: #ffffff;
         font-weight: 700;
         font-size: 0.9375rem;
+        border: none;
         box-shadow: 0 8px 24px rgba(20, 184, 166, 0.4);
         cursor: pointer;
         user-select: none;
@@ -5120,6 +5124,38 @@
         color: #ffffff;
     }
     .supplier-master-fab .fab-icon { font-size: 18px; }
+
+    /* RADAI Floating Action Button */
+    .create-radai-fab {
+        position: fixed;
+        bottom: 24px !important;
+        right: 340px !important;
+        z-index: 990 !important;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 22px;
+        border-radius: 9999px;
+        background: linear-gradient(135deg, #059669, #10b981);
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 0.9375rem;
+        border: none;
+        cursor: pointer;
+        user-select: none;
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        text-decoration: none;
+    }
+    .create-radai-fab:hover {
+        transform: translateY(-2px) scale(1.03);
+        box-shadow: 0 12px 30px rgba(16, 185, 129, 0.55);
+        color: #ffffff;
+    }
+    .create-radai-fab .fab-icon { font-size: 18px; display: flex; align-items: center; }
+    @media (max-width: 768px) {
+        .create-radai-fab { padding: 10px 14px; font-size: 13px; right: 320px !important; }
+    }
 
     .cheque-master-menu {
         position: fixed;
@@ -5687,38 +5723,52 @@ function attachPasswordValidation(inputId) {
 })();
 </script>
 
+<!--FAV ICON BUTTONS-->
+{% with fab_page=request.resolver_match.url_name %}
+{% if fab_page != 'system_settings' and fab_page != 'profile_settings' and fab_page != 'account_settings' and fab_page != 'email_settings' %}
 {% if current_profile.role != 'guest' and current_profile.role != 'budget_accounting' and request.user.profile.role != 'guest' and request.user.profile.role != 'budget_accounting' %}
 <!-- Supplier Floating Action Button -->
 <button type="button" class="supplier-master-fab" title="Add Supplier" onclick="openGlobalSupplierModal()">
   <div class="fab-icon"><i class="fas fa-user-plus"></i></div>
-  <div class="fab-text">Supplier</div>
+  <div class="fab-text">Registry</div>
 </button>
+
+{% if current_profile.role == 'admin' or current_profile.role == 'cashier' or request.user.profile.role == 'admin' or request.user.profile.role == 'cashier' %}
+<!-- RADAI Floating Action Button (admin & cashier only) -->
+<button type="button" class="create-radai-fab no-print" title="Add RADAI Record" aria-label="Add RADAI Record"
+    onclick="if (typeof openGlobalRadaiModal === 'function') { openGlobalRadaiModal(); } else { window.location = '{% url 'radai' %}?create=1'; }">
+  <span class="fab-icon"><i class="fas fa-plus"></i></span>
+  <span>RADAI</span>
+</button>
+{% endif %}
 
 <!-- Master Floating Cheque Action Button & Popover Menu -->
 <div id="chequeMasterFab" class="cheque-master-fab" onclick="toggleChequeMasterMenu(event)" title="Cheque Actions">
   <div class="fab-icon"><i class="fas fa-money-check-alt"></i></div>
-  <div class="fab-text">Cheque</div>
+  <div class="fab-text">Check</div>
   <i class="fas fa-chevron-up fab-chevron" id="chequeFabChevron"></i>
 </div>
 
 <div id="chequeMasterMenu" class="cheque-master-menu">
-  <div class="cheque-menu-header">Cheque Actions</div>
+  <div class="cheque-menu-header">Check Actions</div>
   <button type="button" class="cheque-menu-item" onclick="openCreateChequeKioskModal(); toggleChequeMasterMenu(false);">
     <div class="menu-item-icon green"><i class="fas fa-plus-circle"></i></div>
     <div class="menu-item-text">
-      <div class="item-title">+ Create Cheque</div>
-      <div class="item-sub">Issue &amp; print a new cheque</div>
+      <div class="item-title">+ Create Check</div>
+      <div class="item-sub">Issue &amp; print a new Check</div>
     </div>
   </button>
   <button type="button" class="cheque-menu-item" onclick="openCheckKioskModal(); toggleChequeMasterMenu(false);">
     <div class="menu-item-icon blue"><i class="fas fa-money-check-dollar"></i></div>
     <div class="menu-item-text">
       <div class="item-title">Check Kiosk</div>
-      <div class="item-sub">Verify cheque status &amp; release</div>
+      <div class="item-sub">Verify Check status &amp; release</div>
     </div>
   </button>
 </div>
 {% endif %}
+{% endif %}
+{% endwith %}
 
 <script>
   function toggleChequeMasterMenu(show) {
@@ -5744,7 +5794,7 @@ function attachPasswordValidation(inputId) {
   <div class="kiosk-card" style="max-width: 680px;">
     <div class="kiosk-header">
       <div class="brand">
-        <h1>Create Cheque</h1>
+        <h1>Create Check</h1>
       </div>
       <div style="display: flex; align-items: center; gap: 12px;">
         <button class="kiosk-modal-close" onclick="closeCreateChequeKioskModal()" title="Close (Esc)">&times;</button>
@@ -5754,7 +5804,7 @@ function attachPasswordValidation(inputId) {
     <form id="createChequeKioskForm" onsubmit="submitCreateChequeKiosk(event)">
       <div class="info-grid" style="grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;">
         <div class="info-tile" style="padding:12px;">
-          <div class="tile-label" style="margin-bottom:6px;">Cheque Number</div>
+          <div class="tile-label" style="margin-bottom:6px;">Check Number</div>
           <input type="text" id="kioskChequeNumber" name="cheque_number" class="chatbot-input" placeholder="Auto / e.g. 20260732" oninput="validateKioskForm()" onchange="validateKioskForm()" style="width:100%; border-radius:8px; padding:10px; font-family:'JetBrains Mono', monospace;" />
         </div>
 
@@ -5785,7 +5835,7 @@ function attachPasswordValidation(inputId) {
             <div id="kioskSuppliersList" style="max-height:180px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; background:#fafafa;"></div>
             <div style="margin-top:8px; padding:8px 12px; background:#f0fdf4; border-radius:6px; border:1px solid #bbf7d0;">
               <span style="font-size:12px; color:#166534;">Total: <strong id="kioskTotalAmount">₱0.00</strong></span>
-              <span style="font-size:11px; color:#6b7280; margin-left:12px;">(<span id="kioskSupplierCount">0</span> supplier(s))</span>
+              <span style="font-size:11px; color:#6b7280; margin-left:12px;">(<span id="kioskSupplierCount">0</span> Payees(s))</span>
             </div>
           </div>
         </div>
@@ -5821,7 +5871,7 @@ function attachPasswordValidation(inputId) {
       <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:20px;">
         <button type="button" class="btn btn-secondary" onclick="closeCreateChequeKioskModal()" style="padding:10px 20px; border-radius:8px;">Cancel</button>
         <button type="submit" id="kioskSubmitBtn" class="btn btn-success" disabled style="padding:10px 24px; border-radius:8px; background:linear-gradient(135deg, #10b981 0%, #059669 100%); border:none; font-weight:700; display:flex; align-items:center; gap:8px; opacity:0.5; cursor:not-allowed;">
-          <i class="fas fa-print"></i> <span id="kioskSubmitText">Save &amp; Print Cheque</span>
+          <i class="fas fa-print"></i> <span id="kioskSubmitText">Save &amp; Print Check</span>
         </button>
       </div>
     </form>
@@ -5831,7 +5881,7 @@ function attachPasswordValidation(inputId) {
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; padding:10px 14px; background:rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.3); border-radius:8px;">
         <div style="display:flex; align-items:center; gap:8px; color:#10b981; font-weight:700; font-size:0.95rem;">
           <i class="fas fa-check-circle"></i>
-          <span>Cheque Saved Successfully &amp; Ready for Print!</span>
+          <span>Check Saved Successfully &amp; Ready for Print!</span>
         </div>
         <span id="kioskPreviewChequeBadge" style="color:#10b981; font-weight:700; font-family:'JetBrains Mono', monospace;">#SAVED</span>
       </div>
@@ -5854,7 +5904,7 @@ function attachPasswordValidation(inputId) {
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
         <button type="button" class="btn btn-secondary" onclick="resetKioskToCreateForm()" style="padding:10px 18px; border-radius:8px; display:flex; align-items:center; gap:8px;">
-          <i class="fas fa-plus-circle"></i> Create Another Cheque
+          <i class="fas fa-plus-circle"></i> Create Another Check
         </button>
         <div style="display:flex; gap:10px;">
           <button type="button" class="btn btn-secondary" onclick="closeCreateChequeKioskModal()" style="padding:10px 18px; border-radius:8px;">Close</button>
@@ -5875,12 +5925,12 @@ function attachPasswordValidation(inputId) {
     </div>
     <h3 style="margin: 0 0 10px; font-size: 1.25rem; font-weight: 700; color: var(--kiosk-header-title, #050505);">Unregistered Payee Warning</h3>
     <p style="font-size: 0.9rem; color: var(--kiosk-text-muted, #64748b); margin: 0 0 22px; line-height: 1.5;">
-      Payee <strong id="customPayeeNameWarning" style="color: var(--kiosk-text, #050505);">""</strong> is not registered in Supplier Management. Are you sure you want to create and print a custom cheque for this payee?
+      Payee <strong id="customPayeeNameWarning" style="color: var(--kiosk-text, #050505);">""</strong> is not registered in the Registry. Are you sure you want to create and print a custom Check for this payee?
     </p>
     <div style="display: flex; justify-content: center; gap: 12px;">
       <button type="button" class="btn btn-secondary" onclick="closeCustomPayeeWarningModal()" style="padding: 10px 20px; border-radius: 8px;">Cancel</button>
       <button type="button" class="btn btn-warning" onclick="proceedSubmitCreateChequeKiosk()" style="padding: 10px 22px; border-radius: 8px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: #ffffff; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-check-circle"></i> Proceed &amp; Print Cheque
+        <i class="fas fa-check-circle"></i> Proceed &amp; Print Check
       </button>
     </div>
   </div>
@@ -7915,6 +7965,7 @@ function attachPasswordValidation(inputId) {
 </script>
 
 {% include 'admin_panel/_supplier_modal.html' %}
+{% include 'admin_panel/_radai_modal.html' %}
 
 <script>
 (function(){
@@ -8198,6 +8249,86 @@ function attachPasswordValidation(inputId) {
     if (typeof syncAllTaxAndGross === 'function') syncAllTaxAndGross();
     if (typeof toggleTaxFields === 'function') toggleTaxFields();
   }
+})();
+</script>
+
+<script>
+(function(){
+  function populateRadaiModalContext(data) {
+    var payeeDl = document.getElementById('radaiPayeeChoices');
+    if (payeeDl && data.payee_choices) {
+      payeeDl.innerHTML = '';
+      data.payee_choices.forEach(function(name){
+        var opt = document.createElement('option');
+        opt.value = name;
+        payeeDl.appendChild(opt);
+      });
+    }
+
+    var uacsDl = document.getElementById('radaiUacsChoices');
+    var titleDl = document.getElementById('radaiAccountTitleChoices');
+    if ((uacsDl || titleDl) && data.account_title_groups) {
+      if (uacsDl) uacsDl.innerHTML = '';
+      if (titleDl) titleDl.innerHTML = '';
+      data.account_title_groups.forEach(function(g){
+        if (uacsDl && g.uacs) {
+          var og = document.createElement('option');
+          og.value = g.uacs;
+          og.setAttribute('data-title', g.name);
+          uacsDl.appendChild(og);
+        }
+        if (titleDl) {
+          var ot = document.createElement('option');
+          ot.value = g.name;
+          ot.setAttribute('data-uacs', g.uacs || '');
+          titleDl.appendChild(ot);
+        }
+        (g.titles || []).forEach(function(t){
+          if (uacsDl && t.uacs) {
+            var ou = document.createElement('option');
+            ou.value = t.uacs;
+            ou.setAttribute('data-title', t.value);
+            uacsDl.appendChild(ou);
+          }
+          if (titleDl) {
+            var o2 = document.createElement('option');
+            o2.value = t.value;
+            o2.setAttribute('data-uacs', t.uacs || '');
+            titleDl.appendChild(o2);
+          }
+        });
+      });
+    }
+
+    var fcSel = document.getElementById('radaiFieldFundCluster');
+    if (fcSel && data.fund_clusters && data.fund_clusters.length) {
+      var firstOpt = fcSel.querySelector('option[value=""]');
+      fcSel.innerHTML = '';
+      if (firstOpt) fcSel.appendChild(firstOpt);
+      data.fund_clusters.forEach(function(fc){
+        var opt = document.createElement('option');
+        opt.value = fc.pk;
+        opt.textContent = fc.code + ' - ' + fc.name;
+        fcSel.appendChild(opt);
+      });
+    }
+
+    if (data.auto_radai_defaults && data.auto_radai_defaults.mr_or) {
+      window.RADAI_SERVER_SERIAL = data.auto_radai_defaults.mr_or;
+    }
+  }
+
+  window.openGlobalRadaiModal = function(){
+    var open = function(){
+      if (typeof openRadaiModal === 'function') openRadaiModal('create');
+    };
+    fetch('{% url "radai_modal_context" %}', {
+      headers: {'X-Requested-With': 'XMLHttpRequest'}
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){ populateRadaiModalContext(data); open(); })
+    .catch(function(){ open(); });
+  };
 })();
 </script>
 

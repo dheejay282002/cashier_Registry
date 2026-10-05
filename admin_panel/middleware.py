@@ -1,55 +1,15 @@
 from django.shortcuts import redirect
-from django.urls import reverse
-from urllib.parse import quote
-
-
-# Paths that are always allowed even when session is locked
-_ALWAYS_ALLOWED = {
-    '/',           # login page
-    '/logout/',
-    '/lockscreen/',
-    '/verify-password/',
-    '/lock/',
-}
-
-_ALLOWED_PREFIXES = (
-    '/static/',
-    '/media/',
-    '/admin/',
-)
 
 
 class LockScreenMiddleware:
     """
-    Intercepts every request for an authenticated user.
-    If the session flag 'screen_locked' is True, redirect to /lockscreen/
-    so that pressing the browser back-button, editing the URL bar, or any
-    other navigation cannot bypass the lock screen.
+    Lock screen removed — no-op (kept so imports/settings references stay valid).
     """
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        if (
-            request.user.is_authenticated
-            and request.session.get('screen_locked')
-            and request.path not in _ALWAYS_ALLOWED
-            and not any(request.path.startswith(p) for p in _ALLOWED_PREFIXES)
-        ):
-            # AJAX / fetch requests: return 423 so JS can handle gracefully
-            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-            if is_ajax:
-                from django.http import JsonResponse
-                return JsonResponse({'locked': True}, status=423)
-
-            hard = '1' if request.session.get('screen_lock_hard') else '0'
-            next_path = quote(
-                request.path
-                + (('?' + request.META.get('QUERY_STRING', '')) if request.META.get('QUERY_STRING') else '')
-            )
-            return redirect(f"/lockscreen/?next={next_path}&hard={hard}")
-
         return self.get_response(request)
 
 
@@ -259,6 +219,10 @@ class SingleDeviceLoginMiddleware:
         ):
             try:
                 profile = request.user.profile
+
+                if request.user.is_superuser or getattr(profile, 'role', '') == 'admin':
+                    return self.get_response(request)
+
                 active_key = profile.active_session_key or ''
                 current_key = request.session.session_key or ''
 
@@ -289,6 +253,24 @@ class SingleDeviceLoginMiddleware:
                 if is_terminated or (active_key and current_key and active_key != current_key):
                     from django.contrib.auth import logout
                     from django.http import JsonResponse
+                    kicked_user = request.user if request.user.is_authenticated else None
+                    kick_reason = (
+                        "session_terminated" if is_terminated
+                        else "signed_in_another_device"
+                    )
+                    if kicked_user is not None:
+                        try:
+                            from .models import AuditLog
+                            AuditLog.objects.create(
+                                admin=kicked_user,
+                                action="Logged out",
+                                details={
+                                    "ip": request.META.get('REMOTE_ADDR', ''),
+                                    "method": kick_reason,
+                                },
+                            )
+                        except Exception:
+                            pass
                     request.session.flush()
                     logout(request)
 

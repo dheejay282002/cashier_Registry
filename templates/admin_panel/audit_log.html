@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Audit Log{% endblock %}
+{% block title %}Activity Log{% endblock %}
 {% block nav_audit %}active{% endblock %}
 {% block content %}
 
 <div class="page-center">
-  <h2>Audit Log</h2>
-  <p class="page-sub">Track all system activities, user actions, and administrative changes.</p>
+  <h2>Activity Log</h2>
+  <p class="page-sub">Track all user actions from login to logout — every operation performed in the system.</p>
 </div>
 
 <div style="max-width:1100px; margin:0 auto; padding:0 16px;">
@@ -26,7 +26,7 @@
     text-align: center;
 }
 
-/* ── Dark Mode Overrides for Audit Log ── */
+/* ── Dark Mode Overrides for Activity Log ── */
 [data-theme="dark"] .ill-circle.crimson {
     background: #881337 !important;
     border-color: #be123c !important;
@@ -67,7 +67,7 @@
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">No audit logs found.</td></tr>
+        <tr><td colspan="4" style="text-align:center; padding:30px; color:var(--muted);">No activity logs found.</td></tr>
         {% endfor %}
         </tbody>
     </table>

@@ -33,7 +33,7 @@ SECRET_KEY = 'django-insecure-9g&3tghxo@=c59z&9v)(_v(gqw2sz8h1xjlrar%xa+qrdihut*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['disproportional-jo-sternly.ngrok-free.dev', '127.0.0.1','railway.com', 'localhost']
+ALLOWED_HOSTS = ['disproportional-jo-sternly.ngrok-free.dev', '127.0.0.1', 'path-lending-varieties-naturals.trycloudflare.com', 'railway.com', 'localhost', '10.89.248.213']
 
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
@@ -41,6 +41,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://192.168.100.130:8000',
     'https://disproportional-jo-sternly.ngrok-free.dev',
     'https://railway.com',
+    
 ]
 
 
@@ -66,7 +67,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'admin_panel.middleware.LockScreenMiddleware',
     'admin_panel.middleware.RolePermissionsMiddleware',
     'admin_panel.middleware.SingleDeviceLoginMiddleware',
 ]
@@ -96,6 +96,7 @@ WSGI_APPLICATION = 'registry.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# Database - Uses your XAMPP MySQL
 DATABASES = {
     'default': {
         'ENGINE': 'admin_panel.db_backends.mysql_compat',
@@ -148,7 +149,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.environ.get('REGISTRY_MEDIA_ROOT', str(BASE_DIR / 'media'))
 
 # Cache configuration
 CACHES = {

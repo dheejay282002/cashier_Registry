@@ -7,6 +7,18 @@ from django.utils import timezone
 from admin_panel.fields import EncryptedCharField, EncryptedEmailField, encrypt_value, decrypt_value
 
 
+class ActiveManager(models.Manager):
+    """Manager that excludes archived items by default."""
+    def get_queryset(self):
+        return super().get_queryset().filter(is_archived=False)
+
+
+class ArchivedManager(models.Manager):
+    """Manager that returns only archived items."""
+    def get_queryset(self):
+        return super().get_queryset().filter(is_archived=True)
+
+
 class Transaction(models.Model):
     student_name = models.CharField(max_length=100)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -17,21 +29,35 @@ class Transaction(models.Model):
 
 
 class FundCluster(models.Model):
+    objects = ActiveManager()
+    all_objects = models.Manager()  # Includes archived items
+
     code = models.CharField(max_length=30, unique=True)
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True, default='')
     balance = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    fund_amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True, default=None)
     bank_name = models.CharField(max_length=100, blank=True, default='')
     account_number = EncryptedCharField(max_length=255, blank=True, default='')
     is_active = models.BooleanField(default=True)
+    is_archived = models.BooleanField(default=False)
+    archived_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='fund_clusters_archived')
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.code} — {self.name}"
 
+    @property
+    def has_fund_amount(self):
+        return self.fund_amount is not None
+
 
 class Supplier(models.Model):
+    objects = ActiveManager()
+    all_objects = models.Manager()  # Includes archived items
+
     STATUS_CHOICES = (
         ('active', 'Active'),
         ('inactive', 'Inactive'),
@@ -57,6 +83,9 @@ class Supplier(models.Model):
     tin = models.CharField(max_length=30, blank=True, default='', verbose_name='TIN')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='suppliers_created')
+    is_archived = models.BooleanField(default=False)
+    archived_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='suppliers_archived')
+    archived_at = models.DateTimeField(null=True, blank=True)
     raw_import = models.JSONField(blank=True, null=True, default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -74,11 +103,12 @@ class Supplier(models.Model):
 
 
 class Cheque(models.Model):
+    objects = ActiveManager()
+    all_objects = models.Manager()  # Includes archived items
+
     STATUS_CHOICES = (
-        ('draft', 'Draft'),
-        ('pending', 'Pending'),
         ('released', 'Released'),
-        ('voided', 'Voided'),
+        ('unreleased', 'Unreleased'),
         ('stale', 'Stale'),
     )
     cheque_number = models.CharField(max_length=50, blank=True, default='')
@@ -99,12 +129,17 @@ class Cheque(models.Model):
     professional_tax = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True, verbose_name='Professional Tax')
     tax_5_3 = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True, verbose_name='Tax 5%/3%')
     tax_3_1 = models.DecimalField(max_digits=18, decimal_places=2, null=True, blank=True, verbose_name='Tax 3%/1%')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unreleased')
+    remarks = models.CharField(max_length=60, blank=True, default='')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='cheques_created')
     updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='cheques_updated')
+    is_archived = models.BooleanField(default=False)
+    archived_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='cheques_archived')
+    archived_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     printed_at = models.DateTimeField(null=True, blank=True)
+    released_at = models.DateTimeField(null=True, blank=True)
     voided_at = models.DateTimeField(null=True, blank=True)
     void_reason = models.TextField(blank=True, default='')
     stale_after_days = models.IntegerField(null=True, blank=True)
@@ -226,7 +261,7 @@ ALL_PERMISSIONS = {
         "radai": "RADAI",
         "registry": "Registry",
         "reports": "Reports",
-        "audit_log": "Audit Log",
+        "audit_log": "Activity Log",
         "manage_devices": "Manage Devices",
         "import_data": "Import Data",
         "export": "Export Data",
@@ -267,6 +302,11 @@ DEFAULT_ROLE_PERMISSIONS = {
         "navigation": ["dashboard", "reports", "profile_settings"],
         "permissions": {"reports": ["view", "generate"]},
     },
+    # Budget Accounting: can view and generate reports, NO print, export only
+    "budget_accounting": {
+        "navigation": ["dashboard", "reports", "profile_settings"],
+        "permissions": {"reports": ["view", "generate"]},
+    },
 }
 
 
@@ -284,15 +324,12 @@ class RoleConfig(models.Model):
 
 
 class Report(models.Model):
+    objects = ActiveManager()
+    all_objects = models.Manager()  # Includes archived items
+
     REPORT_TYPES = (
         ('cheque_summary', 'Cheque Summary'),
         ('radai_summary', 'RADAI Summary'),
-        ('weekly_cheque', 'Weekly Cheque Report'),
-        ('monthly_cheque', 'Monthly Cheque Report'),
-        ('annual_cheque', 'Annual Cheque Report'),
-        ('weekly_radai', 'Weekly RADAI Report'),
-        ('monthly_radai', 'Monthly RADAI Report'),
-        ('annual_radai', 'Annual RADAI Report'),
     )
     PERIOD_CHOICES = (
         ('', 'Custom Range'),
@@ -309,6 +346,9 @@ class Report(models.Model):
     date_to = models.DateField(null=True, blank=True)
     data_snapshot = models.JSONField(default=dict)
     notes = models.TextField(blank=True, default='')
+    is_archived = models.BooleanField(default=False)
+    archived_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reports_archived')
+    archived_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.title} ({self.generated_at.date()})"
@@ -328,11 +368,13 @@ class Profile(models.Model):
     ROLE_CHOICES = (
         ('admin', 'Admin'),
         ('cashier', 'Cashier'),
+        ('budget_accounting', 'Budget Accounting'),
         ('guest', 'Guest Viewer'),
     )
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='cashier')
+    specific_role = models.CharField(max_length=100, blank=True, default='', help_text="Specific role label for Guest Viewer users")
     employee_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
     middle_initial = models.CharField(max_length=5, blank=True, default='')
     department = models.CharField(max_length=120, blank=True, default='')
@@ -419,6 +461,9 @@ class RadaiSetting(models.Model):
 
 
 class Radai(models.Model):
+    objects = ActiveManager()
+    all_objects = models.Manager()  # Includes archived items
+
     STATUS_CHOICES = (
         ('active', 'Active'),
         ('inactive', 'Inactive'),
@@ -448,6 +493,9 @@ class Radai(models.Model):
     reference_code = models.CharField(max_length=120, blank=True, default='', verbose_name='ORS/BURS No. & Responsibility Center')
     fund_cluster = models.ForeignKey('FundCluster', on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Fund Cluster')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='radai_created')
+    is_archived = models.BooleanField(default=False)
+    archived_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='radai_archived')
+    archived_at = models.DateTimeField(null=True, blank=True)
     raw_import = models.JSONField(blank=True, null=True, default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

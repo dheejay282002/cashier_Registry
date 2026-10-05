@@ -3,11 +3,30 @@
 {% block title %}Print Cheque #{{ cheque.cheque_number|default:cheque.pk }}{% endblock %}
 {% block content %}
 <style>
+@page {
+    size: letter portrait;
+    margin-top: 0.1in;
+    margin-left: 0.6in;
+    margin-right: 1.9in;
+    margin-bottom: 1.9in;
+}
 @media print {
     body * { visibility: hidden !important; }
     .cheque-wrapper, .cheque-wrapper * { visibility: visible !important; }
-    .cheque-wrapper { position: absolute !important; left: 0 !important; top: 0 !important; width: 8in !important; height: 3in !important; margin: 0 !important; border: none !important; outline: none !important; box-shadow: none !important; box-sizing: border-box !important; }
-    @page { size: 8in 3in; margin: 0; }
+    .cheque-wrapper {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 8in !important;
+        height: 3in !important;
+        margin: 0 !important;
+        padding-top: 0.6in !important;
+        padding-bottom: 0.8in !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+    }
 }
 .cheque-wrapper, .cheque-paper {
     background: white; border: none !important; outline: none !important; border-radius: 0;
@@ -45,25 +64,22 @@
 
 <div class="cheque-wrapper" style="font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif; width: 8in; height: 3in; box-sizing: border-box; background: white; border: none !important; outline: none !important; box-shadow: none !important; position: relative; overflow: hidden; color: black;">
     <!-- Fund Cluster Code -->
-    <div style="position: absolute; left: 0.5in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.fund_cluster.code|default:"—" }}</div>
-    
-    <!-- UACS Object Code -->
-    <div style="position: absolute; left: 1in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.uacs_object_code|default:"5021199000" }}</div>
+    <div style="position: absolute; left: 0.5in; top: 0.28in; font-size: 10pt; font-weight: normal;">{{ cheque.fund_cluster.code|default:"—" }}</div>
     
     <!-- Cheque Number -->
-    <div style="position: absolute; right: 0.5in; top: 0.35in; font-size: 10pt; font-weight: normal; text-align: right;">{{ cheque.cheque_number|default:"______" }}</div>
+    <div style="position: absolute; right: 0.70in; top: 0.18in; font-size: 10pt; font-weight: normal; text-align: right;">{{ cheque.cheque_number|default:"______" }}</div>
     
     <!-- Spaced Date -->
-    <div id="printDate" style="position: absolute; right: 0.45in; top: 0.55in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
+    <div id="printDate" style="position: absolute; right: 0.50in; top: 0.35in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
     
     <!-- Payee Name -->
-    <div id="printPayee" style="position: absolute; left: 1in; top: 0.90in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cheque.payee_name }}</div>
+    <div id="printPayee" style="position: absolute; left: 1.3in; top: 0.70in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cheque.payee_name }}</div>
     
     <!-- Amount -->
-    <div style="position: absolute; right: 0.9in; top: 0.85in; font-size: 12pt; font-weight: normal; text-align: right;">{{ cheque.amount|floatformat:2|intcomma }}</div>
+    <div id="printAmount" style="position: absolute; right: 1.3in; top: 0.69in; font-size: 12pt; font-weight: normal; text-align: right;">{{ cheque.amount|floatformat:2|intcomma }}</div>
     
     <!-- Amount in Words -->
-    <div id="wordsLine1" style="position: absolute; left: 0.80in; top: 1.2in; font-size: 11pt; font-weight: normal; text-transform: uppercase; width: 5.7in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+    <div id="wordsLine1" style="position: absolute; left: 0.80in; top: 1.0in; right: 0.65in; font-size: 11pt; font-weight: normal; text-transform: uppercase; white-space: nowrap; overflow: hidden;"></div>
 </div>
 
 <script>
@@ -76,7 +92,13 @@ function printChequeOnly() {
     const chequeHtml = chequeClone.outerHTML;
 
     const printCss = `
-        @page { size: 8in 3in; margin: 0; }
+        @page {
+            size: letter portrait;
+            margin-top: 0.1in;
+            margin-left: 0.6in;
+            margin-right: 1.9in;
+            margin-bottom: 1.9in;
+        }
         html,body { height: 100%; margin: 0; padding: 0; background: transparent; }
         body { display:flex; align-items:flex-start; justify-content:center; height:100%; }
         .print-stage { width:8in; height:3in; display:flex; align-items:flex-start; justify-content:center; }
@@ -86,6 +108,8 @@ function printChequeOnly() {
             outline: none !important;
             width: 8in;
             height: 3in;
+            padding-top: 0.6in !important;
+            padding-bottom: 0.8in !important;
             position: relative;
             overflow: hidden;
             font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
@@ -147,6 +171,30 @@ document.getElementById('printDate').textContent = formatSpacedDate(rawDate);
 
 const amt = parseFloat('{{ cheque.amount|floatformat:2 }}');
 const words = amountToWords(amt);
-document.getElementById('wordsLine1').textContent = words;
+const wordsEl = document.getElementById('wordsLine1');
+wordsEl.textContent = words;
+
+// Precision auto-shrink Amount in Words until it fits right up to the end boundary
+(function autoShrinkWords(){
+    if(!wordsEl) return;
+    wordsEl.style.whiteSpace = 'nowrap';
+    var fontSize = 11;
+    wordsEl.style.fontSize = fontSize + 'pt';
+    var targetW = wordsEl.clientWidth || (6.55 * 96);
+    while (wordsEl.scrollWidth > targetW && fontSize > 4.5) {
+        fontSize -= 0.1;
+        wordsEl.style.fontSize = fontSize + 'pt';
+    }
+})();
+
+(function(){
+    var el=document.getElementById('printAmount');
+    if(!el)return;
+    el.style.whiteSpace='nowrap';
+    var maxW=el.parentElement.offsetWidth*0.35;
+    while(el.scrollWidth>maxW&&parseFloat(getComputedStyle(el).fontSize)>6){
+        el.style.fontSize=(parseFloat(getComputedStyle(el).fontSize)-0.5)+'pt';
+    }
+})();
 </script>
 {% endblock %}

@@ -213,8 +213,9 @@ def _register_session(request, user):
 
 def logout_view(request):
     if request.user.is_authenticated:
+        user = request.user
         try:
-            profile = request.user.profile
+            profile = user.profile
             if profile.status == 'active':
                 profile.status = 'resting'
                 profile.save(update_fields=['status'])
@@ -222,17 +223,23 @@ def logout_view(request):
             pass
         try:
             from .models import ChatMessage
-            ChatMessage.objects.filter(user=request.user).delete()
+            ChatMessage.objects.filter(user=user).delete()
         except Exception:
             pass
         try:
-            profile = request.user.profile
+            profile = user.profile
             UserDevice.objects.filter(session_key=request.session.session_key).update(is_terminated=True)
             if profile.active_session_key == request.session.session_key:
                 profile.active_session_key = ''
                 profile.save(update_fields=['active_session_key'])
         except Exception:
             pass
+        _audit(user, "Logged out", {
+            "ip": _get_client_ip(request),
+            "method": "manual",
+        })
+        request.session.pop("backup_restore_token", None)
+        request.session.pop("backup_restore_path", None)
     logout(request)
     return render(request, "logout_loading.html")
 
@@ -378,7 +385,7 @@ def login_view(request):
                             recovery_codes.pop(idx)
                             profile.mfa_recovery_codes = recovery_codes
                             profile.save(update_fields=["mfa_recovery_codes"])
-                            if _is_session_active(profile):
+                            if _is_session_active(profile) and not (mfa_user.is_superuser or profile.role == 'admin'):
                                 profile.login_attempt_blocked = True
                                 profile.blocked_login_time = timezone.now()
                                 profile.blocked_login_ip = _get_client_ip(request)
@@ -390,6 +397,10 @@ def login_view(request):
                                 mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                                 login(request, mfa_user)
                                 _register_session(request, mfa_user)
+                                _audit(mfa_user, "Logged in", {
+                                    "ip": _get_client_ip(request),
+                                    "method": "recovery_code",
+                                })
                                 after_change_pw = request.session.pop("mfa_after_change_pw", None)
                                 request.session.pop("mfa_user_id", None)
                                 request.session.pop("mfa_method", None)
@@ -400,11 +411,15 @@ def login_view(request):
                                 return _mfa_redirect(mfa_user)
                         else:
                             error = "Invalid recovery code. Please check your code and try again."
+                            _audit(mfa_user, "Failed MFA attempt", {
+                                "method": "recovery_code",
+                                "ip": _get_client_ip(request),
+                            })
                             mfa_step = True
                             mfa_method = method
                     elif method == "totp" and profile.totp_enabled:
                         if verify_totp(profile.totp_secret, code):
-                            if _is_session_active(profile):
+                            if _is_session_active(profile) and not (mfa_user.is_superuser or profile.role == 'admin'):
                                 profile.login_attempt_blocked = True
                                 profile.blocked_login_time = timezone.now()
                                 profile.blocked_login_ip = _get_client_ip(request)
@@ -416,6 +431,10 @@ def login_view(request):
                                 mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                                 login(request, mfa_user)
                                 _register_session(request, mfa_user)
+                                _audit(mfa_user, "Logged in", {
+                                    "ip": _get_client_ip(request),
+                                    "method": "totp",
+                                })
                                 after_change_pw = request.session.pop("mfa_after_change_pw", None)
                                 request.session.pop("mfa_user_id", None)
                                 request.session.pop("mfa_method", None)
@@ -431,7 +450,7 @@ def login_view(request):
                                 recovery_codes.pop(idx)
                                 profile.mfa_recovery_codes = recovery_codes
                                 profile.save(update_fields=["mfa_recovery_codes"])
-                                if _is_session_active(profile):
+                                if _is_session_active(profile) and not (mfa_user.is_superuser or profile.role == 'admin'):
                                     profile.login_attempt_blocked = True
                                     profile.blocked_login_time = timezone.now()
                                     profile.blocked_login_ip = _get_client_ip(request)
@@ -443,6 +462,10 @@ def login_view(request):
                                     mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                                     login(request, mfa_user)
                                     _register_session(request, mfa_user)
+                                    _audit(mfa_user, "Logged in", {
+                                        "ip": _get_client_ip(request),
+                                        "method": "recovery_code",
+                                    })
                                     after_change_pw = request.session.pop("mfa_after_change_pw", None)
                                     request.session.pop("mfa_user_id", None)
                                     request.session.pop("mfa_method", None)
@@ -453,6 +476,10 @@ def login_view(request):
                                     return _mfa_redirect(mfa_user)
                             else:
                                 error = "Invalid authenticator code."
+                                _audit(mfa_user, "Failed MFA attempt", {
+                                    "method": method,
+                                    "ip": _get_client_ip(request),
+                                })
                                 mfa_step = True
                                 mfa_method = method
                                 mfa_attempts = request.session.get("mfa_failed_attempts", 0) + 1
@@ -503,7 +530,7 @@ def login_view(request):
                             request.session.pop("email_otp_code", None)
                             request.session.pop("email_otp_created", None)
                         elif code == expected:
-                            if _is_session_active(profile):
+                            if _is_session_active(profile) and not (mfa_user.is_superuser or profile.role == 'admin'):
                                 profile.login_attempt_blocked = True
                                 profile.blocked_login_time = timezone.now()
                                 profile.blocked_login_ip = _get_client_ip(request)
@@ -515,6 +542,10 @@ def login_view(request):
                                 mfa_user.backend = 'django.contrib.auth.backends.ModelBackend'
                                 login(request, mfa_user)
                                 _register_session(request, mfa_user)
+                                _audit(mfa_user, "Logged in", {
+                                    "ip": _get_client_ip(request),
+                                    "method": "email_otp",
+                                })
                                 after_change_pw = request.session.pop("mfa_after_change_pw", None)
                                 request.session.pop("mfa_user_id", None)
                                 request.session.pop("mfa_method", None)
@@ -552,7 +583,7 @@ def login_view(request):
                     profile.role = "admin"
                     profile.save(update_fields=["role"])
 
-                if _is_session_active(profile):
+                if _is_session_active(profile) and not (user.is_superuser or profile.role == 'admin'):
                     profile.login_attempt_blocked = True
                     profile.blocked_login_time = timezone.now()
                     profile.blocked_login_ip = _get_client_ip(request)
@@ -570,12 +601,20 @@ def login_view(request):
                         user.backend = 'django.contrib.auth.backends.ModelBackend'
                         login(request, user)
                         _register_session(request, user)
-                        _audit(user, "Logged in")
+                        _audit(user, "Logged in", {
+                            "ip": _get_client_ip(request),
+                            "method": "password",
+                        })
                         if next_url:
                             return redirect(next_url)
                         return _mfa_redirect(user)
         else:
             error = "Invalid username or password."
+            _audit(None, "Failed login attempt", {
+                "username": last_username,
+                "ip": _get_client_ip(request),
+                "reason": "invalid_credentials",
+            })
 
     mfa_has_totp = False
     mfa_has_email = False
@@ -727,7 +766,13 @@ def delete_device(request):
 
 @login_required
 def lockscreen_view(request):
-    return render(request, "lockscreen.html")
+    # Lock screen removed
+    request.session['screen_locked'] = False
+    request.session['screen_lock_hard'] = False
+    request.session.modified = True
+    if _is_admin(request.user):
+        return redirect("admin_dashboard")
+    return redirect("cashier_dashboard")
 
 
 @login_required
@@ -743,16 +788,9 @@ def verify_password(request):
 
 @login_required
 def trigger_lock(request):
-    if request.method != 'POST':
-        return JsonResponse({"error": "POST required"}, status=405)
-    cancel = request.POST.get('cancel', '0') == '1'
-    if cancel:
-        request.session['screen_locked'] = False
-        request.session['screen_lock_hard'] = False
-    else:
-        hard = request.POST.get('hard', '0') == '1'
-        request.session['screen_locked'] = True
-        request.session['screen_lock_hard'] = hard
+    # Lock screen removed — always clear lock flags
+    request.session['screen_locked'] = False
+    request.session['screen_lock_hard'] = False
     request.session.modified = True
     return JsonResponse({"ok": True})
 

@@ -1,0 +1,5589 @@
+{
+  "format": "registry-backup-json",
+  "version": 1,
+  "meta": {
+    "version": 3,
+    "backup_type": "JSON",
+    "format": "json",
+    "created_at": "2026-09-24T00:07:51.459078+00:00",
+    "created_by": 6,
+    "created_by_username": "admin",
+    "database": "mysql",
+    "counts": {
+      "users": 12,
+      "profiles": 12,
+      "fund_clusters": 1,
+      "suppliers": 3,
+      "cheques": 3,
+      "radai": 2,
+      "reports": 0,
+      "account_titles": 253,
+      "user_messages": 0,
+      "audit_logs": 28,
+      "system_settings": 1
+    },
+    "has_sqlite": false,
+    "sections": [
+      "database",
+      "config",
+      "auth",
+      "financial",
+      "system",
+      "audit",
+      "activity_log",
+      "radai",
+      "messages"
+    ]
+  },
+  "objects": [
+    {
+      "model": "auth.user",
+      "pk": 6,
+      "fields": {
+        "password": "pbkdf2_sha256$1200000$3ST9kVee5tEbHMJmUTNtDT$ZMGEOeUPWCGzEoxrKyYGRjUgN75zkh92I6iKIzHAmWM=",
+        "last_login": "2026-09-24T00:03:09.324Z",
+        "is_superuser": true,
+        "username": "admin",
+        "first_name": "Admin",
+        "last_name": "Min Jung",
+        "email": "deejay.cristobal_cyn@isu.edu.ph",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-09T05:43:17.200Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 14,
+      "fields": {
+        "password": "pbkdf2_sha256$1200000$SzXZYnzAWBuy9okKzWFbsW$xesD5x50S4akruih+lCOsvX1bfYTC9LGSS8//IUosgg=",
+        "last_login": "2026-09-23T07:11:04.299Z",
+        "is_superuser": false,
+        "username": "mfa_email_only",
+        "first_name": "",
+        "last_name": "",
+        "email": "eonly@example.com",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-09-23T07:10:28.779Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 15,
+      "fields": {
+        "password": "pbkdf2_sha256$1200000$YLzf5cD11jTF0pG9UtthSf$5SgU8kRqytB6ToqY9FjzcbBaKlHZYxl/TrPhO1X0WQI=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "mfa_both_no_smtp",
+        "first_name": "",
+        "last_name": "",
+        "email": "both@example.com",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-09-23T07:10:37.964Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 16,
+      "fields": {
+        "password": "pbkdf2_sha256$1200000$QBzFRSByBJYanalYExXRGa$bF7SrOUedmUjZ/5h2iOa60CCsbRJkXb9+cH7LugAE4Q=",
+        "last_login": null,
+        "is_superuser": false,
+        "username": "mfa_totp_only",
+        "first_name": "",
+        "last_name": "",
+        "email": "totp@example.com",
+        "is_staff": false,
+        "is_active": true,
+        "date_joined": "2026-09-23T07:10:47.219Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 17,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T07:54:04.086Z",
+        "is_superuser": true,
+        "username": "smoke_rep_daily",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T07:54:04.067Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 18,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T08:13:06.114Z",
+        "is_superuser": true,
+        "username": "smoke_tax_dd",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T08:13:06.091Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 19,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T08:59:08.773Z",
+        "is_superuser": true,
+        "username": "smoke_tax_link",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T08:58:13.548Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 20,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T09:03:37.864Z",
+        "is_superuser": true,
+        "username": "_smoke_vat",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T09:03:37.794Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 21,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T09:07:32.308Z",
+        "is_superuser": true,
+        "username": "_smoke_vat_rate",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T09:07:32.288Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 22,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T09:24:17.218Z",
+        "is_superuser": true,
+        "username": "_smoke_taxlink",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T09:24:17.197Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 23,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T11:12:40.154Z",
+        "is_superuser": true,
+        "username": "_smoke_taxlive",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T11:11:30.769Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "auth.user",
+      "pk": 24,
+      "fields": {
+        "password": "",
+        "last_login": "2026-09-23T13:08:15.361Z",
+        "is_superuser": true,
+        "username": "_smoke_cheque",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "is_staff": true,
+        "is_active": true,
+        "date_joined": "2026-09-23T12:30:34.299Z",
+        "groups": [],
+        "user_permissions": []
+      }
+    },
+    {
+      "model": "admin_panel.systemsetting",
+      "pk": 1,
+      "fields": {
+        "system_name": "registry",
+        "entity_name": "ISABELA STATE UNIVERSITY - CC",
+        "address": "",
+        "system_logo": "system_assets/20260923_133054.png",
+        "system_logo_hover": "system_assets/ehh.jpeg",
+        "last_cheque_number": "000003",
+        "last_report_number": "2026 - 11",
+        "last_dv_payroll_no": "2026-09-0005",
+        "last_ors_burs_no": "02-206441-2026-09-00005",
+        "lockscreen_wallpaper": "",
+        "login_background": "",
+        "auto_lock_seconds": 30,
+        "auto_logout_seconds": 3600,
+        "retention_enabled": false,
+        "retention_max_age_days": 90,
+        "retention_max_count": 10,
+        "retention_auto_delete": false,
+        "auto_backup_enabled": true,
+        "auto_backup_interval_days": 5,
+        "auto_backup_to_downloads": true,
+        "last_auto_backup": "2026-09-23T08:00:33.668Z",
+        "last_auto_backup_file": "system_backup_2026_09_23_080033_FULL.bak",
+        "email_backend": "django.core.mail.backends.smtp.EmailBackend",
+        "email_host": "",
+        "email_port": 587,
+        "email_use_tls": true,
+        "email_host_user": "",
+        "email_host_password": "",
+        "default_from_email": ""
+      }
+    },
+    {
+      "model": "admin_panel.chatbotconfig",
+      "pk": 1,
+      "fields": {
+        "name": "AI Assistant",
+        "provider": "openai",
+        "api_key": "",
+        "base_url": "",
+        "model_name": "gpt-4o-mini",
+        "system_prompt": "",
+        "welcome_message": "Hi! I'm your AI assistant. How can I help you today?",
+        "is_active": false,
+        "max_history": 20,
+        "created_at": "2026-09-23T05:12:18.960Z",
+        "updated_at": "2026-09-23T05:12:18.960Z"
+      }
+    },
+    {
+      "model": "cashier.radaisetting",
+      "pk": 1,
+      "fields": {
+        "ors_burs_no": "",
+        "responsibility_center": ""
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 247,
+      "fields": {
+        "name": "ASSETS",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:40.689Z",
+        "updated_at": "2026-09-23T05:37:40.689Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 262,
+      "fields": {
+        "name": "Awards/Rewards and Prizes",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:44.070Z",
+        "updated_at": "2026-09-23T05:37:44.070Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 296,
+      "fields": {
+        "name": "Biological Assets Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:48.555Z",
+        "updated_at": "2026-09-23T05:37:48.555Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 300,
+      "fields": {
+        "name": "BOR Meeting",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:48.941Z",
+        "updated_at": "2026-09-23T05:37:48.941Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 290,
+      "fields": {
+        "name": "Buildings and Other Structures Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:47.762Z",
+        "updated_at": "2026-09-23T05:37:47.762Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 284,
+      "fields": {
+        "name": "CAPITAL OUTLAYS",
+        "uacs": "5060000000",
+        "created_at": "2026-09-23T05:37:47.361Z",
+        "updated_at": "2026-09-23T05:37:47.361Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 294,
+      "fields": {
+        "name": "CO-Heritage Assets",
+        "uacs": "5060408000",
+        "created_at": "2026-09-23T05:37:48.508Z",
+        "updated_at": "2026-09-23T05:37:48.508Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 266,
+      "fields": {
+        "name": "Confidential, Intelligence and Extraordinary Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:44.573Z",
+        "updated_at": "2026-09-23T05:37:44.574Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 264,
+      "fields": {
+        "name": "Demolition/Relocation and Desilting/Dreging Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:44.425Z",
+        "updated_at": "2026-09-23T05:37:44.425Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 276,
+      "fields": {
+        "name": "Financial Assistance/Subsidy",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:46.150Z",
+        "updated_at": "2026-09-23T05:37:46.150Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 283,
+      "fields": {
+        "name": "FINANCIAL EXPENSES",
+        "uacs": "5030000000",
+        "created_at": "2026-09-23T05:37:47.138Z",
+        "updated_at": "2026-09-23T05:37:47.138Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 293,
+      "fields": {
+        "name": "Furniture, Fixtures and Books Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:48.459Z",
+        "updated_at": "2026-09-23T05:37:48.459Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 268,
+      "fields": {
+        "name": "General Services",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:44.953Z",
+        "updated_at": "2026-09-23T05:37:44.954Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 265,
+      "fields": {
+        "name": "Generation, Transmission and Distribution Expenses",
+        "uacs": "5020901000",
+        "created_at": "2026-09-23T05:37:44.519Z",
+        "updated_at": "2026-09-23T05:37:44.520Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 289,
+      "fields": {
+        "name": "Infrastructure Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:47.741Z",
+        "updated_at": "2026-09-23T05:37:47.742Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 297,
+      "fields": {
+        "name": "Intangible Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:48.650Z",
+        "updated_at": "2026-09-23T05:37:48.650Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 285,
+      "fields": {
+        "name": "Investment Outlays",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:47.380Z",
+        "updated_at": "2026-09-23T05:37:47.380Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 287,
+      "fields": {
+        "name": "Investment Property Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:47.570Z",
+        "updated_at": "2026-09-23T05:37:47.570Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 279,
+      "fields": {
+        "name": "Labor and Wages",
+        "uacs": "5021601000",
+        "created_at": "2026-09-23T05:37:46.484Z",
+        "updated_at": "2026-09-23T05:37:46.484Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 248,
+      "fields": {
+        "name": "LIABILITIES",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:41.001Z",
+        "updated_at": "2026-09-23T05:37:41.001Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 298,
+      "fields": {
+        "name": "Loan Repayment",
+        "uacs": "2010204000",
+        "created_at": "2026-09-23T05:37:48.781Z",
+        "updated_at": "2026-09-23T05:37:48.781Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 286,
+      "fields": {
+        "name": "Loans Receivable Accounts Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:47.474Z",
+        "updated_at": "2026-09-23T05:37:47.476Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 291,
+      "fields": {
+        "name": "Machinery and Equipment Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:47.898Z",
+        "updated_at": "2026-09-23T05:37:47.898Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 254,
+      "fields": {
+        "name": "MOOE",
+        "uacs": "5020000000",
+        "created_at": "2026-09-23T05:37:42.366Z",
+        "updated_at": "2026-09-23T05:37:42.367Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 280,
+      "fields": {
+        "name": "OMMOE",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:46.522Z",
+        "updated_at": "2026-09-23T05:37:46.522Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 251,
+      "fields": {
+        "name": "Other Compensation",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:41.687Z",
+        "updated_at": "2026-09-23T05:37:41.688Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 253,
+      "fields": {
+        "name": "Other Personnel Benefits",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:42.094Z",
+        "updated_at": "2026-09-23T05:37:42.094Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 295,
+      "fields": {
+        "name": "Other Property, Plant and Equipment Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:48.514Z",
+        "updated_at": "2026-09-23T05:37:48.514Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 252,
+      "fields": {
+        "name": "Personnel Benefit Contributions",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:41.990Z",
+        "updated_at": "2026-09-23T05:37:41.990Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 249,
+      "fields": {
+        "name": "PERSONNEL SERVICES",
+        "uacs": "5010000000",
+        "created_at": "2026-09-23T05:37:41.591Z",
+        "updated_at": "2026-09-23T05:37:41.591Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 261,
+      "fields": {
+        "name": "Postage and Courier Services",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:43.826Z",
+        "updated_at": "2026-09-23T05:37:43.826Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 267,
+      "fields": {
+        "name": "Professional Services",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:44.700Z",
+        "updated_at": "2026-09-23T05:37:44.700Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 288,
+      "fields": {
+        "name": "Property, Plant and Equipment Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:47.660Z",
+        "updated_at": "2026-09-23T05:37:47.660Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 281,
+      "fields": {
+        "name": "Rent/Lease Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:46.643Z",
+        "updated_at": "2026-09-23T05:37:46.643Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 269,
+      "fields": {
+        "name": "Repairs and Maintenance",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:45.112Z",
+        "updated_at": "2026-09-23T05:37:45.112Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 270,
+      "fields": {
+        "name": "Repairs and Maintenance-Buildings and Other Structures",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:45.201Z",
+        "updated_at": "2026-09-23T05:37:45.201Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 271,
+      "fields": {
+        "name": "Repairs and Maintenance-Machinery and Equipment",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:45.317Z",
+        "updated_at": "2026-09-23T05:37:45.317Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 275,
+      "fields": {
+        "name": "Repairs and Maintenance-Other Property, Plant and Equipment",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:46.110Z",
+        "updated_at": "2026-09-23T05:37:46.110Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 274,
+      "fields": {
+        "name": "Repairs and Maintenance-Semi-Expendable Furniture, Fixtures and Books",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:46.078Z",
+        "updated_at": "2026-09-23T05:37:46.078Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 273,
+      "fields": {
+        "name": "Repairs and Maintenance-Semi-Expendable Machinery and Equipment",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:45.883Z",
+        "updated_at": "2026-09-23T05:37:45.883Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 272,
+      "fields": {
+        "name": "Repairs and Maintenance-Transportation Equipment",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:45.775Z",
+        "updated_at": "2026-09-23T05:37:45.775Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 250,
+      "fields": {
+        "name": "Salaries and Wages",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:41.609Z",
+        "updated_at": "2026-09-23T05:37:41.609Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 259,
+      "fields": {
+        "name": "Semi-Expendable Furniture, Fixtures and Books Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:43.545Z",
+        "updated_at": "2026-09-23T05:37:43.545Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 258,
+      "fields": {
+        "name": "Semi-Expendable Machinery and Equipment Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:43.037Z",
+        "updated_at": "2026-09-23T05:37:43.037Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 302,
+      "fields": {
+        "name": "Staff Development Committee",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:49.077Z",
+        "updated_at": "2026-09-23T05:37:49.078Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 282,
+      "fields": {
+        "name": "Subscription Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:46.713Z",
+        "updated_at": "2026-09-23T05:37:46.713Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 301,
+      "fields": {
+        "name": "SUC WIDE COMMITTEE FUND",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:49.056Z",
+        "updated_at": "2026-09-23T05:37:49.056Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 299,
+      "fields": {
+        "name": "SUC WIDE COMMON ADMINISTRATIVE COST",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:48.845Z",
+        "updated_at": "2026-09-23T05:37:48.845Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 257,
+      "fields": {
+        "name": "Supplies and Materials Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:42.497Z",
+        "updated_at": "2026-09-23T05:37:42.497Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 263,
+      "fields": {
+        "name": "Survey, Research, Exploration and Development Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:44.306Z",
+        "updated_at": "2026-09-23T05:37:44.306Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 246,
+      "fields": {
+        "name": "Table Header (bold)",
+        "uacs": "UACS Object Code",
+        "created_at": "2026-09-23T05:37:40.668Z",
+        "updated_at": "2026-09-23T05:37:40.668Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 278,
+      "fields": {
+        "name": "Taxes, Duties and Licenses",
+        "uacs": "5021501001",
+        "created_at": "2026-09-23T05:37:46.374Z",
+        "updated_at": "2026-09-23T05:37:46.374Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 277,
+      "fields": {
+        "name": "Taxes, Insurance Premiums and Other Fees",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:46.358Z",
+        "updated_at": "2026-09-23T05:37:46.358Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 256,
+      "fields": {
+        "name": "Training and Scholarship Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:42.465Z",
+        "updated_at": "2026-09-23T05:37:42.465Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 292,
+      "fields": {
+        "name": "Transportation Equipment Outlay",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:48.381Z",
+        "updated_at": "2026-09-23T05:37:48.382Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 255,
+      "fields": {
+        "name": "Traveling Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:42.383Z",
+        "updated_at": "2026-09-23T05:37:42.383Z"
+      }
+    },
+    {
+      "model": "admin_panel.accounttitlegroup",
+      "pk": 260,
+      "fields": {
+        "name": "Utility Expenses",
+        "uacs": "",
+        "created_at": "2026-09-23T05:37:43.667Z",
+        "updated_at": "2026-09-23T05:37:43.668Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1141,
+      "fields": {
+        "category": "account_title",
+        "value": "Accountable Forms Expenses",
+        "uacs": "5020302000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.532Z",
+        "updated_at": "2026-09-23T05:37:42.532Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1268,
+      "fields": {
+        "category": "account_title",
+        "value": "Accounts Payable",
+        "uacs": "2010101000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.947Z",
+        "updated_at": "2026-09-23T05:37:46.947Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1100,
+      "fields": {
+        "category": "account_title",
+        "value": "Accumulated Surplus (Deficit)",
+        "uacs": "3010101000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.562Z",
+        "updated_at": "2026-09-23T05:37:41.563Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1084,
+      "fields": {
+        "category": "account_title",
+        "value": "ADVANCES FOR PAYROLL",
+        "uacs": "1990102000",
+        "group": 247,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:40.825Z",
+        "updated_at": "2026-09-23T05:37:40.825Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1082,
+      "fields": {
+        "category": "account_title",
+        "value": "Advances to Officers & Employees",
+        "uacs": "1990104000",
+        "group": 247,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:40.758Z",
+        "updated_at": "2026-09-23T05:37:40.758Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1083,
+      "fields": {
+        "category": "account_title",
+        "value": "Advances to Special Disbursing Officer",
+        "uacs": "1990103000",
+        "group": 247,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:40.794Z",
+        "updated_at": "2026-09-23T05:37:40.794Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1245,
+      "fields": {
+        "category": "account_title",
+        "value": "Advertising Expenses",
+        "uacs": "5029901000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.533Z",
+        "updated_at": "2026-09-23T05:37:46.534Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1148,
+      "fields": {
+        "category": "account_title",
+        "value": "Agricultural and Marine Supplies Expenses",
+        "uacs": "5020310000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.746Z",
+        "updated_at": "2026-09-23T05:37:42.746Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1143,
+      "fields": {
+        "category": "account_title",
+        "value": "Animal/Zoological Supplies Expenses",
+        "uacs": "5020304000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.588Z",
+        "updated_at": "2026-09-23T05:37:42.588Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1120,
+      "fields": {
+        "category": "account_title",
+        "value": "Anniversary Bonus - Civilian",
+        "uacs": "5010299038",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.983Z",
+        "updated_at": "2026-09-23T05:37:41.983Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1190,
+      "fields": {
+        "category": "account_title",
+        "value": "Auditing Services",
+        "uacs": "5021102000",
+        "group": 267,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.755Z",
+        "updated_at": "2026-09-23T05:37:44.756Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1178,
+      "fields": {
+        "category": "account_title",
+        "value": "Awards/Reward Expenses",
+        "uacs": "5020601001",
+        "group": 262,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.092Z",
+        "updated_at": "2026-09-23T05:37:44.092Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1277,
+      "fields": {
+        "category": "account_title",
+        "value": "Bank Charges",
+        "uacs": "5030104000",
+        "group": 283,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.263Z",
+        "updated_at": "2026-09-23T05:37:47.263Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1114,
+      "fields": {
+        "category": "account_title",
+        "value": "Bonus - Civilian (YEB)",
+        "uacs": "5010214001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.925Z",
+        "updated_at": "2026-09-23T05:37:41.925Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1177,
+      "fields": {
+        "category": "account_title",
+        "value": "Cable, Satellite, Telegraph and Radio Expenses",
+        "uacs": "5020504000",
+        "group": 261,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.026Z",
+        "updated_at": "2026-09-23T05:37:44.026Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1325,
+      "fields": {
+        "category": "account_title",
+        "value": "Capital Outlay",
+        "uacs": "5060000000",
+        "group": 298,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.806Z",
+        "updated_at": "2026-09-23T05:37:48.806Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1115,
+      "fields": {
+        "category": "account_title",
+        "value": "Cash Gift - Civilian",
+        "uacs": "5010215001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.932Z",
+        "updated_at": "2026-09-23T05:37:41.932Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1081,
+      "fields": {
+        "category": "account_title",
+        "value": "Cash in Bank - Local Currency, Current Account",
+        "uacs": "1010202000",
+        "group": 247,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:40.714Z",
+        "updated_at": "2026-09-23T05:37:40.714Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1151,
+      "fields": {
+        "category": "account_title",
+        "value": "Chemical & Filtering Supplies Expenses",
+        "uacs": "5020313000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.907Z",
+        "updated_at": "2026-09-23T05:37:42.907Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1106,
+      "fields": {
+        "category": "account_title",
+        "value": "Clothing/Uniform Allowance - Civilian",
+        "uacs": "5010204001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.790Z",
+        "updated_at": "2026-09-23T05:37:41.790Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1295,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Agricultural and Forestry Equipment",
+        "uacs": "5060405004",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.082Z",
+        "updated_at": "2026-09-23T05:37:48.082Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1318,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Agricultural Produce Held for Consumption/Sale/Distribution",
+        "uacs": "5060502003",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.605Z",
+        "updated_at": "2026-09-23T05:37:48.605Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1314,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Agriculture",
+        "uacs": "5060501004",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.576Z",
+        "updated_at": "2026-09-23T05:37:48.576Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1319,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Aquaculture",
+        "uacs": "5060502004",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.611Z",
+        "updated_at": "2026-09-23T05:37:48.611Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1308,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Books",
+        "uacs": "5060407002",
+        "group": 293,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.499Z",
+        "updated_at": "2026-09-23T05:37:48.499Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1311,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Breeding Stocks",
+        "uacs": "5060501001",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.560Z",
+        "updated_at": "2026-09-23T05:37:48.560Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1288,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Buildings",
+        "uacs": "5060404001",
+        "group": 290,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.780Z",
+        "updated_at": "2026-09-23T05:37:47.780Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1297,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Communication Equipment",
+        "uacs": "5060405007",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.136Z",
+        "updated_at": "2026-09-23T05:37:48.136Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1322,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Computer Software",
+        "uacs": "5060602002",
+        "group": 297,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.698Z",
+        "updated_at": "2026-09-23T05:37:48.698Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1298,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Construction and Heavy Equipment",
+        "uacs": "5060405008",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.169Z",
+        "updated_at": "2026-09-23T05:37:48.169Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1307,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Furniture and Fixtures",
+        "uacs": "5060407001",
+        "group": 293,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.479Z",
+        "updated_at": "2026-09-23T05:37:48.479Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1290,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Hostels and Dormitories",
+        "uacs": "5060404006",
+        "group": 290,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.840Z",
+        "updated_at": "2026-09-23T05:37:47.840Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1294,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-ICT Equipment",
+        "uacs": "5060405003",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.053Z",
+        "updated_at": "2026-09-23T05:37:48.054Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1281,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Investment in Associates",
+        "uacs": "5060102000",
+        "group": 285,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.441Z",
+        "updated_at": "2026-09-23T05:37:47.442Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1280,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Investment in GOCCs",
+        "uacs": "5060101000",
+        "group": 285,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.401Z",
+        "updated_at": "2026-09-23T05:37:47.401Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1285,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Investment Property-Buildings",
+        "uacs": "5060301002",
+        "group": 287,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.627Z",
+        "updated_at": "2026-09-23T05:37:47.627Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1284,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Investment Property-Land",
+        "uacs": "5060301001",
+        "group": 287,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.593Z",
+        "updated_at": "2026-09-23T05:37:47.593Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1286,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Land",
+        "uacs": "5060401001",
+        "group": 288,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.676Z",
+        "updated_at": "2026-09-23T05:37:47.678Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1312,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Livestock",
+        "uacs": "5060501002",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.565Z",
+        "updated_at": "2026-09-23T05:37:48.565Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1316,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Livestock Held for Consumption/Sale/Distribution",
+        "uacs": "5060502001",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.590Z",
+        "updated_at": "2026-09-23T05:37:48.590Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1282,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Loans Receivable-GOCCs",
+        "uacs": "5060200000",
+        "group": 286,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.498Z",
+        "updated_at": "2026-09-23T05:37:47.498Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1283,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Loans Receivable-Others",
+        "uacs": "5060299900",
+        "group": 286,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.536Z",
+        "updated_at": "2026-09-23T05:37:47.536Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1292,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Machinery",
+        "uacs": "5060405001",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.915Z",
+        "updated_at": "2026-09-23T05:37:47.915Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1296,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Marine and Fishery Equipment",
+        "uacs": "5060405005",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.118Z",
+        "updated_at": "2026-09-23T05:37:48.118Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1300,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Medical Equipment",
+        "uacs": "5060405011",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.232Z",
+        "updated_at": "2026-09-23T05:37:48.232Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1299,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Military, Police and Security Equipment",
+        "uacs": "5060405010",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.200Z",
+        "updated_at": "2026-09-23T05:37:48.200Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1305,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Motor Vehicles",
+        "uacs": "5060406001",
+        "group": 292,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.400Z",
+        "updated_at": "2026-09-23T05:37:48.401Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1293,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Office Equipment",
+        "uacs": "5060405002",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.993Z",
+        "updated_at": "2026-09-23T05:37:47.993Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1315,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Bearer Biological Assets",
+        "uacs": "5060501005",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.584Z",
+        "updated_at": "2026-09-23T05:37:48.584Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1320,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Consumable Biological Assets",
+        "uacs": "5060502099",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.621Z",
+        "updated_at": "2026-09-23T05:37:48.621Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1323,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Intangible Assets",
+        "uacs": "5060603099",
+        "group": 297,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.729Z",
+        "updated_at": "2026-09-23T05:37:48.729Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1287,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Land Improvements",
+        "uacs": "5060402099",
+        "group": 288,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.710Z",
+        "updated_at": "2026-09-23T05:37:47.710Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1304,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Machinery and Equipment",
+        "uacs": "5060405099",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.352Z",
+        "updated_at": "2026-09-23T05:37:48.352Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1310,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Property, Plant and Equipment",
+        "uacs": "5060409099",
+        "group": 295,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.549Z",
+        "updated_at": "2026-09-23T05:37:48.549Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1291,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Structures",
+        "uacs": "5060404099",
+        "group": 290,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.871Z",
+        "updated_at": "2026-09-23T05:37:47.871Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1306,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Other Transportation Equipment",
+        "uacs": "5060406099",
+        "group": 292,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.429Z",
+        "updated_at": "2026-09-23T05:37:48.430Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1321,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Patents/Copyrights",
+        "uacs": "5060601001",
+        "group": 297,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.670Z",
+        "updated_at": "2026-09-23T05:37:48.670Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1301,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Printing Equipment",
+        "uacs": "5060405012",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.262Z",
+        "updated_at": "2026-09-23T05:37:48.262Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1289,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-School Buildings",
+        "uacs": "5060404002",
+        "group": 290,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.812Z",
+        "updated_at": "2026-09-23T05:37:47.812Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1302,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Sports Equipment",
+        "uacs": "5060405013",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.297Z",
+        "updated_at": "2026-09-23T05:37:48.297Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1303,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Technical and ScientIfic Equipment",
+        "uacs": "5060405014",
+        "group": 291,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.325Z",
+        "updated_at": "2026-09-23T05:37:48.325Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1313,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Trees, Plants and Crops",
+        "uacs": "5060501003",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.570Z",
+        "updated_at": "2026-09-23T05:37:48.570Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1317,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Trees, Plants and Crops Held for Consumption/Sale/Distribution",
+        "uacs": "5060502002",
+        "group": 296,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.598Z",
+        "updated_at": "2026-09-23T05:37:48.598Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1309,
+      "fields": {
+        "category": "account_title",
+        "value": "CO-Work/Zoo Animals",
+        "uacs": "5060409001",
+        "group": 295,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.531Z",
+        "updated_at": "2026-09-23T05:37:48.531Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1116,
+      "fields": {
+        "category": "account_title",
+        "value": "Collective Negotiation Agreement Incentive - Civilian",
+        "uacs": "5010299011",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.940Z",
+        "updated_at": "2026-09-23T05:37:41.940Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1278,
+      "fields": {
+        "category": "account_title",
+        "value": "Commitment Fees",
+        "uacs": "5030105000",
+        "group": 283,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.299Z",
+        "updated_at": "2026-09-23T05:37:47.299Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1266,
+      "fields": {
+        "category": "account_title",
+        "value": "Computer Software",
+        "uacs": "1080102000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.831Z",
+        "updated_at": "2026-09-23T05:37:46.831Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1186,
+      "fields": {
+        "category": "account_title",
+        "value": "Confidential Expenses",
+        "uacs": "5021001000",
+        "group": 266,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.598Z",
+        "updated_at": "2026-09-23T05:37:44.598Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1191,
+      "fields": {
+        "category": "account_title",
+        "value": "Consultancy Services",
+        "uacs": "5021103000",
+        "group": 267,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.787Z",
+        "updated_at": "2026-09-23T05:37:44.787Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1183,
+      "fields": {
+        "category": "account_title",
+        "value": "Demolition and Relocation Expenses",
+        "uacs": "5020801000",
+        "group": 264,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.448Z",
+        "updated_at": "2026-09-23T05:37:44.448Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1184,
+      "fields": {
+        "category": "account_title",
+        "value": "Desilting and Dreging Expenses",
+        "uacs": "5020802000",
+        "group": 264,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.490Z",
+        "updated_at": "2026-09-23T05:37:44.490Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1258,
+      "fields": {
+        "category": "account_title",
+        "value": "Donations",
+        "uacs": "5029908000",
+        "group": 282,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.735Z",
+        "updated_at": "2026-09-23T05:37:46.735Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1145,
+      "fields": {
+        "category": "account_title",
+        "value": "Drugs and Medicines Expenses",
+        "uacs": "5020307000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.630Z",
+        "updated_at": "2026-09-23T05:37:42.630Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1085,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to BIR",
+        "uacs": "2020101000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.047Z",
+        "updated_at": "2026-09-23T05:37:41.047Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1093,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to Bureaus",
+        "uacs": "2030102000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.339Z",
+        "updated_at": "2026-09-23T05:37:41.339Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1092,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to Central Office",
+        "uacs": "2030101000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.313Z",
+        "updated_at": "2026-09-23T05:37:41.314Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1090,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to GOCCs",
+        "uacs": "2020106000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.244Z",
+        "updated_at": "2026-09-23T05:37:41.244Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1086,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to GSIS",
+        "uacs": "2020102000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.099Z",
+        "updated_at": "2026-09-23T05:37:41.099Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1091,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to LGUs",
+        "uacs": "2020107000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.282Z",
+        "updated_at": "2026-09-23T05:37:41.282Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1089,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to NGAs",
+        "uacs": "2020105000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.208Z",
+        "updated_at": "2026-09-23T05:37:41.208Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1097,
+      "fields": {
+        "category": "account_title",
+        "value": "DUE TO OFFICERS AND EMPLOYEES",
+        "uacs": "2010102000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.465Z",
+        "updated_at": "2026-09-23T05:37:41.465Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1095,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to Operating Units",
+        "uacs": "2030104000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.406Z",
+        "updated_at": "2026-09-23T05:37:41.406Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1096,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to Other Funds",
+        "uacs": "2030105000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.434Z",
+        "updated_at": "2026-09-23T05:37:41.434Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1087,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to Pag-IBIG",
+        "uacs": "2020103000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.139Z",
+        "updated_at": "2026-09-23T05:37:41.139Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1088,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to PhilHealth",
+        "uacs": "2020104000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.175Z",
+        "updated_at": "2026-09-23T05:37:41.175Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1094,
+      "fields": {
+        "category": "account_title",
+        "value": "Due to Regional Offices",
+        "uacs": "2030103000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.372Z",
+        "updated_at": "2026-09-23T05:37:41.372Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1124,
+      "fields": {
+        "category": "account_title",
+        "value": "ECIP - Civilian",
+        "uacs": "5010304001",
+        "group": 252,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.070Z",
+        "updated_at": "2026-09-23T05:37:42.070Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1170,
+      "fields": {
+        "category": "account_title",
+        "value": "Electricity Expenses",
+        "uacs": "5020402000",
+        "group": 260,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.731Z",
+        "updated_at": "2026-09-23T05:37:43.731Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1193,
+      "fields": {
+        "category": "account_title",
+        "value": "Environment/Sanitary Services",
+        "uacs": "5021201000",
+        "group": 268,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.995Z",
+        "updated_at": "2026-09-23T05:37:44.995Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1188,
+      "fields": {
+        "category": "account_title",
+        "value": "Extraordinary and Miscellaneous Expenses",
+        "uacs": "5021003000",
+        "group": 266,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.671Z",
+        "updated_at": "2026-09-23T05:37:44.671Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1242,
+      "fields": {
+        "category": "account_title",
+        "value": "Fidelity Bond Premiums",
+        "uacs": "5021502000",
+        "group": 278,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.444Z",
+        "updated_at": "2026-09-23T05:37:46.444Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1235,
+      "fields": {
+        "category": "account_title",
+        "value": "Financial Assistance to Local Government Units",
+        "uacs": "5021403000",
+        "group": 276,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.221Z",
+        "updated_at": "2026-09-23T05:37:46.221Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1234,
+      "fields": {
+        "category": "account_title",
+        "value": "Financial Assistance to NGAs",
+        "uacs": "5021402000",
+        "group": 276,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.192Z",
+        "updated_at": "2026-09-23T05:37:46.192Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1144,
+      "fields": {
+        "category": "account_title",
+        "value": "Food Supplies Expenses",
+        "uacs": "5020305000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.611Z",
+        "updated_at": "2026-09-23T05:37:42.611Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1147,
+      "fields": {
+        "category": "account_title",
+        "value": "Fuel, Oil and Lubricants Expenses",
+        "uacs": "5020309000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.699Z",
+        "updated_at": "2026-09-23T05:37:42.700Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1272,
+      "fields": {
+        "category": "account_title",
+        "value": "FURNITURE AND FIXTURES",
+        "uacs": "1060701000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.071Z",
+        "updated_at": "2026-09-23T05:37:47.071Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1171,
+      "fields": {
+        "category": "account_title",
+        "value": "Gas/Heating Expenses",
+        "uacs": "5020403000",
+        "group": 260,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.768Z",
+        "updated_at": "2026-09-23T05:37:43.768Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1185,
+      "fields": {
+        "category": "account_title",
+        "value": "Generation, Transmission and Distribution Expenses",
+        "uacs": "5020901000",
+        "group": 265,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.544Z",
+        "updated_at": "2026-09-23T05:37:44.544Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1276,
+      "fields": {
+        "category": "account_title",
+        "value": "Guarantee Fees",
+        "uacs": "5030103000",
+        "group": 283,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.231Z",
+        "updated_at": "2026-09-23T05:37:47.231Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1099,
+      "fields": {
+        "category": "account_title",
+        "value": "Guaranty / Security Deposits Payable",
+        "uacs": "2040104000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.536Z",
+        "updated_at": "2026-09-23T05:37:41.536Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1109,
+      "fields": {
+        "category": "account_title",
+        "value": "Honoraria - Civilian",
+        "uacs": "5010210001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.863Z",
+        "updated_at": "2026-09-23T05:37:41.863Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1326,
+      "fields": {
+        "category": "account_title",
+        "value": "Honoraria/RATA-Designated Officials",
+        "uacs": "",
+        "group": 300,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.983Z",
+        "updated_at": "2026-09-23T05:37:48.984Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1110,
+      "fields": {
+        "category": "account_title",
+        "value": "HP - Magna Carta Benefits for Public Health Workers under R.A. 7305",
+        "uacs": "5010211005",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.890Z",
+        "updated_at": "2026-09-23T05:37:41.890Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1271,
+      "fields": {
+        "category": "account_title",
+        "value": "ICT EQUIPMENT",
+        "uacs": "1060503000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.038Z",
+        "updated_at": "2026-09-23T05:37:47.038Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1255,
+      "fields": {
+        "category": "account_title",
+        "value": "ICT Software Subscription",
+        "uacs": "5029907001",
+        "group": 282,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.717Z",
+        "updated_at": "2026-09-23T05:37:46.717Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1180,
+      "fields": {
+        "category": "account_title",
+        "value": "Indemnities",
+        "uacs": "5020603000",
+        "group": 262,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.235Z",
+        "updated_at": "2026-09-23T05:37:44.235Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1243,
+      "fields": {
+        "category": "account_title",
+        "value": "Insurance Expenses",
+        "uacs": "5021503000",
+        "group": 278,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.461Z",
+        "updated_at": "2026-09-23T05:37:46.461Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1187,
+      "fields": {
+        "category": "account_title",
+        "value": "Intelligence Expenses",
+        "uacs": "5021002000",
+        "group": 266,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.635Z",
+        "updated_at": "2026-09-23T05:37:44.635Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1275,
+      "fields": {
+        "category": "account_title",
+        "value": "Interest Expenses",
+        "uacs": "5030102000",
+        "group": 283,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.199Z",
+        "updated_at": "2026-09-23T05:37:47.199Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1176,
+      "fields": {
+        "category": "account_title",
+        "value": "Internet Subscription Expenses",
+        "uacs": "5020503000",
+        "group": 261,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.972Z",
+        "updated_at": "2026-09-23T05:37:43.972Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1194,
+      "fields": {
+        "category": "account_title",
+        "value": "Janitorial Services",
+        "uacs": "5021202000",
+        "group": 268,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.032Z",
+        "updated_at": "2026-09-23T05:37:45.032Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1244,
+      "fields": {
+        "category": "account_title",
+        "value": "Labor and Wages",
+        "uacs": "5021601000",
+        "group": 279,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.501Z",
+        "updated_at": "2026-09-23T05:37:46.501Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1108,
+      "fields": {
+        "category": "account_title",
+        "value": "Laundry Allowance - Magna Carta Benefits for Public Health Workers under R.A. 7305",
+        "uacs": "5010206004",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.835Z",
+        "updated_at": "2026-09-23T05:37:41.835Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1189,
+      "fields": {
+        "category": "account_title",
+        "value": "Legal Services",
+        "uacs": "5021101000",
+        "group": 267,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.724Z",
+        "updated_at": "2026-09-23T05:37:44.724Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1256,
+      "fields": {
+        "category": "account_title",
+        "value": "Library and Other Reading Materials Subscription Expenses",
+        "uacs": "5029907004",
+        "group": 282,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.723Z",
+        "updated_at": "2026-09-23T05:37:46.723Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1259,
+      "fields": {
+        "category": "account_title",
+        "value": "Litigation/Acquired Assets Expenses",
+        "uacs": "5029909000",
+        "group": 282,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.743Z",
+        "updated_at": "2026-09-23T05:37:46.744Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1111,
+      "fields": {
+        "category": "account_title",
+        "value": "Longevity Pay - Civilian",
+        "uacs": "5010212001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.901Z",
+        "updated_at": "2026-09-23T05:37:41.901Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1260,
+      "fields": {
+        "category": "account_title",
+        "value": "Loss on Guaranty",
+        "uacs": "5029910000",
+        "group": 282,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.774Z",
+        "updated_at": "2026-09-23T05:37:46.774Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1133,
+      "fields": {
+        "category": "account_title",
+        "value": "Loyalty Award - Civilian",
+        "uacs": "5010499015",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.280Z",
+        "updated_at": "2026-09-23T05:37:42.281Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1129,
+      "fields": {
+        "category": "account_title",
+        "value": "Lump-sum for Compensation Adjustment",
+        "uacs": "5010499006",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.194Z",
+        "updated_at": "2026-09-23T05:37:42.194Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1127,
+      "fields": {
+        "category": "account_title",
+        "value": "Lump-sum for Creation of New Positions - Civilian",
+        "uacs": "5010499001",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.157Z",
+        "updated_at": "2026-09-23T05:37:42.157Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1130,
+      "fields": {
+        "category": "account_title",
+        "value": "Lump-sum for Filling of Positions - Civilian",
+        "uacs": "5010499007",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.216Z",
+        "updated_at": "2026-09-23T05:37:42.216Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1128,
+      "fields": {
+        "category": "account_title",
+        "value": "Lump-sum for Reclassification of Positions",
+        "uacs": "5010499003",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.176Z",
+        "updated_at": "2026-09-23T05:37:42.176Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1131,
+      "fields": {
+        "category": "account_title",
+        "value": "Lump-sum for Step Increments - Length of Service",
+        "uacs": "5010499010",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.240Z",
+        "updated_at": "2026-09-23T05:37:42.240Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1132,
+      "fields": {
+        "category": "account_title",
+        "value": "Lump-sum for Step Increments - Meritorious Performance",
+        "uacs": "5010499011",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.272Z",
+        "updated_at": "2026-09-23T05:37:42.272Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1274,
+      "fields": {
+        "category": "account_title",
+        "value": "Managemnet Supervision/Trusteeship Fees",
+        "uacs": "5030101000",
+        "group": 283,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.168Z",
+        "updated_at": "2026-09-23T05:37:47.168Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1324,
+      "fields": {
+        "category": "account_title",
+        "value": "MANDATORY RESERVE",
+        "uacs": "",
+        "group": 297,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:48.758Z",
+        "updated_at": "2026-09-23T05:37:48.759Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1146,
+      "fields": {
+        "category": "account_title",
+        "value": "Medical, Dental and Laboratory Supplies Expenses",
+        "uacs": "5020308000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.663Z",
+        "updated_at": "2026-09-23T05:37:42.663Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1254,
+      "fields": {
+        "category": "account_title",
+        "value": "Membership Dues and Contributions to Organizations",
+        "uacs": "5029906000",
+        "group": 281,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.708Z",
+        "updated_at": "2026-09-23T05:37:46.708Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1119,
+      "fields": {
+        "category": "account_title",
+        "value": "Mid-Year Bonus - Civilian",
+        "uacs": "5010299036",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.972Z",
+        "updated_at": "2026-09-23T05:37:41.972Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1150,
+      "fields": {
+        "category": "account_title",
+        "value": "Military, Police and Traffic Supplies Expenses",
+        "uacs": "5020312000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.811Z",
+        "updated_at": "2026-09-23T05:37:42.811Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1113,
+      "fields": {
+        "category": "account_title",
+        "value": "Night-shift Differential Pay",
+        "uacs": "5010213002",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.919Z",
+        "updated_at": "2026-09-23T05:37:41.919Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1142,
+      "fields": {
+        "category": "account_title",
+        "value": "Non-accountable Forms Expenses",
+        "uacs": "5020303000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.558Z",
+        "updated_at": "2026-09-23T05:37:42.558Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1273,
+      "fields": {
+        "category": "account_title",
+        "value": "OFFICE EQUIPMENT",
+        "uacs": "1060502000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.108Z",
+        "updated_at": "2026-09-23T05:37:47.108Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1140,
+      "fields": {
+        "category": "account_title",
+        "value": "Office Supplies Expenses",
+        "uacs": "5020301000",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.511Z",
+        "updated_at": "2026-09-23T05:37:42.511Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1279,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Financial Charges",
+        "uacs": "5030199000",
+        "group": 283,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.330Z",
+        "updated_at": "2026-09-23T05:37:47.331Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1135,
+      "fields": {
+        "category": "account_title",
+        "value": "Other General Services",
+        "uacs": "5021204000",
+        "group": 268,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.340Z",
+        "updated_at": "2026-09-23T05:37:42.341Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1269,
+      "fields": {
+        "category": "account_title",
+        "value": "other land improvements",
+        "uacs": "1060299000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.974Z",
+        "updated_at": "2026-09-23T05:37:46.974Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1270,
+      "fields": {
+        "category": "account_title",
+        "value": "OTHER MACHINERY AND EQUIPMENT",
+        "uacs": "1060599000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:47.013Z",
+        "updated_at": "2026-09-23T05:37:47.013Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1262,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Maintenance and Operating Expenses",
+        "uacs": "5029999002",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.788Z",
+        "updated_at": "2026-09-23T05:37:46.788Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1330,
+      "fields": {
+        "category": "account_title",
+        "value": "Other MOOE",
+        "uacs": "",
+        "group": 302,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:49.121Z",
+        "updated_at": "2026-09-23T05:37:49.121Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1098,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Payables",
+        "uacs": "2999999000",
+        "group": 248,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.502Z",
+        "updated_at": "2026-09-23T05:37:41.502Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1134,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Personnel Benefits",
+        "uacs": "5010499099",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.309Z",
+        "updated_at": "2026-09-23T05:37:42.309Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1192,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Professional Services",
+        "uacs": "5021199000",
+        "group": 267,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.819Z",
+        "updated_at": "2026-09-23T05:37:44.819Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1264,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Property, Plant and Equipment",
+        "uacs": "1069899000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.812Z",
+        "updated_at": "2026-09-23T05:37:46.812Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1265,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Structures",
+        "uacs": "1060499000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.823Z",
+        "updated_at": "2026-09-23T05:37:46.823Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1257,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Subscription Expenses",
+        "uacs": "5029907099",
+        "group": 282,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.729Z",
+        "updated_at": "2026-09-23T05:37:46.729Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1168,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Supplies and Materials Expenses",
+        "uacs": "5020399000",
+        "group": 259,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.633Z",
+        "updated_at": "2026-09-23T05:37:43.633Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1172,
+      "fields": {
+        "category": "account_title",
+        "value": "Other Utility Expenses",
+        "uacs": "5020499000",
+        "group": 260,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.798Z",
+        "updated_at": "2026-09-23T05:37:43.798Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1112,
+      "fields": {
+        "category": "account_title",
+        "value": "Overtime Pay",
+        "uacs": "5010213001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.911Z",
+        "updated_at": "2026-09-23T05:37:41.911Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1122,
+      "fields": {
+        "category": "account_title",
+        "value": "Pag-IBIG - Civilian",
+        "uacs": "5010302001",
+        "group": 252,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.015Z",
+        "updated_at": "2026-09-23T05:37:42.015Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1118,
+      "fields": {
+        "category": "account_title",
+        "value": "Peformance Based Bonus - Civilian",
+        "uacs": "5010299014",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.952Z",
+        "updated_at": "2026-09-23T05:37:41.952Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1103,
+      "fields": {
+        "category": "account_title",
+        "value": "PERA - Civilian",
+        "uacs": "5010201001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.705Z",
+        "updated_at": "2026-09-23T05:37:41.705Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1267,
+      "fields": {
+        "category": "account_title",
+        "value": "Petty Cash Fund",
+        "uacs": "1010102000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.903Z",
+        "updated_at": "2026-09-23T05:37:46.903Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1123,
+      "fields": {
+        "category": "account_title",
+        "value": "PhilHealth - Civilian",
+        "uacs": "5010303001",
+        "group": 252,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.040Z",
+        "updated_at": "2026-09-23T05:37:42.041Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1173,
+      "fields": {
+        "category": "account_title",
+        "value": "Postage and Deliveries",
+        "uacs": "5020501000",
+        "group": 261,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.847Z",
+        "updated_at": "2026-09-23T05:37:43.847Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1246,
+      "fields": {
+        "category": "account_title",
+        "value": "Printing and Publication Expenses",
+        "uacs": "5029902000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.561Z",
+        "updated_at": "2026-09-23T05:37:46.561Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1179,
+      "fields": {
+        "category": "account_title",
+        "value": "Prizes",
+        "uacs": "5020602000",
+        "group": 262,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.152Z",
+        "updated_at": "2026-09-23T05:37:44.152Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1117,
+      "fields": {
+        "category": "account_title",
+        "value": "Productivity Enhancement Incentive - Civilian",
+        "uacs": "5010299012",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.945Z",
+        "updated_at": "2026-09-23T05:37:41.945Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1329,
+      "fields": {
+        "category": "account_title",
+        "value": "Recruitment Committee",
+        "uacs": "",
+        "group": 302,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:49.101Z",
+        "updated_at": "2026-09-23T05:37:49.101Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1249,
+      "fields": {
+        "category": "account_title",
+        "value": "Rents-Buildings and Structures",
+        "uacs": "5029905001",
+        "group": 281,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.649Z",
+        "updated_at": "2026-09-23T05:37:46.649Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1252,
+      "fields": {
+        "category": "account_title",
+        "value": "Rents-Equipment",
+        "uacs": "5029905004",
+        "group": 281,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.696Z",
+        "updated_at": "2026-09-23T05:37:46.696Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1250,
+      "fields": {
+        "category": "account_title",
+        "value": "Rents-Land",
+        "uacs": "5029905002",
+        "group": 281,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.655Z",
+        "updated_at": "2026-09-23T05:37:46.655Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1253,
+      "fields": {
+        "category": "account_title",
+        "value": "Rents-Living Quarters",
+        "uacs": "5029905005",
+        "group": 281,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.702Z",
+        "updated_at": "2026-09-23T05:37:46.702Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1251,
+      "fields": {
+        "category": "account_title",
+        "value": "Rents-Motor Vehicles",
+        "uacs": "5029905003",
+        "group": 281,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.674Z",
+        "updated_at": "2026-09-23T05:37:46.674Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1104,
+      "fields": {
+        "category": "account_title",
+        "value": "Representation Allowance (RA)",
+        "uacs": "5010202000",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.738Z",
+        "updated_at": "2026-09-23T05:37:41.738Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1247,
+      "fields": {
+        "category": "account_title",
+        "value": "Representation Expenses",
+        "uacs": "5029903000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.590Z",
+        "updated_at": "2026-09-23T05:37:46.590Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1182,
+      "fields": {
+        "category": "account_title",
+        "value": "Research, Exploration and Development Expenses",
+        "uacs": "5020702000",
+        "group": 263,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.389Z",
+        "updated_at": "2026-09-23T05:37:44.389Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1121,
+      "fields": {
+        "category": "account_title",
+        "value": "Retirement and Life Insurance Premiums",
+        "uacs": "5010301000",
+        "group": 252,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.000Z",
+        "updated_at": "2026-09-23T05:37:42.001Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1125,
+      "fields": {
+        "category": "account_title",
+        "value": "Retirement Gratuity - Civilian",
+        "uacs": "5010402001",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.111Z",
+        "updated_at": "2026-09-23T05:37:42.112Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1206,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Agricultural and Forestry Equipment",
+        "uacs": "5021305004",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.440Z",
+        "updated_at": "2026-09-23T05:37:45.440Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1199,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Buildings",
+        "uacs": "5021304001",
+        "group": 270,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.220Z",
+        "updated_at": "2026-09-23T05:37:45.220Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1208,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Communication Equipment",
+        "uacs": "5021305007",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.495Z",
+        "updated_at": "2026-09-23T05:37:45.495Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1201,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Hostels and Dormitories",
+        "uacs": "5021304006",
+        "group": 270,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.278Z",
+        "updated_at": "2026-09-23T05:37:45.278Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1205,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-ICT Equipment",
+        "uacs": "5021305003",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.407Z",
+        "updated_at": "2026-09-23T05:37:45.407Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1203,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Machinery",
+        "uacs": "5021305001",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.345Z",
+        "updated_at": "2026-09-23T05:37:45.345Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1207,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Marine and Fishery Equipment",
+        "uacs": "5021305005",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.477Z",
+        "updated_at": "2026-09-23T05:37:45.478Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1210,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Medical Equipment",
+        "uacs": "5021305011",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.566Z",
+        "updated_at": "2026-09-23T05:37:45.566Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1209,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Military, Police and Security Equipment",
+        "uacs": "5021305010",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.529Z",
+        "updated_at": "2026-09-23T05:37:45.529Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1215,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Motor Vehicles",
+        "uacs": "5021306001",
+        "group": 272,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.798Z",
+        "updated_at": "2026-09-23T05:37:45.798Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1204,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Office Equipment",
+        "uacs": "5021305002",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.374Z",
+        "updated_at": "2026-09-23T05:37:45.375Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1198,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Other Land Improvements",
+        "uacs": "5021302099",
+        "group": 269,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.177Z",
+        "updated_at": "2026-09-23T05:37:45.178Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1214,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Other Machinery and Equipment",
+        "uacs": "5021305099",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.695Z",
+        "updated_at": "2026-09-23T05:37:45.696Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1202,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Other Structures",
+        "uacs": "5021304099",
+        "group": 270,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.306Z",
+        "updated_at": "2026-09-23T05:37:45.306Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1216,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Other Transportation Equipment",
+        "uacs": "5021306099",
+        "group": 272,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.825Z",
+        "updated_at": "2026-09-23T05:37:45.826Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1211,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Printing Equipment",
+        "uacs": "5021305012",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.601Z",
+        "updated_at": "2026-09-23T05:37:45.601Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1217,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Repairs and Maintenance-Furniture and  Fixtures",
+        "uacs": "5021307000",
+        "group": 272,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.855Z",
+        "updated_at": "2026-09-23T05:37:45.856Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1196,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Repairs and Maintenance-Investment Property",
+        "uacs": "5021301000",
+        "group": 269,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.132Z",
+        "updated_at": "2026-09-23T05:37:45.132Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1197,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Repairs and Maintenance-Land Improvements",
+        "uacs": "5021302000",
+        "group": 269,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.156Z",
+        "updated_at": "2026-09-23T05:37:45.156Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1200,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-School Buildings",
+        "uacs": "5021304002",
+        "group": 270,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.247Z",
+        "updated_at": "2026-09-23T05:37:45.248Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1221,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Agricultural and Forestry Equipment",
+        "uacs": "5021321004",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.980Z",
+        "updated_at": "2026-09-23T05:37:45.980Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1230,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Books",
+        "uacs": "5021322002",
+        "group": 274,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.089Z",
+        "updated_at": "2026-09-23T05:37:46.089Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1223,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Communication Equipment",
+        "uacs": "5021321007",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.017Z",
+        "updated_at": "2026-09-23T05:37:46.017Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1229,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Furniture and Fixture",
+        "uacs": "5021322001",
+        "group": 274,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.083Z",
+        "updated_at": "2026-09-23T05:37:46.083Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1220,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Information and Communications Technology Equipment",
+        "uacs": "5021321003",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.953Z",
+        "updated_at": "2026-09-23T05:37:45.953Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1218,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Machinery",
+        "uacs": "5021321001",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.902Z",
+        "updated_at": "2026-09-23T05:37:45.902Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1222,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Marine and Fishery Equipment",
+        "uacs": "5021321005",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.999Z",
+        "updated_at": "2026-09-23T05:37:45.999Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1224,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Medical Equipment",
+        "uacs": "5021321010",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.028Z",
+        "updated_at": "2026-09-23T05:37:46.028Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1219,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Office Equipment",
+        "uacs": "5021321002",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.931Z",
+        "updated_at": "2026-09-23T05:37:45.932Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1228,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Other Machinery and  Equipment",
+        "uacs": "5021321099",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.072Z",
+        "updated_at": "2026-09-23T05:37:46.072Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1232,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Other Property, Plant and Equipment",
+        "uacs": "5021399099",
+        "group": 275,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.138Z",
+        "updated_at": "2026-09-23T05:37:46.138Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1225,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Printing Equipment",
+        "uacs": "5021321011",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.035Z",
+        "updated_at": "2026-09-23T05:37:46.035Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1226,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Sports Equipment",
+        "uacs": "5021321012",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.053Z",
+        "updated_at": "2026-09-23T05:37:46.053Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1227,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Technical and Scientific Equipment",
+        "uacs": "5021321013",
+        "group": 273,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.065Z",
+        "updated_at": "2026-09-23T05:37:46.065Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1231,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-SE-Work/Zoo Animals",
+        "uacs": "5021399001",
+        "group": 275,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.116Z",
+        "updated_at": "2026-09-23T05:37:46.117Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1212,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Sports Equipment",
+        "uacs": "5021305013",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.632Z",
+        "updated_at": "2026-09-23T05:37:45.633Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1213,
+      "fields": {
+        "category": "account_title",
+        "value": "RM-Technical and Scientific Equipment",
+        "uacs": "5021305014",
+        "group": 271,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.662Z",
+        "updated_at": "2026-09-23T05:37:45.662Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1101,
+      "fields": {
+        "category": "account_title",
+        "value": "Salaries and Wages -  Civilian",
+        "uacs": "5010101001",
+        "group": 250,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.627Z",
+        "updated_at": "2026-09-23T05:37:41.627Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1102,
+      "fields": {
+        "category": "account_title",
+        "value": "Salaries and Wages -Casual/Contractual",
+        "uacs": "5010102000",
+        "group": 250,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.665Z",
+        "updated_at": "2026-09-23T05:37:41.665Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1139,
+      "fields": {
+        "category": "account_title",
+        "value": "Scholarship Expenses",
+        "uacs": "5020202000",
+        "group": 256,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.478Z",
+        "updated_at": "2026-09-23T05:37:42.478Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1263,
+      "fields": {
+        "category": "account_title",
+        "value": "School Building",
+        "uacs": "1060402000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.794Z",
+        "updated_at": "2026-09-23T05:37:46.794Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1155,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Agricultural and Forestry Equipment",
+        "uacs": "5020321004",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.200Z",
+        "updated_at": "2026-09-23T05:37:43.200Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1157,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Airport Equipment",
+        "uacs": "5020321006",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.259Z",
+        "updated_at": "2026-09-23T05:37:43.259Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1167,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Books",
+        "uacs": "5020322002",
+        "group": 259,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.607Z",
+        "updated_at": "2026-09-23T05:37:43.607Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1158,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Communications Equipment",
+        "uacs": "5020321007",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.290Z",
+        "updated_at": "2026-09-23T05:37:43.290Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1159,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Disaster Response and Rescue Equipment",
+        "uacs": "5020321008",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.319Z",
+        "updated_at": "2026-09-23T05:37:43.319Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1166,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Furniture and Fixtures",
+        "uacs": "5020322001",
+        "group": 259,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.567Z",
+        "updated_at": "2026-09-23T05:37:43.567Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1154,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Information and Communications Technology Equipment",
+        "uacs": "5020321003",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.164Z",
+        "updated_at": "2026-09-23T05:37:43.164Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1152,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Machinery",
+        "uacs": "5020321001",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.077Z",
+        "updated_at": "2026-09-23T05:37:43.077Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1156,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Marine and Fishery Equipment",
+        "uacs": "5020321005",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.226Z",
+        "updated_at": "2026-09-23T05:37:43.226Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1161,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Medical Equipment",
+        "uacs": "5020321010",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.383Z",
+        "updated_at": "2026-09-23T05:37:43.383Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1160,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Military, Police and Security Equipment",
+        "uacs": "5020321009",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.350Z",
+        "updated_at": "2026-09-23T05:37:43.350Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1153,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Office Equipment",
+        "uacs": "5020321002",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.111Z",
+        "updated_at": "2026-09-23T05:37:43.111Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1165,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Other Machinery and  Equipment",
+        "uacs": "5020321099",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.514Z",
+        "updated_at": "2026-09-23T05:37:43.515Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1162,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Printing Equipment",
+        "uacs": "5020321011",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.417Z",
+        "updated_at": "2026-09-23T05:37:43.417Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1163,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Sports Equipment",
+        "uacs": "5020321012",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.452Z",
+        "updated_at": "2026-09-23T05:37:43.452Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1164,
+      "fields": {
+        "category": "account_title",
+        "value": "SE-Technical and Scientific Equipment",
+        "uacs": "5020321013",
+        "group": 258,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.483Z",
+        "updated_at": "2026-09-23T05:37:43.484Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1195,
+      "fields": {
+        "category": "account_title",
+        "value": "Security Services",
+        "uacs": "5021203000",
+        "group": 268,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:45.067Z",
+        "updated_at": "2026-09-23T05:37:45.068Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1239,
+      "fields": {
+        "category": "account_title",
+        "value": "Subsidies-Others",
+        "uacs": "5021499000",
+        "group": 276,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.329Z",
+        "updated_at": "2026-09-23T05:37:46.329Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1233,
+      "fields": {
+        "category": "account_title",
+        "value": "Subsidy to NGAs",
+        "uacs": "5021401000",
+        "group": 276,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.164Z",
+        "updated_at": "2026-09-23T05:37:46.164Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1237,
+      "fields": {
+        "category": "account_title",
+        "value": "Subsidy to Operating Units",
+        "uacs": "5021408000",
+        "group": 276,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.274Z",
+        "updated_at": "2026-09-23T05:37:46.274Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1238,
+      "fields": {
+        "category": "account_title",
+        "value": "Subsidy to Other Funds",
+        "uacs": "5021409000",
+        "group": 276,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.303Z",
+        "updated_at": "2026-09-23T05:37:46.303Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1236,
+      "fields": {
+        "category": "account_title",
+        "value": "Subsidy to Regional Offices/Staff Bureaus",
+        "uacs": "5021407000",
+        "group": 276,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.251Z",
+        "updated_at": "2026-09-23T05:37:46.251Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1107,
+      "fields": {
+        "category": "account_title",
+        "value": "Subsistence Allowance - Magna Carta for Public Health Workers under R.A. 7305",
+        "uacs": "5010205003",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.813Z",
+        "updated_at": "2026-09-23T05:37:41.813Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1181,
+      "fields": {
+        "category": "account_title",
+        "value": "Survey Expenses",
+        "uacs": "5020701000",
+        "group": 263,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:44.344Z",
+        "updated_at": "2026-09-23T05:37:44.344Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1241,
+      "fields": {
+        "category": "account_title",
+        "value": "Tax Refund",
+        "uacs": "5021501002",
+        "group": 278,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.417Z",
+        "updated_at": "2026-09-23T05:37:46.417Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1240,
+      "fields": {
+        "category": "account_title",
+        "value": "Taxes, Duties and Licenses",
+        "uacs": "5021501001",
+        "group": 278,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.390Z",
+        "updated_at": "2026-09-23T05:37:46.390Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1175,
+      "fields": {
+        "category": "account_title",
+        "value": "Telephone Expenses-landline",
+        "uacs": "5020502002",
+        "group": 261,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.929Z",
+        "updated_at": "2026-09-23T05:37:43.929Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1174,
+      "fields": {
+        "category": "account_title",
+        "value": "Telephone Expenses-mobile",
+        "uacs": "5020502001",
+        "group": 261,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.895Z",
+        "updated_at": "2026-09-23T05:37:43.895Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1126,
+      "fields": {
+        "category": "account_title",
+        "value": "Terminal Leave Benefits - Civilian",
+        "uacs": "5010403001",
+        "group": 253,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.138Z",
+        "updated_at": "2026-09-23T05:37:42.138Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1149,
+      "fields": {
+        "category": "account_title",
+        "value": "Textbooks and Instructional Materials",
+        "uacs": "5020311001",
+        "group": 257,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.778Z",
+        "updated_at": "2026-09-23T05:37:42.778Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1138,
+      "fields": {
+        "category": "account_title",
+        "value": "Training Expenses",
+        "uacs": "5020201000",
+        "group": 256,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.470Z",
+        "updated_at": "2026-09-23T05:37:42.470Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1105,
+      "fields": {
+        "category": "account_title",
+        "value": "Transportation Allowance (TA)",
+        "uacs": "5010203001",
+        "group": 251,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:41.774Z",
+        "updated_at": "2026-09-23T05:37:41.774Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1248,
+      "fields": {
+        "category": "account_title",
+        "value": "Transportation and Delivery Expenses",
+        "uacs": "5029904000",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.616Z",
+        "updated_at": "2026-09-23T05:37:46.616Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1137,
+      "fields": {
+        "category": "account_title",
+        "value": "Travel Expenses-Foreign",
+        "uacs": "5020102000",
+        "group": 255,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.442Z",
+        "updated_at": "2026-09-23T05:37:42.443Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1136,
+      "fields": {
+        "category": "account_title",
+        "value": "Travel Expenses-Local",
+        "uacs": "5020101000",
+        "group": 255,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:42.408Z",
+        "updated_at": "2026-09-23T05:37:42.408Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1328,
+      "fields": {
+        "category": "account_title",
+        "value": "University Operating Expenses",
+        "uacs": "",
+        "group": 300,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:49.031Z",
+        "updated_at": "2026-09-23T05:37:49.032Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1169,
+      "fields": {
+        "category": "account_title",
+        "value": "Water Expenses",
+        "uacs": "5020401000",
+        "group": 260,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:43.692Z",
+        "updated_at": "2026-09-23T05:37:43.693Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1261,
+      "fields": {
+        "category": "account_title",
+        "value": "Website Maintenance",
+        "uacs": "5029999001",
+        "group": 280,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:46.782Z",
+        "updated_at": "2026-09-23T05:37:46.782Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1327,
+      "fields": {
+        "category": "account_title",
+        "value": "Year-end Incentive",
+        "uacs": "",
+        "group": 300,
+        "is_active": true,
+        "created_at": "2026-09-23T05:37:49.011Z",
+        "updated_at": "2026-09-23T05:37:49.011Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1339,
+      "fields": {
+        "category": "tax",
+        "value": "Professional Tax",
+        "uacs": "0%",
+        "group": null,
+        "is_active": true,
+        "created_at": "2026-09-23T11:13:33.936Z",
+        "updated_at": "2026-09-23T11:13:33.936Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1340,
+      "fields": {
+        "category": "tax",
+        "value": "Tax (2%/1%)",
+        "uacs": "2%/1%",
+        "group": null,
+        "is_active": true,
+        "created_at": "2026-09-23T12:15:40.009Z",
+        "updated_at": "2026-09-23T12:15:40.009Z"
+      }
+    },
+    {
+      "model": "admin_panel.managementoption",
+      "pk": 1337,
+      "fields": {
+        "category": "tax",
+        "value": "Tax (5%/3%)",
+        "uacs": "5%/3%",
+        "group": null,
+        "is_active": true,
+        "created_at": "2026-09-23T11:13:33.929Z",
+        "updated_at": "2026-09-23T11:13:33.929Z"
+      }
+    },
+    {
+      "model": "cashier.fundcluster",
+      "pk": 10,
+      "fields": {
+        "code": "164",
+        "name": "ISABELA STATE UNIVERSITY",
+        "description": "",
+        "balance": "0.00",
+        "bank_name": "LANDBANK",
+        "account_number": "0066 5654 14",
+        "is_active": true,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "created_at": "2026-09-23T05:38:36.207Z",
+        "updated_at": "2026-09-23T05:38:36.207Z"
+      }
+    },
+    {
+      "model": "cashier.supplier",
+      "pk": 5354,
+      "fields": {
+        "mr_or": "000001",
+        "mr": "",
+        "code_or": "",
+        "code_or2": "9-23-1",
+        "series_month": "1",
+        "date": "2026-09-23",
+        "or_number": "",
+        "series_day": "1",
+        "account_number": "",
+        "account_name": "Dee Jay Cristobal",
+        "code_line": "",
+        "line": "",
+        "code_noc": "",
+        "nature_of_collections": "Sample",
+        "amount": "13900.00",
+        "remarks": "Unreleased",
+        "address": "",
+        "tin": "",
+        "status": "active",
+        "created_by": 6,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "raw_import": {
+          "custom_columns": {},
+          "supplier_extras": {
+            "account_title": "Salaries and Wages -Casual/Contractual",
+            "fund_cluster": "164",
+            "fund_cluster_id": "10",
+            "other_deductions": "50.00",
+            "is_vat": "true",
+            "dv_payroll": "2026-09-0001",
+            "ors_burs": "02-206441-2026-09-00001",
+            "responsibility_center": "0876-765-3545",
+            "uacs": "5010102000",
+            "professional_tax": "0.00",
+            "tax_5": "750.00",
+            "tax_2": "300.00",
+            "gross_amount": "15000.00"
+          }
+        },
+        "created_at": "2026-09-23T05:39:26.344Z",
+        "updated_at": "2026-09-23T05:39:26.344Z"
+      }
+    },
+    {
+      "model": "cashier.supplier",
+      "pk": 5355,
+      "fields": {
+        "mr_or": "000002",
+        "mr": "",
+        "code_or": "",
+        "code_or2": "9-23-2",
+        "series_month": "2",
+        "date": "2026-09-23",
+        "or_number": "",
+        "series_day": "2",
+        "account_number": "",
+        "account_name": "Dee Jay Cristobal",
+        "code_line": "",
+        "line": "",
+        "code_noc": "",
+        "nature_of_collections": "",
+        "amount": "0.93",
+        "remarks": "Unreleased",
+        "address": "",
+        "tin": "",
+        "status": "active",
+        "created_by": 6,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "raw_import": {
+          "custom_columns": {},
+          "supplier_extras": {
+            "account_title": "Advances to Special Disbursing Officer",
+            "fund_cluster": "164",
+            "fund_cluster_id": "10",
+            "other_deductions": "0.00",
+            "is_vat": "true",
+            "dv_payroll": "2026-09-0002",
+            "ors_burs": "02-206441-2026-09-00002",
+            "responsibility_center": "0876-765-3545",
+            "uacs": "1990103000",
+            "professional_tax": "0.00",
+            "tax_5": "0.05",
+            "tax_2": "0.02",
+            "gross_amount": "1.00"
+          }
+        },
+        "created_at": "2026-09-23T08:01:55.269Z",
+        "updated_at": "2026-09-23T08:01:55.269Z"
+      }
+    },
+    {
+      "model": "cashier.supplier",
+      "pk": 5356,
+      "fields": {
+        "mr_or": "000003",
+        "mr": "",
+        "code_or": "",
+        "code_or2": "9-23-3",
+        "series_month": "3",
+        "date": "2026-09-23",
+        "or_number": "",
+        "series_day": "3",
+        "account_number": "",
+        "account_name": "HARRY JAMES POTTER",
+        "code_line": "",
+        "line": "",
+        "code_noc": "",
+        "nature_of_collections": "Payment for the deeds I purchase",
+        "amount": "5467.00",
+        "remarks": "Unreleased",
+        "address": "",
+        "tin": "",
+        "status": "active",
+        "created_by": 6,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "raw_import": {
+          "custom_columns": {},
+          "supplier_extras": {
+            "account_title": "Fuel, Oil and Lubricants Expenses",
+            "fund_cluster": "164",
+            "fund_cluster_id": "10",
+            "cashier_name": "Admin Min Jung",
+            "other_deductions": "0.00",
+            "dv_payroll": "2026-09-0003",
+            "ors_burs": "02-206441-2026-09-00003",
+            "responsibility_center": "0876-765-3545",
+            "uacs": "5020309000",
+            "professional_tax": "0.00",
+            "tax_5": "0.00",
+            "tax_2": "0.00",
+            "gross_amount": "5467.00",
+            "tax_1_option": "5",
+            "tax_2_option": "2",
+            "is_vat": "false"
+          }
+        },
+        "created_at": "2026-09-23T13:00:32.338Z",
+        "updated_at": "2026-09-23T13:00:32.338Z"
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 6,
+      "fields": {
+        "user": 6,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": "EMP-2026-00002",
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "profile_pictures/opswat_cceca8.jfif",
+        "rfid_uid": null,
+        "status": "active",
+        "is_disbursing_officer": false,
+        "email_encrypted": "deejay.cristobal_cyn@isu.edu.ph",
+        "email_hash": "04f5d5eb19a82a55e99648171ceb898fe9da0c93185d8b9f50116f8dec5f6c57",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [
+          "03bc6dd73f4d265d10d96e599da1ad6209f5c6a1800335201657449a689bc683",
+          "ceefb7949ae55ad492139124cf099a5155d6954a4b49ee636b0f88cf49064339",
+          "45723fd81ad1763a4cbf8c74357fb08cfe77378fe1bd8848959c7dd78938a027",
+          "090c48cd578aecd77a632578984da137a2aaea4b7c714e50a4451c69f32149e2",
+          "ec2941c73c5a8b3ca49bd9a79ecd10b7d6b4796442d658a3f49f287ecd83efb4",
+          "42fdbf0f3470a9c9af763fe3b69624540ef8ecb00d9af961be54d4894cb43827",
+          "91eefe2904312972f9ac2d3b7a47a80b5926ffd0c69aaff881ab40114e05f6ae",
+          "8156ab7871898445afc00cea724f9fca6ef600dcc931ffb25d1780a6c95c9959"
+        ],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "gptpbamwnufy8245fyv6y64w2czhv63n",
+        "last_activity": "2026-09-24T00:07:47.637Z",
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": 1800,
+        "auto_logout_seconds": 600,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 20,
+      "fields": {
+        "user": 14,
+        "role": "cashier",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "active",
+        "is_disbursing_officer": false,
+        "email_encrypted": "eonly@example.com",
+        "email_hash": "3a5fc8cf2837a6dd37df54f74812377b476d63854a14566b6e50dd9e2dff5ea0",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": true,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "c0bkdghozjk5xo92a9xobiykh8dd0eum",
+        "last_activity": "2026-09-23T07:11:04.335Z",
+        "login_attempt_blocked": true,
+        "blocked_login_time": "2026-09-23T07:11:04.643Z",
+        "blocked_login_ip": "127.0.0.1",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 21,
+      "fields": {
+        "user": 15,
+        "role": "cashier",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "both@example.com",
+        "email_hash": "4e89e176f1075387fcc6f1cd8492b0e3695375ab5ff4bdbe09e82d3f0ef86bff",
+        "totp_secret": "",
+        "totp_enabled": true,
+        "email_otp_enabled": true,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 22,
+      "fields": {
+        "user": 16,
+        "role": "cashier",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "totp@example.com",
+        "email_hash": "e2e18991ce5bac854491e1af54956c994dbf66e0c0cd7d09cc2a12f06a5bc16c",
+        "totp_secret": "",
+        "totp_enabled": true,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 23,
+      "fields": {
+        "user": 17,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 24,
+      "fields": {
+        "user": 18,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 25,
+      "fields": {
+        "user": 19,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 26,
+      "fields": {
+        "user": 20,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 27,
+      "fields": {
+        "user": 21,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 28,
+      "fields": {
+        "user": 22,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 29,
+      "fields": {
+        "user": 23,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.profile",
+      "pk": 30,
+      "fields": {
+        "user": 24,
+        "role": "admin",
+        "specific_role": "",
+        "employee_id": null,
+        "middle_initial": "",
+        "department": "",
+        "position": "",
+        "profile_picture": "",
+        "rfid_uid": null,
+        "status": "pending",
+        "is_disbursing_officer": false,
+        "email_encrypted": "",
+        "email_hash": "",
+        "totp_secret": "",
+        "totp_enabled": false,
+        "email_otp_enabled": false,
+        "mfa_recovery_codes": [],
+        "must_change_password": false,
+        "lockscreen_wallpaper": "",
+        "active_session_key": "",
+        "last_activity": null,
+        "login_attempt_blocked": false,
+        "blocked_login_time": null,
+        "blocked_login_ip": "",
+        "auto_lock_seconds": null,
+        "auto_logout_seconds": null,
+        "fingerprint_template": "",
+        "face_embedding": "",
+        "voice_sample": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 129,
+      "fields": {
+        "user": 14,
+        "session_key": "gcfcegka4va3i3sdll6wh0lwstownoql",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "",
+        "last_activity": "2026-09-23T07:10:37.786Z",
+        "login_time": "2026-09-23T07:10:37.791Z",
+        "is_terminated": false,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 130,
+      "fields": {
+        "user": 14,
+        "session_key": "rn2dgs5vrj927zv9ftec8fass3tof0jh",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "",
+        "last_activity": "2026-09-23T07:10:53.246Z",
+        "login_time": "2026-09-23T07:10:53.247Z",
+        "is_terminated": false,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 131,
+      "fields": {
+        "user": 14,
+        "session_key": "iqdbm59s2ss55n0w93s9tdbq62wuscwa",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "",
+        "last_activity": "2026-09-23T07:10:59.617Z",
+        "login_time": "2026-09-23T07:10:59.619Z",
+        "is_terminated": false,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 132,
+      "fields": {
+        "user": 14,
+        "session_key": "c0bkdghozjk5xo92a9xobiykh8dd0eum",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "",
+        "last_activity": "2026-09-23T07:11:04.350Z",
+        "login_time": "2026-09-23T07:11:04.353Z",
+        "is_terminated": false,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 133,
+      "fields": {
+        "user": 6,
+        "session_key": "puyw1544507pa5n671nhboth00303ho8",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-23T07:11:23.519Z",
+        "login_time": "2026-09-23T07:11:23.520Z",
+        "is_terminated": true,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 134,
+      "fields": {
+        "user": 6,
+        "session_key": "o3y1o2tsw9csus72doj5bapqbihzchbk",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-23T08:02:01.233Z",
+        "login_time": "2026-09-23T07:11:37.865Z",
+        "is_terminated": true,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 135,
+      "fields": {
+        "user": 6,
+        "session_key": "awz2ddt80s03y1oukf24ct3elfirxbv7",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-23T08:26:29.223Z",
+        "login_time": "2026-09-23T08:03:37.071Z",
+        "is_terminated": true,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 136,
+      "fields": {
+        "user": 6,
+        "session_key": "8qhy33wg6okc3g07k3bpzejea5bakog3",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-23T09:18:28.478Z",
+        "login_time": "2026-09-23T08:51:21.686Z",
+        "is_terminated": true,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 137,
+      "fields": {
+        "user": 6,
+        "session_key": "1iwiyk2wuiw8mzkrqrw66qpt9ibm3eck",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-23T11:23:31.227Z",
+        "login_time": "2026-09-23T10:57:47.098Z",
+        "is_terminated": true,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 138,
+      "fields": {
+        "user": 6,
+        "session_key": "4r2403mswmlg41u6dkeq4srko5zsmvim",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-23T13:50:36.715Z",
+        "login_time": "2026-09-23T12:14:54.337Z",
+        "is_terminated": true,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 139,
+      "fields": {
+        "user": 6,
+        "session_key": "x8svz2t6uv2k8qq1didm91vfmhgxmi60",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-23T15:53:43.966Z",
+        "login_time": "2026-09-23T15:42:16.821Z",
+        "is_terminated": true,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.userdevice",
+      "pk": 140,
+      "fields": {
+        "user": 6,
+        "session_key": "gptpbamwnufy8245fyv6y64w2czhv63n",
+        "device_name": "LAPTOP-FFGRPUV9",
+        "windows_username": "acer",
+        "ip_address": "127.0.0.1",
+        "location": "Local Network",
+        "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+        "last_activity": "2026-09-24T00:07:47.637Z",
+        "login_time": "2026-09-24T00:03:09.597Z",
+        "is_terminated": false,
+        "is_blocked": false,
+        "screen_capture": "",
+        "current_url": ""
+      }
+    },
+    {
+      "model": "cashier.cheque",
+      "pk": 162,
+      "fields": {
+        "cheque_number": "000001",
+        "payee": 5354,
+        "payee_name": "Dee Jay Cristobal",
+        "fund_cluster": 10,
+        "amount": "13900.00",
+        "date": "2026-09-23",
+        "purpose": "Sample",
+        "bank_name": "LANDBANK",
+        "account_number": "0066 5654 14",
+        "dv_payroll_no": "2026-09-0001",
+        "ors_burs_no": "02-206441-2026-09-00001",
+        "responsibility_center": "",
+        "uacs_object_code": "",
+        "nature_of_payment": "",
+        "professional_tax": null,
+        "tax_5_3": null,
+        "tax_3_1": null,
+        "status": "released",
+        "remarks": "Released",
+        "created_by": 6,
+        "updated_by": 6,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "created_at": "2026-09-23T08:02:02.565Z",
+        "updated_at": "2026-09-23T12:55:00.851Z",
+        "printed_at": "2026-09-23T08:02:02.612Z",
+        "released_at": "2026-09-23T21:02:00Z",
+        "voided_at": null,
+        "void_reason": "",
+        "stale_after_days": null,
+        "stale_at": "2027-03-22"
+      }
+    },
+    {
+      "model": "cashier.cheque",
+      "pk": 170,
+      "fields": {
+        "cheque_number": "000003",
+        "payee": 5356,
+        "payee_name": "HARRY JAMES POTTER",
+        "fund_cluster": 10,
+        "amount": "5467.00",
+        "date": "2026-09-23",
+        "purpose": "Payment for the deeds I purchase",
+        "bank_name": "LANDBANK",
+        "account_number": "0066 5654 14",
+        "dv_payroll_no": "2026-09-0002",
+        "ors_burs_no": "02-206441-2026-09-00002",
+        "responsibility_center": "",
+        "uacs_object_code": "",
+        "nature_of_payment": "",
+        "professional_tax": null,
+        "tax_5_3": null,
+        "tax_3_1": null,
+        "status": "pending",
+        "remarks": "Unreleased",
+        "created_by": 6,
+        "updated_by": null,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "created_at": "2026-09-23T13:01:15.791Z",
+        "updated_at": "2026-09-23T13:01:15.791Z",
+        "printed_at": "2026-09-23T13:01:16.664Z",
+        "released_at": null,
+        "voided_at": null,
+        "void_reason": "",
+        "stale_after_days": null,
+        "stale_at": null
+      }
+    },
+    {
+      "model": "cashier.cheque",
+      "pk": 171,
+      "fields": {
+        "cheque_number": "000002",
+        "payee": 5355,
+        "payee_name": "Dee Jay Cristobal",
+        "fund_cluster": 10,
+        "amount": "0.93",
+        "date": "2026-09-23",
+        "purpose": "Unreleased",
+        "bank_name": "LANDBANK",
+        "account_number": "0066 5654 14",
+        "dv_payroll_no": "2026-09-0003",
+        "ors_burs_no": "02-206441-2026-09-00003",
+        "responsibility_center": "",
+        "uacs_object_code": "",
+        "nature_of_payment": "",
+        "professional_tax": null,
+        "tax_5_3": null,
+        "tax_3_1": null,
+        "status": "pending",
+        "remarks": "Unreleased",
+        "created_by": 6,
+        "updated_by": null,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "created_at": "2026-09-23T13:02:01.208Z",
+        "updated_at": "2026-09-23T13:02:01.208Z",
+        "printed_at": "2026-09-23T13:02:01.814Z",
+        "released_at": null,
+        "voided_at": null,
+        "void_reason": "",
+        "stale_after_days": null,
+        "stale_at": null
+      }
+    },
+    {
+      "model": "cashier.radai",
+      "pk": 64,
+      "fields": {
+        "mr_or": "001",
+        "mr": "",
+        "code_or": "",
+        "code_or2": "",
+        "series_month": "1",
+        "date": "2026-09-23",
+        "or_number": "",
+        "series_day": "1",
+        "account_number": "",
+        "account_name": "Ako",
+        "code_line": "",
+        "line": "",
+        "code_noc": "",
+        "nature_of_collections": "Sample",
+        "amount": "50000.00",
+        "remarks": "",
+        "address": "",
+        "tin": "",
+        "status": "active",
+        "ors_burs_no": "",
+        "responsibility_center": "",
+        "reference_code": "567567",
+        "fund_cluster": 10,
+        "created_by": 6,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "raw_import": {
+          "radai_extras": {
+            "dv_payroll": "DV-001",
+            "uacs": "1990103000",
+            "account_title": "Advances to Special Disbursing Officer",
+            "remarks_text": "",
+            "professional_tax": "",
+            "total_ada": "50000.00"
+          }
+        },
+        "created_at": "2026-09-23T07:27:59.977Z",
+        "updated_at": "2026-09-23T07:27:59.977Z"
+      }
+    },
+    {
+      "model": "cashier.radai",
+      "pk": 65,
+      "fields": {
+        "mr_or": "263435879641",
+        "mr": "",
+        "code_or": "",
+        "code_or2": "",
+        "series_month": "2",
+        "date": "2026-09-23",
+        "or_number": "",
+        "series_day": "2",
+        "account_number": "",
+        "account_name": "LBP",
+        "code_line": "",
+        "line": "",
+        "code_noc": "",
+        "nature_of_collections": "SAMPLE",
+        "amount": "500.00",
+        "remarks": "",
+        "address": "",
+        "tin": "",
+        "status": "active",
+        "ors_burs_no": "",
+        "responsibility_center": "",
+        "reference_code": "567568",
+        "fund_cluster": 10,
+        "created_by": 6,
+        "is_archived": false,
+        "archived_by": null,
+        "archived_at": null,
+        "raw_import": {
+          "radai_extras": {
+            "dv_payroll": "DV-2",
+            "uacs": "5060404006",
+            "account_title": "CO-Hostels and Dormitories",
+            "remarks_text": "",
+            "professional_tax": "20",
+            "total_ada": "480.00"
+          }
+        },
+        "created_at": "2026-09-23T13:09:01.077Z",
+        "updated_at": "2026-09-23T13:09:01.077Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 732,
+      "fields": {
+        "admin": 6,
+        "action": "System reset executed",
+        "details": {
+          "reset_by": "admin"
+        },
+        "timestamp": "2026-09-23T05:12:18.961Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 733,
+      "fields": {
+        "admin": 6,
+        "action": "Created fund cluster",
+        "details": {
+          "id": 10,
+          "code": "164"
+        },
+        "timestamp": "2026-09-23T05:38:36.210Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 734,
+      "fields": {
+        "admin": 6,
+        "action": "Created supplier",
+        "details": {
+          "id": 5354,
+          "name": "Dee Jay Cristobal"
+        },
+        "timestamp": "2026-09-23T05:39:26.349Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 735,
+      "fields": {
+        "admin": 6,
+        "action": "Created RADAI record",
+        "details": {
+          "id": 64,
+          "name": "Ako"
+        },
+        "timestamp": "2026-09-23T07:27:59.982Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 736,
+      "fields": {
+        "admin": 6,
+        "action": "Automated 5-day backup executed",
+        "details": {
+          "filename": "system_backup_2026_09_23_080033_FULL.bak",
+          "server_path": "C:\\Users\\acer\\Desktop\\AMADEUS\\sample aspp\\cap\\media\\backups\\system_backup_2026_09_23_080033_FULL.bak",
+          "downloads_path": "C:\\Users\\acer\\Downloads\\system_backup_2026_09_23_080033_FULL.bak",
+          "forced": false
+        },
+        "timestamp": "2026-09-23T08:00:40.565Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 737,
+      "fields": {
+        "admin": 6,
+        "action": "Created supplier",
+        "details": {
+          "id": 5355,
+          "name": "Dee Jay Cristobal"
+        },
+        "timestamp": "2026-09-23T08:01:55.274Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 738,
+      "fields": {
+        "admin": 6,
+        "action": "Created cheque",
+        "details": {
+          "id": 162,
+          "number": "000002",
+          "amount": "0.93"
+        },
+        "timestamp": "2026-09-23T08:02:02.580Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 739,
+      "fields": {
+        "admin": 6,
+        "action": "Printed cheque",
+        "details": {
+          "id": 162
+        },
+        "timestamp": "2026-09-23T08:02:02.615Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 740,
+      "fields": {
+        "admin": 6,
+        "action": "Created cheque",
+        "details": {
+          "id": 162,
+          "number": "000001",
+          "amount": "13900.00"
+        },
+        "timestamp": "2026-09-23T12:40:36.746Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 741,
+      "fields": {
+        "admin": 6,
+        "action": "Updated supplier remark via inline edit",
+        "details": {
+          "id": 5354,
+          "remarks": "Unreleased"
+        },
+        "timestamp": "2026-09-23T12:47:50.821Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 742,
+      "fields": {
+        "admin": 6,
+        "action": "Updated supplier remark via inline edit",
+        "details": {
+          "id": 5355,
+          "remarks": "Unreleased"
+        },
+        "timestamp": "2026-09-23T12:47:52.504Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 743,
+      "fields": {
+        "admin": 6,
+        "action": "Updated supplier remark via inline edit",
+        "details": {
+          "id": 5355,
+          "remarks": ""
+        },
+        "timestamp": "2026-09-23T12:49:45.140Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 744,
+      "fields": {
+        "admin": 6,
+        "action": "Created cheque",
+        "details": {
+          "id": 162,
+          "number": "000002",
+          "amount": "0.93"
+        },
+        "timestamp": "2026-09-23T12:49:49.901Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 745,
+      "fields": {
+        "admin": 6,
+        "action": "Created cheque",
+        "details": {
+          "id": 162,
+          "number": "000001",
+          "amount": "13900.00"
+        },
+        "timestamp": "2026-09-23T12:55:01.188Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 746,
+      "fields": {
+        "admin": 6,
+        "action": "Created supplier",
+        "details": {
+          "id": 5356,
+          "name": "HARRY JAMES POTTER"
+        },
+        "timestamp": "2026-09-23T13:00:32.343Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 747,
+      "fields": {
+        "admin": 6,
+        "action": "Created cheque",
+        "details": {
+          "id": 170,
+          "number": "000003",
+          "amount": "5467.00"
+        },
+        "timestamp": "2026-09-23T13:01:15.896Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 748,
+      "fields": {
+        "admin": 6,
+        "action": "Printed cheque",
+        "details": {
+          "id": 170
+        },
+        "timestamp": "2026-09-23T13:01:16.695Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 749,
+      "fields": {
+        "admin": 6,
+        "action": "Created cheque",
+        "details": {
+          "id": 171,
+          "number": "000002",
+          "amount": "0.93"
+        },
+        "timestamp": "2026-09-23T13:02:01.305Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 750,
+      "fields": {
+        "admin": 6,
+        "action": "Printed cheque",
+        "details": {
+          "id": 171
+        },
+        "timestamp": "2026-09-23T13:02:01.831Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 751,
+      "fields": {
+        "admin": 6,
+        "action": "Released cheque via Check Validator",
+        "details": {
+          "id": 162,
+          "number": "000001"
+        },
+        "timestamp": "2026-09-23T13:03:01.790Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 752,
+      "fields": {
+        "admin": 24,
+        "action": "Created cheque",
+        "details": {
+          "id": 172,
+          "number": "000301",
+          "amount": "100.00"
+        },
+        "timestamp": "2026-09-23T13:08:17.224Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 753,
+      "fields": {
+        "admin": 24,
+        "action": "Created cheque",
+        "details": {
+          "id": 173,
+          "number": "000302",
+          "amount": "200.00"
+        },
+        "timestamp": "2026-09-23T13:08:17.950Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 754,
+      "fields": {
+        "admin": 6,
+        "action": "Created RADAI record",
+        "details": {
+          "id": 65,
+          "name": "LBP"
+        },
+        "timestamp": "2026-09-23T13:09:01.101Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 755,
+      "fields": {
+        "admin": 6,
+        "action": "Logged out",
+        "details": {
+          "ip": "127.0.0.1",
+          "method": "manual",
+          "note": "User clicked logout"
+        },
+        "timestamp": "2026-09-23T13:50:41.774Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 756,
+      "fields": {
+        "admin": 6,
+        "action": "Entered password - successfully logged in",
+        "details": {
+          "ip": "127.0.0.1",
+          "method": "password"
+        },
+        "timestamp": "2026-09-23T15:42:16.842Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 757,
+      "fields": {
+        "admin": 6,
+        "action": "Logged out",
+        "details": {
+          "ip": "127.0.0.1",
+          "method": "manual",
+          "note": "User clicked logout"
+        },
+        "timestamp": "2026-09-23T15:53:52.212Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 758,
+      "fields": {
+        "admin": 6,
+        "action": "Entered password - successfully logged in",
+        "details": {
+          "ip": "127.0.0.1",
+          "method": "password"
+        },
+        "timestamp": "2026-09-24T00:03:09.654Z"
+      }
+    },
+    {
+      "model": "admin_panel.auditlog",
+      "pk": 759,
+      "fields": {
+        "admin": 6,
+        "action": "Backup downloaded",
+        "details": {
+          "filename": "system_backup_2026_09_24_000618_DATA.sql",
+          "format": "sql",
+          "counts": {
+            "users": 12,
+            "profiles": 12,
+            "fund_clusters": 1,
+            "suppliers": 3,
+            "cheques": 3,
+            "radai": 2,
+            "reports": 0,
+            "account_titles": 253,
+            "user_messages": 0,
+            "audit_logs": 27,
+            "system_settings": 1
+          }
+        },
+        "timestamp": "2026-09-24T00:06:18.316Z"
+      }
+    }
+  ]
+}

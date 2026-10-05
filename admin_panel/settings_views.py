@@ -77,12 +77,20 @@ def profile_settings(request):
             request.user.first_name = request.POST.get('first_name', '')
             request.user.last_name = request.POST.get('last_name', '')
             request.user.save(update_fields=['first_name', 'last_name'])
+            _audit(request.user, "Updated profile", {
+                "first_name": request.user.first_name,
+                "last_name": request.user.last_name,
+                "middle_initial": profile.middle_initial,
+                "department": profile.department,
+                "position": profile.position,
+            })
             success = "Profile updated."
         elif action == 'change_password':
             current = request.POST.get('current_password', '')
             new_pw = request.POST.get('new_password', '')
             confirm = request.POST.get('confirm_password', '')
             if not request.user.check_password(current):
+                _audit(request.user, "Failed password change attempt", {"reason": "incorrect_current_password"})
                 error = "Current password is incorrect."
             elif new_pw != confirm:
                 error = "Passwords do not match."
@@ -93,6 +101,7 @@ def profile_settings(request):
                 else:
                     request.user.set_password(new_pw)
                     request.user.save()
+                    _audit(request.user, "Changed password", {"method": "profile_settings"})
                     success = "Password changed."
 
     context = _page_context(request, is_admin, "Profile Settings", extra={
@@ -307,7 +316,7 @@ def audit_log(request):
     if not is_admin:
         return render(request, "access_denied.html")
     logs = AuditLog.objects.select_related('admin').order_by('-created_at')[:100]
-    context = _page_context(request, is_admin, "Audit Log", extra={
+    context = _page_context(request, is_admin, "Activity Log", extra={
         "logs": logs,
     })
     return render(request, "admin_panel/audit_log.html", context)

@@ -218,7 +218,7 @@
                             <span>{{ c.payee_name|default:"—" }}</span>
                             {% if not c.payee and not c.payee_id %}
                             <span class="badge badge-custom-cheque" title="Custom Cheque (Not linked to Supplier Registry)" style="background: linear-gradient(135deg, #064e3b 0%, #047857 100%); color: #34d399; border: 1px solid #059669; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;">
-                                <i class="fas fa-file-signature" style="font-size:10px; color:#34d399;"></i> Custom Cheque
+                                <i class="fas fa-file-signature" style="font-size:10px; color:#34d399;"></i> Custom Check
                             </span>
                             {% endif %}
                         </div>
@@ -228,21 +228,26 @@
                     <td>{{ c.date }}</td>
                     <td>
                         {% if c.status == 'released' %}
-                        <span class="badge badge-released"><i class="fas fa-check-circle"></i> Released / Claimed</span>
+                        <span style="font-weight:600; color:var(--text, #111827);">Released / Claimed</span>
+                        {% if c.released_at %}
+                        <div style="font-size:11px; margin-top:4px; color:var(--muted, #64748b);">Released: {{ c.released_at|date:"M d, Y h:i A" }}</div>
+                        {% endif %}
+                        {% elif c.status == 'stale' %}
+                        <span style="font-weight:600; color:var(--text, #111827);">Stale</span>
                         {% else %}
-                        <span class="badge badge-{{ c.status }}">{{ c.get_status_display }}</span>
+                        <span style="font-weight:600; color:var(--text, #111827);">Unreleased</span>
                         {% endif %}
                         {% if c.stale_at and c.status != 'released' and c.status != 'voided' %}
-                        <div style="font-size:11px; margin-top:4px; font-weight:600; color:{% if c.stale_is_overdue %}#dc2626{% else %}var(--muted){% endif %};">
-                            {% if c.stale_is_overdue %}<i class="fas fa-exclamation-triangle"></i> Already Stale{% else %}Stale on {{ c.stale_at }}{% endif %}
+                        <div style="font-size:11px; margin-top:4px; color:var(--muted, #64748b);">
+                            {% if c.stale_is_overdue %}Already Stale{% else %}Stale on {{ c.stale_at }}{% endif %}
                         </div>
                         {% elif c.printed_at and c.stale_after_days and c.status != 'released' and c.status != 'voided' %}
-                        <div style="font-size:11px; color:var(--muted); margin-top:4px;">Stale after {{ c.stale_after_days }} days</div>
+                        <div style="font-size:11px; color:var(--muted, #64748b); margin-top:4px;">Stale after {{ c.stale_after_days }} days</div>
                         {% endif %}
                     </td>
                     <td style="font-size:12px; color:var(--muted);">
                         {% if c.created_by %}
-                            {{ c.created_by.get_full_name|default:c.created_by.username }}
+                            {% if c.created_by %}{{ c.created_by.get_full_name|default:c.created_by.username }}{% else %}—{% endif %}
                         {% else %}
                             —
                         {% endif %}
@@ -253,14 +258,14 @@
                             <button class="btn btn-sm btn-secondary" disabled title="{% if c.status == 'released' %}Released - editing disabled{% else %}Voided - editing disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-pen"></i></button>
                             <button class="btn btn-sm btn-primary" disabled title="{% if c.status == 'released' %}Released - printing disabled{% else %}Voided - printing disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-print"></i></button>
                             <button class="btn btn-sm btn-danger" disabled title="{% if c.status == 'released' %}Released - voiding disabled{% else %}Voided - voiding disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-ban"></i></button>
-                            <button class="btn btn-sm btn-danger" disabled title="{% if c.status == 'released' %}Released - deletion disabled{% else %}Voided - deletion disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-sm btn-danger" disabled title="{% if c.status == 'released' %}Released - archive disabled{% else %}Voided - archive disabled{% endif %}" style="opacity:0.4; cursor:not-allowed;"><i class="fas fa-box-archive"></i></button>
                             {% else %}
                             <a href="{% url 'cheque_edit' c.pk %}" class="btn btn-sm btn-secondary" title="Edit" onclick="disableRowActions(this)"><i class="fas fa-pen"></i></a>
                             <a href="{% url 'cheque_print' c.pk %}" class="btn btn-sm btn-primary" title="Print" onclick="disableRowActions(this)"><i class="fas fa-print"></i></a>
                             {% if is_admin %}
                             <button class="btn btn-sm btn-danger" title="Void" onclick="disableRowActions(this); openVoid({{ c.pk }});"><i class="fas fa-ban"></i></button>
                             {% endif %}
-                            <button class="btn btn-sm btn-danger" title="Delete" onclick="disableRowActions(this); openDelete({{ c.pk }}, '{{ c.real_cheque_number|default:c.pk }}');"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-sm btn-danger" title="Archive" onclick="disableRowActions(this); openDelete({{ c.pk }}, '{{ c.real_cheque_number|default:c.pk }}');"><i class="fas fa-box-archive"></i></button>
                             {% endif %}
                         </div>
                         {% if c.action_blocked %}
@@ -282,14 +287,14 @@
 <div id="deleteModal"
     style="display:none; position:fixed; z-index:5000; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
     <div style="background:white; border-radius:12px; padding:24px; width:420px; max-width:95vw;">
-        <h3 style="margin-bottom:14px; font-size:16px; color:var(--danger);"><i class="fas fa-trash"></i> Delete Cheque
+        <h3 style="margin-bottom:14px; font-size:16px; color:var(--warning);"><i class="fas fa-box-archive"></i> Archive Cheque
         </h3>
-        <p id="deleteModalText" style="font-size:14px; color:var(--muted); margin-bottom:14px;">Delete this cheque
-            permanently?</p>
+        <p id="deleteModalText" style="font-size:14px; color:var(--muted); margin-bottom:14px;">Archive this cheque?
+            You can restore it later from the Archives page.</p>
         <div style="display:flex;gap:10px;justify-content:flex-end;">
             <button type="button" class="btn btn-secondary" onclick="closeDelete()">Cancel</button>
-            <button type="button" class="btn btn-danger" onclick="confirmDelete()"><i class="fas fa-trash"></i>
-                Delete</button>
+            <button type="button" class="btn btn-warning" onclick="confirmDelete()"><i class="fas fa-box-archive"></i>
+                Archive</button>
         </div>
     </div>
 </div>
@@ -343,29 +348,29 @@
 
     function openDelete(pk, numberLabel) {
         deleteTargetPk = pk;
-        const btn = document.querySelector('#deleteModal .btn-danger');
+        const btn = document.querySelector('#deleteModal .btn-warning');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+            btn.innerHTML = '<i class="fas fa-box-archive"></i> Archive';
         }
-        document.getElementById('deleteModalText').textContent = 'Delete cheque ' + numberLabel + ' permanently? This cannot be undone.';
+        document.getElementById('deleteModalText').textContent = 'Archive cheque ' + numberLabel + '? You can restore it later from the Archives page.';
         document.getElementById('deleteModal').style.display = 'flex';
     }
 
     function closeDelete() {
         deleteTargetPk = null;
-        const btn = document.querySelector('#deleteModal .btn-danger');
+        const btn = document.querySelector('#deleteModal .btn-warning');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-trash"></i> Delete';
+            btn.innerHTML = '<i class="fas fa-box-archive"></i> Archive';
         }
         document.getElementById('deleteModal').style.display = 'none';
     }
 
     function confirmDelete() {
         if (!deleteTargetPk) return;
-        const btn = document.querySelector('#deleteModal .btn-danger');
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...'; }
+        const btn = document.querySelector('#deleteModal .btn-warning');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Archiving...'; }
         const url = deleteUrlTemplate.replace('__PK__', deleteTargetPk);
         fetch(url, {
             method: 'POST',
@@ -377,18 +382,18 @@
             .then(response => response.json().then(data => ({ ok: response.ok, data })))
             .then(({ ok, data }) => {
                 if (!ok || !data.ok) {
-                    showToast('error', 'Delete Failed', (data && data.error) ? data.error : 'Could not delete cheque.');
-                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash"></i> Delete'; }
+                    showToast('error', 'Archive Failed', (data && data.error) ? data.error : 'Could not archive cheque.');
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-box-archive"></i> Archive'; }
                     return;
                 }
                 const row = document.getElementById('cheque-row-' + deleteTargetPk);
                 if (row) row.remove();
                 closeDelete();
-                showToast('success', 'Deleted', 'Cheque has been deleted.');
+                showToast('success', 'Archived', 'Cheque archived successfully.');
             })
-            .catch(function() {
-                showToast('error', 'Delete Failed', 'Network error. Please try again.');
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash"></i> Delete'; }
+            .catch(() => {
+                showToast('error', 'Error', 'Network error. Please try again.');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-box-archive"></i> Archive'; }
             });
     }
 

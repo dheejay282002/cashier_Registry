@@ -66,7 +66,11 @@ def compute_bucket_taxes(net_amount, pro_rate=Decimal('0')):
     pro_rate = Decimal(pro_rate or '0')
 
     try:
-        active_taxes = list(ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True).exclude(value__iexact='Professional Tax').order_by('pk'))
+        from admin_panel.views import _sort_tax_options
+        active_taxes = _sort_tax_options(list(
+            ManagementOption.objects.filter(category=ManagementOption.CATEGORY_TAX, is_active=True)
+            .exclude(value__iexact='Professional Tax')
+        ))
         t1 = active_taxes[0] if len(active_taxes) > 0 else None
         t2 = active_taxes[1] if len(active_taxes) > 1 else None
         t1_rate = t1.uacs if t1 else '5%/3%'
@@ -109,6 +113,19 @@ def _is_admin(user):
         return True
     profile, _ = Profile.objects.get_or_create(user=user, defaults={"role": "cashier"})
     return profile.role == "admin"
+
+
+def _email_setup_configured():
+    """True only when SMTP host, username, and password are all set in SystemSetting."""
+    try:
+        sys_set = SystemSetting.get_settings()
+    except Exception:
+        return False
+    return bool(
+        (sys_set.email_host or '').strip()
+        and (sys_set.email_host_user or '').strip()
+        and (sys_set.email_host_password or '').strip()
+    )
 
 
 def _get_profile(user):
@@ -309,8 +326,6 @@ def _audit(user, action, details=None):
 SUPPLIER_IMPORT_COLUMNS = [
     ('mr_or', 'Check Serial'),
     ('date', 'Check Date'),
-    ('or_number', 'OR Number'),
-    ('series_day', 'Series/Day'),
     ('dv_payroll', 'DV/Payroll No.'),
     ('ors_burs', 'ORS/BURS No.'),
     ('responsibility_center', 'Responsibility Center'),
@@ -338,6 +353,21 @@ RADAI_IMPORT_COLUMNS = [
     ('uacs', 'UACS Object Code'),
     ('nature_of_collections', 'Nature of Payment'),
     ('amount', 'Amount'),
+    ('fund_cluster', 'Fund Cluster'),
+]
+
+RADAI_LBP_IMPORT_COLUMNS = [
+    ('date', 'ADA Date'),
+    ('mr_or', 'ADA Serial No.'),
+    ('dv_payroll', 'DV/Payroll No.'),
+    ('reference_code', 'ORS/BURS No. | Responsibility Center'),
+    ('account_name', 'Payee'),
+    ('uacs', 'UACS Object Code'),
+    ('nature_of_collections', 'Nature of Payment'),
+    ('gross_amount', 'Gross Amount'),
+    ('professional_tax', 'Professional Tax'),
+    ('total_ada', 'Total per ADA'),
+    ('fund_cluster', 'Fund Cluster'),
 ]
 
 
@@ -347,6 +377,10 @@ def _supplier_import_headers():
 
 def _radai_import_headers():
     return [label for _, label in RADAI_IMPORT_COLUMNS]
+
+
+def _radai_lbp_import_headers():
+    return [label for _, label in RADAI_LBP_IMPORT_COLUMNS]
 
 
 # ─────────────────────────────────────────────
@@ -665,8 +699,14 @@ def _estimate_report_sheets(row_count):
     return max(1, (int(row_count or 0) + 24) // 25)
 
 
-def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_cluster_id=None, cheque_status=None, payee=None):
+def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_cluster_id=None, cheque_status=None, payee=None, uacs=None):
     snapshot = {"generated_at": timezone.now().isoformat(), "type": report_type}
+
+    _base_map = {
+        'weekly_cheque': 'cheque_summary', 'monthly_cheque': 'cheque_summary', 'annual_cheque': 'cheque_summary',
+        'weekly_radai': 'radai_summary', 'monthly_radai': 'radai_summary', 'annual_radai': 'radai_summary',
+    }
+    base_type = _base_map.get(report_type, report_type)
 
     def apply_date_filter(qs, date_field='created_at'):
         if date_from:
@@ -681,36 +721,103 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
                 qs = qs.filter(**{f"{date_field}__date__lte": date_to})
         return qs
 
-    if report_type == 'cheque_summary':
-        qs = apply_date_filter(Cheque.objects.select_related('payee', 'fund_cluster').all(), 'date')
+    if base_type == 'cheque_summary':
+        # ALWAYS show ALL suppliers. Mark as Released/Unreleased based on cheque status.
         fund_cluster = None
         if fund_cluster_id:
-            fund_cluster = FundCluster.objects.filter(pk=fund_cluster_id, is_active=True).first()
-            if fund_cluster:
-                qs = qs.filter(fund_cluster=fund_cluster)
+            fund_cluster = FundCluster.objects.filter(pk=fund_cluster_id).first()
+
+        supplier_qs = Supplier.objects.all().order_by('-date', '-pk')
+
+        all_cheques = Cheque.objects.select_related('payee', 'fund_cluster')
+        if date_from:
+            all_cheques = all_cheques.filter(date__gte=date_from)
+        if date_to:
+            all_cheques = all_cheques.filter(date__lte=date_to)
+        if fund_cluster:
+            all_cheques = all_cheques.filter(fund_cluster=fund_cluster)
         if cheque_status and cheque_status != 'all':
-            qs = qs.filter(status=cheque_status)
-        by_status = {s: qs.filter(status=s).count() for s, _ in Cheque.STATUS_CHOICES}
-        total_amount = qs.aggregate(t=Sum('amount'))['t'] or 0
+            if cheque_status == 'unreleased':
+                all_cheques = all_cheques.exclude(status='released')
+            else:
+                all_cheques = all_cheques.filter(status=cheque_status)
+
+        from collections import defaultdict
+        supplier_cheques = defaultdict(list)
+        for c in all_cheques:
+            if c.payee_id:
+                supplier_cheques[c.payee_id].append(c)
+
+        by_status = {s: all_cheques.filter(status=s).count() for s, _ in Cheque.STATUS_CHOICES}
+        total_amount = all_cheques.aggregate(t=Sum('amount'))['t'] or 0
         rows = []
-        for c in qs.order_by('-date')[:500]:
-            rows.append({
-                "id": c.pk,
-                "number": c.cheque_number,
-                "payee": c.payee_name,
-                "fund": c.fund_cluster.code if c.fund_cluster else '',
-                "amount": str(c.amount),
-                "date": str(c.date),
-                "status": c.status,
-                "dv_payroll": c.dv_payroll_no or '',
-                "ors_burs": c.ors_burs_no or '',
-                "responsibility_center": c.responsibility_center or '',
-                "uacs": c.uacs_object_code or '',
-                "nature": c.nature_of_payment or '',
-                "professional_tax": str(c.professional_tax) if c.professional_tax is not None else '',
-                "tax_5": str(c.tax_5_3) if c.tax_5_3 is not None else '',
-                "tax_2": str(c.tax_3_1) if c.tax_3_1 is not None else '',
-            })
+        has_status_filter = cheque_status and cheque_status != 'all'
+        if fund_cluster:
+            supplier_ids_with_cheques = set(supplier_cheques.keys())
+            if has_status_filter:
+                relevant_supplier_ids = supplier_ids_with_cheques
+            else:
+                try:
+                    supplier_ids_from_extras = set(
+                        Supplier.objects.filter(raw_import__supplier_extras__fund_cluster=fund_cluster.code)
+                        .values_list('pk', flat=True)
+                    )
+                except Exception:
+                    supplier_ids_from_extras = set()
+                relevant_supplier_ids = supplier_ids_with_cheques | supplier_ids_from_extras
+            relevant_suppliers = Supplier.objects.filter(pk__in=relevant_supplier_ids).order_by('-date', '-pk')
+            supplier_list = relevant_suppliers[:500]
+        else:
+            if has_status_filter:
+                supplier_list = Supplier.objects.filter(pk__in=supplier_cheques.keys()).order_by('-date', '-pk')[:500]
+            else:
+                supplier_list = supplier_qs[:500]
+
+        for s in supplier_list:
+            cheques_for_supplier = supplier_cheques.get(s.pk, [])
+            has_released = any(c.status == 'released' for c in cheques_for_supplier)
+            supplier_status = 'released' if has_released else 'unreleased'
+
+            if cheques_for_supplier:
+                c = sorted(cheques_for_supplier, key=lambda x: x.date or x.created_at.date() if x.created_at else '', reverse=True)[0]
+                rows.append({
+                    "id": s.pk,
+                    "number": c.real_cheque_number or c.cheque_number or s.mr_or or '',
+                    "payee": s.account_name or c.payee_name,
+                    "fund": c.fund_cluster.code if c.fund_cluster else '',
+                    "amount": str(c.amount),
+                    "date": str(c.date),
+                    "status": supplier_status,
+                    "dv_payroll": c.dv_payroll_no or '',
+                    "ors_burs": c.ors_burs_no or '',
+                    "responsibility_center": c.responsibility_center or '',
+                    "uacs": c.uacs_object_code or '',
+                    "nature": c.nature_of_payment or '',
+                    "remarks": c.remarks or '',
+                    "professional_tax": str(c.professional_tax) if c.professional_tax is not None else '',
+                    "tax_5": str(c.tax_5_3) if c.tax_5_3 is not None else '',
+                    "tax_2": str(c.tax_3_1) if c.tax_3_1 is not None else '',
+                })
+            else:
+                extras = s.raw_import.get('supplier_extras') or {}
+                rows.append({
+                    "id": s.pk,
+                    "number": s.mr_or or '',
+                    "payee": s.account_name or '',
+                    "fund": extras.get('fund_cluster', ''),
+                    "amount": str(s.amount) if s.amount else '0',
+                    "date": str(s.date) if s.date else '',
+                    "status": 'unreleased',
+                    "dv_payroll": extras.get('dv_payroll', ''),
+                    "ors_burs": extras.get('ors_burs', ''),
+                    "responsibility_center": extras.get('responsibility_center', ''),
+                    "uacs": extras.get('uacs', ''),
+                    "nature": s.nature_of_collections or '',
+                    "remarks": s.remarks or '',
+                    "professional_tax": extras.get('professional_tax', ''),
+                    "tax_5": extras.get('tax_5', ''),
+                    "tax_2": extras.get('tax_2', ''),
+                })
         sheet_count = _estimate_report_sheets(len(rows))
         cheque_nums = [r.get('number') for r in rows if r.get('number')]
         first_cheque = ''
@@ -736,6 +843,10 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
                 first_cheque = cheque_nums[-1]
 
         snapshot.update({"by_status": by_status, "total_amount": str(total_amount), "rows": rows, "sheet_count": sheet_count, "check_first": first_cheque, "check_last": last_cheque, "cheque_count": len(rows)})
+        if uacs:
+            rows = [r for r in rows if str(r.get("uacs") or '').strip() == str(uacs).strip()]
+            snapshot["uacs"] = str(uacs).strip()
+            snapshot["rows"] = rows
         if fund_cluster:
             snapshot["fund_cluster_id"] = fund_cluster.pk
             snapshot["fund_cluster"] = str(fund_cluster)
@@ -749,7 +860,7 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
                 else fund_cluster.bank_name or fund_cluster.account_number or ''
             )
 
-    elif report_type == 'fund_summary':
+    elif base_type == 'fund_summary':
         qs = FundCluster.objects.all()
         rows = []
         for f in qs:
@@ -759,13 +870,15 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
                 "id": f.pk,
                 "code": f.code, "name": f.name,
                 "balance": str(f.balance),
+                "fund_amount": ("" if f.fund_amount is None else str(f.fund_amount)),
                 "released_amount": str(released),
+                "remaining_amount": ("" if f.fund_amount is None else str(f.fund_amount - released)),
                 "cheque_count": cheques.count(),
                 "is_active": f.is_active,
             })
         snapshot["rows"] = rows
 
-    elif report_type == 'supplier_summary':
+    elif base_type == 'supplier_summary':
         rows = []
         for s in Supplier.objects.all().order_by('-date', '-pk'):
             cheques = apply_date_filter(s.cheque_set.all())
@@ -794,7 +907,7 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
             })
         snapshot["rows"] = rows
 
-    elif report_type == 'radai_summary':
+    elif base_type == 'radai_summary':
         qs = Radai.objects.select_related('created_by', 'fund_cluster').all()
         if date_from:
             qs = qs.filter(date__gte=date_from)
@@ -833,8 +946,14 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
                 "uacs": str(extras.get('uacs') or ''),
                 "nature_of_collections": r.nature_of_collections,
                 "amount": str(r.amount),
+                "professional_tax": str(extras.get('professional_tax') or ''),
+                "total_ada": str(extras.get('total_ada') or ''),
             })
         snapshot["rows"] = rows
+        if uacs:
+            rows = [r for r in rows if str(r.get("uacs") or '').strip() == str(uacs).strip()]
+            snapshot["uacs"] = str(uacs).strip()
+            snapshot["rows"] = rows
         snapshot["fund_cluster_code"] = fc_code
         snapshot["fund_cluster_name"] = fc_name
         snapshot["fund_cluster"] = fc_name
@@ -848,7 +967,7 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
         snapshot["ada_first"] = serial_numbers[-1] if serial_numbers else ''
         snapshot["ada_last"] = serial_numbers[0] if serial_numbers else ''
 
-    elif report_type == 'audit_summary':
+    elif base_type == 'audit_summary':
         qs = apply_date_filter(AuditLog.objects.select_related('admin'), 'timestamp')
         rows = [{"id": a.pk, "user": a.admin.username if a.admin else '', "action": a.action, "timestamp": a.timestamp.isoformat()} for a in qs.order_by('-timestamp')[:500]]
         snapshot["rows"] = rows
@@ -956,9 +1075,10 @@ def _do_import_compat(import_type, rows, user):
                     )
                     continue
 
+            # account_number is EncryptedCharField (non-deterministic) — filter on plain or_number
             duplicate_exists = Supplier.objects.filter(
                 account_name=name,
-                account_number=account_number,
+                or_number=account_number,
                 mr_or=parsed.get('mr_or', ''),
                 date=parsed_date,
             ).exists()

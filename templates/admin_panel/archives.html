@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Archives{% endblock %}
+{% block nav_archives %}active{% endblock %}
+{% block content %}
+
+<style>
+    .page-header {
+        position: relative;
+        margin-bottom: 16px;
+    }
+
+    .table-scroll-container {
+        position: relative;
+        max-height: calc(100vh - 185px);
+        overflow-y: auto;
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 61, 46, 0.12);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    }
+
+    .archives-table {
+        width: 100%;
+        table-layout: auto;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .archives-table th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 20 !important;
+        background: linear-gradient(135deg, #0f3d2e, #17563d) !important;
+        color: #ffffff !important;
+        border-bottom: 1px solid #0b2f23 !important;
+        text-align: center !important;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .archives-table td {
+        vertical-align: middle;
+        white-space: nowrap;
+        text-align: center;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .filter-tab:hover {
+        background: var(--brand);
+        color: white;
+        border-color: var(--brand);
+    }
+
+    .filter-tab.active {
+        background: var(--brand);
+        color: white;
+        border-color: var(--brand);
+    }
+
+    .badge-archived {
+        background: #fef3c7;
+        color: #92400e;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .badge-type {
+        background: #e0e7ff;
+        color: #3730a3;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+
+    .restore-btn {
+        background: var(--success);
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .restore-btn:hover {
+        background: #15803d;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 20px 0 12px 0;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--line);
+    }
+
+    .section-header h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--ink);
+    }
+
+    .section-count {
+        background: var(--brand);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state i {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+    }
+</style>
+
+<div class="page-header">
+    <h2><i class="fas fa-box-archive"></i> Archives</h2>
+    <p style="color: var(--muted); margin: 0;">View and restore archived financial data</p>
+</div>
+
+<div class="filter-tabs">
+    <a href="?type=all" class="filter-tab {% if filter_type == 'all' %}active{% endif %}">
+        <i class="fas fa-layer-group"></i> All
+    </a>
+    <a href="?type=cheques" class="filter-tab {% if filter_type == 'cheques' %}active{% endif %}">
+        <i class="fas fa-money-check-dollar"></i> Check
+    </a>
+    <a href="?type=suppliers" class="filter-tab {% if filter_type == 'suppliers' %}active{% endif %}">
+        <i class="fas fa-building"></i> Suppliers
+    </a>
+    <a href="?type=fund_clusters" class="filter-tab {% if filter_type == 'fund_clusters' %}active{% endif %}">
+        <i class="fas fa-piggy-bank"></i> Fund Clusters
+    </a>
+    <a href="?type=radai" class="filter-tab {% if filter_type == 'radai' %}active{% endif %}">
+        <i class="fas fa-database"></i> RADAI
+    </a>
+    <a href="?type=reports" class="filter-tab {% if filter_type == 'reports' %}active{% endif %}">
+        <i class="fas fa-chart-bar"></i> Reports
+    </a>
+</div>
+
+{% if error %}
+<div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>
+{% endif %}
+{% if success %}
+<div class="alert alert-success"><i class="fas fa-circle-check"></i> {{ success }}</div>
+{% endif %}
+
+{% if filter_type == 'all' or filter_type == 'cheques' %}
+{% if archived_cheques %}
+<div class="section-header">
+    <h3><i class="fas fa-money-check-dollar"></i> Cheques</h3>
+    <span class="section-count">{{ archived_cheques|length }}</span>
+</div>
+<div class="table-scroll-container">
+    <table class="archives-table">
+        <thead>
+            <tr>
+                <th>Check No.</th>
+                <th>Payee</th>
+                <th>Amount</th>
+                <th>Fund Cluster</th>
+                <th>Status</th>
+                <th>Archived By</th>
+                <th>Archived At</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cheque in archived_cheques %}
+            <tr>
+                <td><strong>{{ cheque.cheque_number|default:"—" }}</strong></td>
+                <td>{{ cheque.payee_name|default:cheque.payee|default:"—" }}</td>
+                <td><strong>₱{{ cheque.amount|floatformat:2|intcomma }}</strong></td>
+                <td>{{ cheque.fund_cluster|default:"—" }}</td>
+                <td>
+                    <span class="badge badge-archived">{{ cheque.status|title }}</span>
+                </td>
+                <td>{% if cheque.archived_by %}{{ cheque.archived_by.get_full_name|default:cheque.archived_by.username }}{% else %}—{% endif %}</td>
+                <td>{{ cheque.archived_at|date:"M d, Y H:i" }}</td>
+                <td>
+                    {% if is_admin %}
+                    <button class="restore-btn" onclick="restoreItem('cheque', {{ cheque.pk }})">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif filter_type == 'cheques' %}
+<div class="empty-state">
+    <i class="fas fa-money-check-dollar"></i>
+    <p>No archived cheques found.</p>
+</div>
+{% endif %}
+{% endif %}
+
+{% if filter_type == 'all' or filter_type == 'suppliers' %}
+{% if archived_suppliers %}
+<div class="section-header">
+    <h3><i class="fas fa-building"></i> Suppliers</h3>
+    <span class="section-count">{{ archived_suppliers|length }}</span>
+</div>
+<div class="table-scroll-container">
+    <table class="archives-table">
+        <thead>
+            <tr>
+                <th>Account Name</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Archived By</th>
+                <th>Archived At</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for supplier in archived_suppliers %}
+            <tr>
+                <td><strong>{{ supplier.account_name }}</strong></td>
+                <td><strong>₱{{ supplier.amount|floatformat:2|intcomma }}</strong></td>
+                <td>{{ supplier.date|date:"M d, Y"|default:"—" }}</td>
+                <td>
+                    <span class="badge badge-archived">{{ supplier.status|title }}</span>
+                </td>
+                <td>{% if supplier.archived_by %}{{ supplier.archived_by.get_full_name|default:supplier.archived_by.username }}{% else %}—{% endif %}</td>
+                <td>{{ supplier.archived_at|date:"M d, Y H:i" }}</td>
+                <td>
+                    {% if is_admin %}
+                    <button class="restore-btn" onclick="restoreItem('supplier', {{ supplier.pk }})">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif filter_type == 'suppliers' %}
+<div class="empty-state">
+    <i class="fas fa-building"></i>
+    <p>No archived suppliers found.</p>
+</div>
+{% endif %}
+{% endif %}
+
+{% if filter_type == 'all' or filter_type == 'fund_clusters' %}
+{% if archived_fund_clusters %}
+<div class="section-header">
+    <h3><i class="fas fa-piggy-bank"></i> Fund Clusters</h3>
+    <span class="section-count">{{ archived_fund_clusters|length }}</span>
+</div>
+<div class="table-scroll-container">
+    <table class="archives-table">
+        <thead>
+            <tr>
+                <th>Cluster Code</th>
+                <th>Name</th>
+                <th>Bank Name</th>
+                <th>Description</th>
+                <th>Archived By</th>
+                <th>Archived At</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for fc in archived_fund_clusters %}
+            <tr>
+                <td><strong>{{ fc.code }}</strong></td>
+                <td>{{ fc.name }}</td>
+                <td>{{ fc.bank_name|default:"—" }}</td>
+                <td>{{ fc.description|default:"—"|truncatechars:40 }}</td>
+                <td>{% if fc.archived_by %}{{ fc.archived_by.get_full_name|default:fc.archived_by.username }}{% else %}—{% endif %}</td>
+                <td>{{ fc.archived_at|date:"M d, Y H:i" }}</td>
+                <td>
+                    {% if is_admin %}
+                    <button class="restore-btn" onclick="restoreItem('fund_cluster', {{ fc.pk }})">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif filter_type == 'fund_clusters' %}
+<div class="empty-state">
+    <i class="fas fa-piggy-bank"></i>
+    <p>No archived fund clusters found.</p>
+</div>
+{% endif %}
+{% endif %}
+
+{% if filter_type == 'all' or filter_type == 'radai' %}
+{% if archived_radai %}
+<div class="section-header">
+    <h3><i class="fas fa-database"></i> RADAI</h3>
+    <span class="section-count">{{ archived_radai|length }}</span>
+</div>
+<div class="table-scroll-container">
+    <table class="archives-table">
+        <thead>
+            <tr>
+                <th>Account Name</th>
+                <th>Amount</th>
+                <th>Fund Cluster</th>
+                <th>Status</th>
+                <th>Archived By</th>
+                <th>Archived At</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for radai in archived_radai %}
+            <tr>
+                <td><strong>{{ radai.account_name }}</strong></td>
+                <td><strong>₱{{ radai.amount|floatformat:2|intcomma }}</strong></td>
+                <td>{{ radai.fund_cluster|default:"—" }}</td>
+                <td>
+                    <span class="badge badge-archived">{{ radai.status|title }}</span>
+                </td>
+                <td>{% if radai.archived_by %}{{ radai.archived_by.get_full_name|default:radai.archived_by.username }}{% else %}—{% endif %}</td>
+                <td>{{ radai.archived_at|date:"M d, Y H:i" }}</td>
+                <td>
+                    {% if is_admin %}
+                    <button class="restore-btn" onclick="restoreItem('radai', {{ radai.pk }})">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif filter_type == 'radai' %}
+<div class="empty-state">
+    <i class="fas fa-database"></i>
+    <p>No archived RADAI records found.</p>
+</div>
+{% endif %}
+{% endif %}
+
+{% if filter_type == 'all' or filter_type == 'reports' %}
+{% if archived_reports %}
+<div class="section-header">
+    <h3><i class="fas fa-chart-bar"></i> Reports</h3>
+    <span class="section-count">{{ archived_reports|length }}</span>
+</div>
+<div class="table-scroll-container">
+    <table class="archives-table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Generated By</th>
+                <th>Date Range</th>
+                <th>Archived By</th>
+                <th>Archived At</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in archived_reports %}
+            <tr>
+                <td><strong>{{ report.title }}</strong></td>
+                <td>
+                    <span class="badge badge-type">{{ report.get_report_type_display }}</span>
+                </td>
+                <td>{{ report.generated_by_name }}</td>
+                <td>
+                    {% if report.date_from and report.date_to %}
+                        {{ report.date_from|date:"M d" }} – {{ report.date_to|date:"M d, Y" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>{% if report.archived_by %}{{ report.archived_by.get_full_name|default:report.archived_by.username }}{% else %}—{% endif %}</td>
+                <td>{{ report.archived_at|date:"M d, Y H:i" }}</td>
+                <td>
+                    {% if is_admin %}
+                    <button class="restore-btn" onclick="restoreItem('report', {{ report.pk }})">
+                        <i class="fas fa-undo"></i> Restore
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif filter_type == 'reports' %}
+<div class="empty-state">
+    <i class="fas fa-chart-bar"></i>
+    <p>No archived reports found.</p>
+</div>
+{% endif %}
+{% endif %}
+
+{% if not archived_cheques and not archived_suppliers and not archived_fund_clusters and not archived_radai and not archived_reports %}
+<div class="empty-state">
+    <i class="fas fa-box-archive"></i>
+    <p>No archived items found.</p>
+</div>
+{% endif %}
+
+<script>
+function restoreItem(itemType, pk) {
+    if (!confirm('Are you sure you want to restore this ' + itemType.replace('_', ' ') + '?')) {
+        return;
+    }
+
+    fetch('/restore/' + itemType + '/' + pk + '/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.ok) {
+            showToast('success', 'Success', itemType.replace('_', ' ') + ' restored successfully.');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', 'Error', data.error || 'Failed to restore item.');
+        }
+    })
+    .catch(error => {
+        showToast('error', 'Error', 'An error occurred while restoring.');
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+{% endblock %}

@@ -428,7 +428,7 @@
 
                 {% if current_profile.role != 'guest' and current_profile.role != 'budget_accounting' and request.user.profile.role != 'guest' and request.user.profile.role != 'budget_accounting' %}
                 <button type="button" onclick="openSupplierModal('create')">
-                    <i class="fas fa-plus"></i> Add Supplier
+                    <i class="fas fa-plus"></i> Add Registry Record
                 </button>
                 {% endif %}
             </div>
@@ -654,18 +654,18 @@
             if (isFiltering) {
                 if (tableCountDiv) {
                     if (visibleCount === 0) {
-                        tableCountDiv.textContent = "No matching suppliers found.";
+                        tableCountDiv.textContent = "No matching Payees found.";
                     } else if (visibleCount === totalCount) {
-                        tableCountDiv.textContent = `Showing all ${totalCount} suppliers.`;
+                        tableCountDiv.textContent = `Showing all ${totalCount} Payees.`;
                     } else if (visibleCount === 1) {
-                        tableCountDiv.textContent = "Showing 1 matching supplier.";
+                        tableCountDiv.textContent = "Showing 1 matching Payees.";
                     } else {
-                        tableCountDiv.textContent = `Showing ${visibleCount} of ${totalCount} suppliers.`;
+                        tableCountDiv.textContent = `Showing ${visibleCount} of ${totalCount} Payees.`;
                     }
                 }
             } else {
                 if (tableCountDiv) {
-                    tableCountDiv.textContent = `Showing all ${totalCount} suppliers.`;
+                    tableCountDiv.textContent = `Showing all ${totalCount} Payees.`;
                 }
             }
         }

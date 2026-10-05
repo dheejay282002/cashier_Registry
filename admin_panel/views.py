@@ -1617,7 +1617,7 @@ CRITICAL RULES — YOU MUST FOLLOW THESE:
 
 MODULES:
 1. CHEQUES — cheque_number, payee, fund_cluster, amount, date, purpose, status (draft/pending/released/voided/stale)
-2. FUND CLUSTERS — code (RA/OA/CO), name, balance, is_active
+2. FUND CLUSTERS — code (RA/OA/CO), name, balance, fund_amount, is_active
 3. ACCOUNT TITLES — name, uacs code, with sub-options
 4. SUPPLIERS — account_name, amount, tin, status (active/inactive/blacklisted)
 5. RADAI — account_name, ors_burs_no, fund_cluster, amount, status
@@ -3264,6 +3264,7 @@ def _build_data_preview_from_serialized(raw):
                 "name": fields.get("name", ""),
                 "description": fields.get("description", ""),
                 "balance": fields.get("balance", "0"),
+                "fund_amount": fields.get("fund_amount"),
                 "bank_name": fields.get("bank_name", ""),
                 "is_active": fields.get("is_active", True),
                 "is_archived": fields.get("is_archived", False),
@@ -4216,18 +4217,30 @@ def admin_dashboard(request):
     radai_total = Radai.objects.count()
     radai_amount = Radai.objects.aggregate(t=Sum('amount'))['t'] or 0
 
-    # All fund clusters by released amount
+    # All fund clusters by released amount, with their (optional) fund amount
     top_funds_raw = (
-        Cheque.objects
-        .filter(status='released', fund_cluster__isnull=False)
-        .values('fund_cluster__code', 'fund_cluster__name')
-        .annotate(total_released=Sum('amount'))
-        .order_by('-total_released')
+        FundCluster.objects
+        .annotate(total_released=Sum('cheque__amount', filter=Q(cheque__status='released')))
+        .order_by('-total_released', 'code')
     )
-    top_funds = [
-        {'code': f['fund_cluster__code'], 'name': f['fund_cluster__name'], 'released_amount': f['total_released']}
-        for f in top_funds_raw
-    ]
+    top_funds = []
+    for f in top_funds_raw:
+        released = f.total_released or 0
+        has_amount = f.has_fund_amount
+        # Keep the old behaviour (clusters with payouts) and add any cluster
+        # that carries a fund amount — the dashboard only shows what exists.
+        if not released and not has_amount:
+            continue
+        remaining = (f.fund_amount - released) if has_amount else None
+        top_funds.append({
+            'code': f.code,
+            'name': f.name,
+            'released_amount': released,
+            'fund_amount': f.fund_amount,
+            'has_fund_amount': has_amount,
+            'remaining_amount': remaining,
+            'is_overdrawn': bool(remaining is not None and remaining < 0),
+        })
 
     # Cheque processing speed (avg days from creation to last update for released cheques)
     released_cheques_qs = Cheque.objects.filter(status='released').exclude(updated_at__isnull=True)
@@ -4297,7 +4310,7 @@ def admin_dashboard(request):
         alerts.append({
             'type': 'danger',
             'icon': 'fas fa-clock',
-            'message': f'{stale_cheques_count} cheque(s) pending for more than 7 days',
+            'message': f'{stale_cheques_count} checks(s) pending for more than 7 days',
             'color': '#ef4444'
         })
     # Voided today
@@ -4495,14 +4508,14 @@ def cashier_dashboard(request):
             alerts.append({
                 'type': 'danger',
                 'icon': 'fas fa-clock',
-                'message': f'{stale_cheques_count} of your cheques pending for more than 7 days',
+                'message': f'{stale_cheques_count} of your checks pending for more than 7 days',
                 'color': '#ef4444'
             })
         if already_stale > 0:
             alerts.append({
                 'type': 'danger',
                 'icon': 'fas fa-exclamation-triangle',
-                'message': f'{already_stale} of your cheques are already stale',
+                'message': f'{already_stale} of your checks are already stale',
                 'color': '#dc2626'
             })
 
@@ -5109,6 +5122,20 @@ def cashier_transactions(request):
 # FUND CLUSTERS
 # ─────────────────────────────────────────────
 
+def _parse_fund_amount(raw):
+    """Optional fund amount. Blank/None => None (no fund amount set)."""
+    raw = str(raw or '').strip().replace(',', '').replace('₱', '').replace('PHP', '').strip()
+    if not raw:
+        return None, None
+    try:
+        value = Decimal(raw)
+    except (InvalidOperation, ValueError, TypeError):
+        return None, "Invalid fund amount."
+    if value < 0:
+        return None, "Fund amount cannot be negative."
+    return value.quantize(Decimal('0.01')), None
+
+
 @login_required
 def fund_clusters(request):
     is_admin = _is_admin(request.user)
@@ -5138,20 +5165,28 @@ def fund_clusters(request):
         elif action == 'edit':
             fc_id = request.POST.get('fc_id')
             fc = get_object_or_404(FundCluster, pk=fc_id)
-            fc.code = request.POST.get('code', '').strip()
-            fc.name = request.POST.get('name', '').strip()
-            fc.description = request.POST.get('description', '').strip()
-            fc.bank_name = request.POST.get('bank_name', '').strip()
-            fc.account_number = request.POST.get('account_number', '').strip()
-            fc.is_active = request.POST.get('is_active') == 'on'
-            fc.save()
-            _audit(request.user, "Edited fund cluster", {"id": fc_id})
-            success = f"Fund cluster '{fc.name}' updated."
+            fund_amount, amount_error = _parse_fund_amount(request.POST.get('fund_amount'))
+            if amount_error:
+                error = amount_error
+            else:
+                fc.code = request.POST.get('code', '').strip()
+                fc.name = request.POST.get('name', '').strip()
+                fc.description = request.POST.get('description', '').strip()
+                fc.bank_name = request.POST.get('bank_name', '').strip()
+                fc.account_number = request.POST.get('account_number', '').strip()
+                fc.fund_amount = fund_amount
+                fc.is_active = request.POST.get('is_active') == 'on'
+                fc.save()
+                _audit(request.user, "Edited fund cluster", {"id": fc_id})
+                success = f"Fund cluster '{fc.name}' updated."
         else:
             code = request.POST.get('code', '').strip()
             name = request.POST.get('name', '').strip()
             desc = request.POST.get('description', '').strip()
-            if not code or not name:
+            fund_amount, amount_error = _parse_fund_amount(request.POST.get('fund_amount'))
+            if amount_error:
+                error = amount_error
+            elif not code or not name:
                 error = "Code and name are required."
             elif FundCluster.objects.filter(code=code).exists():
                 error = "Fund cluster code already exists."
@@ -5161,17 +5196,28 @@ def fund_clusters(request):
                     name=name,
                     description=desc,
                     balance=0,
+                    fund_amount=fund_amount,
                     bank_name=request.POST.get('bank_name', '').strip(),
                     account_number=request.POST.get('account_number', '').strip()
                 )
                 _audit(request.user, "Created fund cluster", {"id": fc.pk, "code": code})
                 success = f"Fund cluster '{name}' created."
 
-    clusters = FundCluster.objects.annotate(
+    clusters = list(FundCluster.objects.annotate(
         cheque_count=Count('cheque', distinct=True),
         released_count=Count('cheque', filter=Q(cheque__status='released'), distinct=True),
         total_released=Sum('cheque__amount', filter=Q(cheque__status='released')),
-    ).order_by('code')
+    ).order_by('code'))
+    for fc in clusters:
+        # Live remaining = fund amount − total disbursed (only when a fund amount is set)
+        released = fc.total_released or 0
+        if fc.has_fund_amount:
+            remaining = fc.fund_amount - released
+            fc.remaining_amount = remaining
+            fc.is_overdrawn = remaining < 0
+        else:
+            fc.remaining_amount = None
+            fc.is_overdrawn = False
     context = _page_context(request, is_admin=is_admin, page_title="Fund Clusters", extra={
         "clusters": clusters,
         "error": error,
@@ -6136,6 +6182,19 @@ def suppliers(request):
                     sup.archived_at = timezone.now()
                     sup.save(update_fields=['is_archived', 'archived_by', 'archived_at'])
                     _audit(request.user, "Archived supplier", {"id": sup_id})
+                    # Archive linked cheques too so they show under Archives ▸ Check
+                    linked_cheques = list(Cheque.objects.filter(payee=sup))
+                    for chq in linked_cheques:
+                        chq.is_archived = True
+                        chq.archived_by = request.user
+                        chq.archived_at = timezone.now()
+                        chq.save(update_fields=['is_archived', 'archived_by', 'archived_at'])
+                    if linked_cheques:
+                        _audit(request.user, "Archived cheques with registry record", {
+                            "supplier_id": sup_id,
+                            "count": len(linked_cheques),
+                            "cheque_ids": [c.pk for c in linked_cheques],
+                        })
                     return redirect('suppliers')
         elif action == 'edit':
             sup_id = request.POST.get('sup_id')
@@ -6558,7 +6617,7 @@ def suppliers(request):
     tax_1_label = t1.value if t1 else ''
     tax_2_label = t2.value if t2 else ''
 
-    context = _page_context(request, is_admin=is_admin, page_title="Supplier Management", extra={
+    context = _page_context(request, is_admin=is_admin, page_title="Registry", extra={
         "supplier_list": supplier_list,
         "page_obj": None,
         "error": error,
@@ -6680,6 +6739,82 @@ def supplier_modal_context(request):
         'goods_service_rates': goods_service_rates,
         'auto_supplier_defaults': auto_supplier_defaults,
         'today_supplier_date': today_supplier_date,
+    })
+
+
+@login_required
+def radai_modal_context(request):
+    """Return RADAI modal context data as JSON for the global FAB."""
+    default_source_qs = Radai.objects.filter(is_archived=False).select_related('created_by')
+
+    payee_choices = sorted(set(
+        name for name in default_source_qs.exclude(account_name='').values_list('account_name', flat=True)
+        if str(name).strip()
+    ), key=lambda x: str(x).lower())
+
+    _at_groups = AccountTitleGroup.objects.prefetch_related('options').order_by('name')
+    account_title_groups = []
+    for g in _at_groups:
+        titles = list(
+            g.options.filter(category=ManagementOption.CATEGORY_ACCOUNT_TITLE, is_active=True)
+            .order_by('value').values('value', 'uacs')
+        )
+        account_title_groups.append({'name': g.name, 'uacs': g.uacs or '', 'titles': titles})
+    _ungrouped = list(
+        ManagementOption.objects.filter(
+            category=ManagementOption.CATEGORY_ACCOUNT_TITLE,
+            is_active=True, group__isnull=True,
+        ).order_by('value').values('value', 'uacs')
+    )
+    if _ungrouped:
+        account_title_groups.append({'name': 'Other', 'uacs': '', 'titles': _ungrouped})
+
+    fund_clusters = list(
+        FundCluster.objects.filter(is_active=True).order_by('code').values('pk', 'code', 'name')
+    )
+
+    def _latest_non_empty(field_name):
+        return (
+            default_source_qs.exclude(**{field_name: ''})
+            .order_by('-created_at', '-pk')
+            .values_list(field_name, flat=True)
+            .first()
+            or ''
+        )
+
+    def _next_trailing_number(value):
+        txt = str(value or '').strip()
+        if not txt:
+            return ''
+        parts = txt.split('-')
+        if len(parts) == 3 and parts[1].strip().isdigit():
+            try:
+                return f"{parts[0]}-{int(parts[1].strip()) + 1}-{parts[2]}"
+            except Exception:
+                pass
+        if '-' in txt:
+            prefix, suffix = txt.rsplit('-', 1)
+            if suffix.isdigit():
+                try:
+                    return f"{prefix}-{int(suffix) + 1}"
+                except Exception:
+                    pass
+        m = re.search(r"(.*?)(\d+)$", txt)
+        if m:
+            return f"{m.group(1)}{int(m.group(2)) + 1}"
+        return txt + '-1'
+
+    latest_mr_or = _latest_non_empty('mr_or')
+    auto_radai_defaults = {
+        'mr_or': _next_trailing_number(latest_mr_or) if latest_mr_or else '1',
+    }
+
+    return JsonResponse({
+        'ok': True,
+        'payee_choices': payee_choices,
+        'account_title_groups': account_title_groups,
+        'fund_clusters': fund_clusters,
+        'auto_radai_defaults': auto_radai_defaults,
     })
 
 
@@ -8607,15 +8742,15 @@ def cheque_delete(request, pk):
 
     if cheque.status == 'released':
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({"ok": False, "error": "Released cheques cannot be deleted."}, status=400)
-        return redirect(f"{reverse('cheque_list')}?error={quote('Released cheques cannot be deleted.')}")
+            return JsonResponse({"ok": False, "error": "Released cheques cannot be archived."}, status=400)
+        return redirect(f"{reverse('cheque_list')}?error={quote('Released cheques cannot be archived.')}")
 
-    if cheque.fund_cluster_id:
-        _adjust_fund_balance(cheque.fund_cluster, cheque.amount)
+    cheque.is_archived = True
+    cheque.archived_by = request.user
+    cheque.archived_at = timezone.now()
+    cheque.save(update_fields=['is_archived', 'archived_by', 'archived_at'])
 
-    cheque.delete()
-
-    _audit(request.user, "Deleted cheque", {
+    _audit(request.user, "Archived cheque", {
         "id": pk,
         "number": cheque_number,
         "payee_name": cheque_payee
@@ -9451,7 +9586,9 @@ def _build_report_snapshot(report_type, date_from=None, date_to=None, fund_clust
                 "id": f.pk,
                 "code": f.code, "name": f.name,
                 "balance": str(f.balance),
+                "fund_amount": ("" if f.fund_amount is None else str(f.fund_amount)),
                 "released_amount": str(released),
+                "remaining_amount": ("" if f.fund_amount is None else str(f.fund_amount - released)),
                 "cheque_count": cheques.count(),
                 "is_active": f.is_active,
             })
@@ -9719,7 +9856,7 @@ def _report_headers_and_rows(report_type, snapshot):
         return headers, table_rows
 
     if base_type == "fund_summary":
-        headers = ["#", "Code", "Fund Name", "Balance", "Released", "Cheques", "Active"]
+        headers = ["#", "Code", "Fund Name", "Balance", "Fund Amount", "Released", "Remaining", "Cheques", "Active"]
         table_rows = []
         for idx, row in enumerate(rows, start=1):
             table_rows.append([
@@ -9727,7 +9864,9 @@ def _report_headers_and_rows(report_type, snapshot):
                 row.get("code") or "",
                 row.get("name") or "",
                 (lambda v: ("₱ " + f"{Decimal(v):,.2f}") if v not in (None, "") else "")(row.get('balance')),
+                (lambda v: ("₱ " + f"{Decimal(v):,.2f}") if v not in (None, "") else "")(row.get('fund_amount')),
                 (lambda v: ("₱ " + f"{Decimal(v):,.2f}") if v not in (None, "") else "")(row.get('released_amount')),
+                (lambda v: ("₱ " + f"{Decimal(v):,.2f}") if v not in (None, "") else "")(row.get('remaining_amount')),
                 str(row.get("cheque_count") or 0),
                 "Yes" if row.get("is_active") else "No",
             ])
@@ -11653,11 +11792,26 @@ def _do_import(import_type, rows, user):
                 bal = Decimal(_get_value(r, 'balance', 'amount', default='0') or '0')
             except InvalidOperation:
                 bal = Decimal('0')
+            fund_defaults = {"name": name, "balance": bal,
+                             "description": _get_value(r, 'description', 'desc'),
+                             "is_active": str(_get_value(r, 'is_active', 'active', default='true')).lower() != 'false'}
+            # fund_amount is optional: only touch it when the column exists in the file
+            has_fund_amount_col = any(
+                str(k).strip().lower().replace(' ', '').replace('_', '') == 'fundamount'
+                for k in (r.keys() if isinstance(r, dict) else [])
+            )
+            if has_fund_amount_col:
+                fund_amount_raw = _get_value(r, 'fund amount', 'fundamount')
+                if not fund_amount_raw:
+                    fund_defaults["fund_amount"] = None
+                else:
+                    try:
+                        fund_defaults["fund_amount"] = Decimal(fund_amount_raw.replace(',', ''))
+                    except InvalidOperation:
+                        warnings.append(f"Fund cluster '{code}': invalid fund amount '{fund_amount_raw}' ignored.")
             FundCluster.objects.update_or_create(
                 code=code,
-                defaults={"name": name, "balance": bal,
-                          "description": _get_value(r, 'description', 'desc'),
-                          "is_active": str(_get_value(r, 'is_active', 'active', default='true')).lower() != 'false'}
+                defaults=fund_defaults
             )
             count += 1
     _audit(user, f"Imported {import_type}", {"count": count})
@@ -12075,11 +12229,11 @@ def download_import_template(request):
     fmt = request.GET.get('format', 'xlsx').strip().lower()
 
     if import_type == 'fund_clusters':
-        headers = ['Code', 'Name', 'Description', 'Balance', 'Is Active']
+        headers = ['Code', 'Name', 'Description', 'Balance', 'Fund Amount', 'Is Active']
         filename_base = 'fund_clusters_import_template'
         sample_rows = [
-            ['101', 'General Fund', 'Regular Agency Fund', '1500000.00', 'TRUE'],
-            ['164', 'Internally Generated Funds', 'Off-Budgetary Receipts', '750000.00', 'TRUE'],
+            ['101', 'General Fund', 'Regular Agency Fund', '1500000.00', '500000000.00', 'TRUE'],
+            ['164', 'Internally Generated Funds', 'Off-Budgetary Receipts', '750000.00', '100000000.00', 'TRUE'],
         ]
     elif import_type == 'radai_lbp':
         headers = ['ADA Date', 'ADA Serial No.', 'DV/Payroll No.', 'ORS/BURS No. | Responsibility Center', 'Payee', 'UACS Object Code', 'Nature of Payment', 'Gross Amount', 'Professional Tax', 'Total per ADA', 'Fund Cluster']
@@ -13863,6 +14017,18 @@ def restore_item(request, item_type, pk):
         obj.archived_at = None
         obj.save(update_fields=['is_archived', 'archived_by', 'archived_at'])
         _audit(request.user, "Restored supplier", {"id": pk, "name": obj.account_name})
+        restored_cheques = list(Cheque.all_objects.filter(payee=obj, is_archived=True))
+        for chq in restored_cheques:
+            chq.is_archived = False
+            chq.archived_by = None
+            chq.archived_at = None
+            chq.save(update_fields=['is_archived', 'archived_by', 'archived_at'])
+        if restored_cheques:
+            _audit(request.user, "Restored cheques with registry record", {
+                "supplier_id": pk,
+                "count": len(restored_cheques),
+                "cheque_ids": [c.pk for c in restored_cheques],
+            })
         return JsonResponse({"ok": True})
     elif item_type == 'fund_cluster':
         obj = get_object_or_404(FundCluster.all_objects, pk=pk, is_archived=True)

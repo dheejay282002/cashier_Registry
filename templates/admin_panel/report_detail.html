@@ -4,19 +4,38 @@
 {% block content %}
 <style>
     @media print {
+        @page {
+            size: A4 landscape;
+            margin: 5mm 6mm;
+        }
+
+        html, body {
+            background: white !important;
+            color: black !important;
+            width: 100% !important;
+            height: auto !important;
+            overflow: visible !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
         .navbar,
         .mini-sidebar,
         .sidebar,
         .overlay,
         #rfidModal,
         #rfidTestInput,
-        .no-print {
+        .no-print,
+        .supplier-master-fab,
+        .cheque-master-fab,
+        #chequeMasterFab,
+        #chequeMasterMenu {
             display: none !important;
         }
 
         .content {
             margin: 0 !important;
-            padding: 10px !important;
+            padding: 0 !important;
         }
 
         body * {
@@ -29,27 +48,29 @@
         }
 
         .print-only {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+            position: static !important;
+            left: auto !important;
+            top: auto !important;
+            width: 100% !important;
             display: block !important;
+            overflow: visible !important;
         }
 
         .report-page-footer.print-only {
             position: fixed !important;
-            bottom: 8mm !important;
+            bottom: 6mm !important;
             top: auto !important;
             left: 0 !important;
             width: 100% !important;
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
             color: #333;
         }
         .report-page-footer.print-only::after {
             content: "Page " counter(page) " of " counter(pages);
         }
 
+        .report-preview-modal,
         .report-preview-modal.active {
             display: block !important;
             position: static !important;
@@ -57,13 +78,23 @@
             inset: auto !important;
             z-index: auto !important;
             padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            box-shadow: none !important;
         }
 
         .report-preview-card {
             box-shadow: none !important;
             border: none !important;
             max-height: none !important;
+            height: auto !important;
             width: 100% !important;
+            overflow: visible !important;
+            border-radius: 0 !important;
+            background: transparent !important;
         }
 
         .report-preview-head {
@@ -73,15 +104,57 @@
         .report-preview-body {
             padding: 0 !important;
             overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+            background: transparent !important;
+        }
+
+        .report-sheet {
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            background: transparent !important;
         }
 
         .report-table-wrap {
+            overflow: visible !important;
             overflow-x: visible !important;
-            width: auto !important;
+            overflow-y: visible !important;
+            width: 100% !important;
+            margin-top: 4px !important;
         }
 
-        @page {
-            margin: 8mm 8mm;
+        .report-table {
+            width: 100% !important;
+            table-layout: fixed !important;
+            page-break-inside: auto;
+            break-inside: auto;
+            font-size: 8.5pt !important;
+        }
+
+        .report-table th,
+        .report-table td {
+            padding: 1.5px 2px !important;
+            font-size: 7.5pt !important;
+            line-height: 1.15 !important;
+            vertical-align: middle !important;
+            text-align: center !important;
+        }
+
+        .report-table tbody tr {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .report-table thead {
+            display: table-header-group;
+        }
+
+        .report-cert {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-top: 10px !important;
+            padding: 10px 14px !important;
         }
     }
 
@@ -130,6 +203,8 @@
         background: #fff;
         flex: 1;
     }
+
+    .supplier-master-fab, .cheque-master-fab, #chequeMasterFab, #chequeMasterMenu { display: none !important; }
 
     /* Screen Dark Mode Overrides */
     @media screen {
@@ -236,51 +311,60 @@
     }
 
     .report-meta-grid {
-        display: grid;
-        grid-template-columns: 1.2fr 1.7fr;
-        gap: 1px;
-        align-items: start;
-        margin-top: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-top: 14px;
         margin-bottom: 12px;
+        width: 100%;
     }
 
-    .report-meta-left,
+    .report-meta-left {
+        flex: 1;
+        max-width: 62%;
+        font-size: 11px;
+    }
+
     .report-meta-right {
-        font-size: 12px;
+        flex: 0 0 280px;
+        font-size: 11px;
+        text-align: left;
     }
 
     .report-meta-left .row,
     .report-meta-right .row {
         display: flex;
-        gap: 1px;
+        gap: 4px;
         align-items: baseline;
-        line-height: 1.1;
+        line-height: 1.2;
         margin-bottom: 2px;
     }
 
-    .report-meta-left .label,
+    .report-meta-left .label {
+        font-weight: 700;
+        white-space: nowrap;
+        width: 110px;
+        flex-shrink: 0;
+    }
+
     .report-meta-right .label {
         font-weight: 700;
         white-space: nowrap;
-        flex: 0 0 100px;
+        width: 95px;
+        flex-shrink: 0;
     }
 
     .report-meta-left .value,
     .report-meta-right .value {
         display: inline-block;
         flex: 0 0 auto;
+        width: fit-content;
+        max-width: 100%;
         min-height: 14px;
-        border-bottom: 1px solid #444;
+        border-bottom: 1px solid #000;
         padding-left: 2px;
-        padding-right: 2px;
-        min-width: 40px;
-        max-width: 520px;
-    }
-
-    .report-meta-right {
-        justify-self: end;
-        text-align: left;
-        width: 400px;
+        padding-right: 4px;
+        white-space: nowrap;
     }
 
     .report-table-wrap {
@@ -307,11 +391,29 @@
         text-align: center;
     }
 
-    td.wrap-text {
+    td.wrap-text, .report-table td.wrap-text {
         white-space: normal !important;
-        word-break: break-word;
-        min-width: 150px;
-        max-width: 300px;
+        word-break: break-word !important;
+        overflow-wrap: break-word !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        text-align: left !important;
+    }
+
+    td.amount-col, .report-table td.amount-col {
+        white-space: nowrap !important;
+        font-size: 7.0pt !important;
+        letter-spacing: -0.15px !important;
+        text-align: right !important;
+        padding-left: 1.5px !important;
+        padding-right: 1.5px !important;
+    }
+
+    td.no-wrap, .report-table td.no-wrap {
+        white-space: nowrap !important;
+        word-break: keep-all !important;
+        overflow: hidden !important;
+        text-overflow: clip !important;
     }
 
     .report-table thead tr:first-child th {
@@ -328,43 +430,100 @@
         font-weight: 700;
     }
 
-    .table-wrap {
+    .report-detail-wrap {
         width: 100%;
-        overflow-x: auto;
         box-sizing: border-box;
-        max-width: calc(100% - 96px);
-        margin-left: 72px;
     }
 
-    .table-wrap table {
-        min-width: max-content;
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .table-wrap td,
-    .table-wrap th {
-        border: 1px solid var(--line);
-        padding: 8px 12px;
-        font-size: 13px;
-        vertical-align: middle;
-        white-space: nowrap;
-        text-align: center;
-    }
-
-    .table-wrap thead tr:first-child th {
+    .report-meta-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 24px;
         background: linear-gradient(135deg, #0f3d2e, #17563d);
         color: #ffffff;
-        border-bottom: 2px solid #0b2f23;
-        text-align: center;
+        padding: 14px 24px;
+        border-radius: 8px 8px 0 0;
+        font-size: 13px;
+        font-weight: 600;
     }
 
-    .table-wrap thead tr:nth-child(2) th {
-        background: #004629;
-        color: #fff;
+    .report-meta-bar .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .report-meta-bar .meta-label {
+        color: #a7f3d0;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+    }
+
+    .report-meta-bar .meta-value {
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    .report-detail-table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: auto;
+        border: 1px solid #222;
+    }
+
+    .report-detail-table th,
+    .report-detail-table td {
+        border: 1px solid #222;
+        padding: 6px 10px;
+        font-size: 12px;
+        line-height: 1.2;
+        vertical-align: middle;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .report-detail-table td.wrap-text {
+        white-space: normal !important;
+        word-break: break-word;
+        min-width: 120px;
+        max-width: 250px;
+    }
+
+    .report-detail-table thead tr:first-child th {
+        background: #1a3a2a;
+        color: #ffffff;
+        font-weight: 700;
         font-size: 12px;
         text-align: center;
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
+        border-color: #111;
+    }
+
+    .report-detail-table thead tr:nth-child(2) th {
+        background: #245540;
+        color: #ffffff;
+        font-weight: 600;
+        font-size: 11px;
+        text-align: center;
+        border-color: #111;
+    }
+
+    .report-detail-table tbody td {
+        background: #fff;
+        color: #000;
+    }
+
+    .report-detail-table tbody tr:hover td {
+        background: #f0faf4;
+    }
+
+    .report-detail-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-bottom: 10px;
     }
 
     .report-cert {
@@ -412,7 +571,7 @@
         text-align: center;
     }
 
-    body.desktop-nav-expanded .table-wrap {
+    body.desktop-nav-expanded .report-detail-wrap {
         margin-left: 232px;
         max-width: calc(100% - 232px);
     }
@@ -429,11 +588,6 @@
 <div class="no-print page-header">
     <h2><i class="fas fa-file-alt"></i> {{ report.title }}</h2>
     <div style="display:flex; gap:8px;">
-        {% if can_print %}
-        <button type="button" onclick="openReportPreviewModal()" class="btn btn-secondary btn-sm">
-            <i class="fas fa-print"></i> Print
-        </button>
-        {% endif %}
         <a href="{% url 'reports' %}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
     </div>
 </div>
@@ -448,7 +602,7 @@
 
 {% if table_rows %}
 <template id="report-template">
-    {% if report.report_type == 'cheque_summary' %}
+    {% if report.report_type == 'cheque_summary' or report.report_type == 'weekly_cheque' or report.report_type == 'monthly_cheque' or report.report_type == 'annual_cheque' %}
     <div class="report-sheet">
         <div class="report-sheet-header-container">
             <div style="width: 80px;" aria-hidden="true"></div>
@@ -465,15 +619,15 @@
             <div class="report-meta-left">
                 <div class="row">
                     <div class="label">Entity Name</div>
-                    <div class="value">{{ entity_name|default:'' }}</div>
+                    <div class="value">{{ entity_name|default:system_setting.entity_name|default:'Department of Agriculture' }}</div>
                 </div>
                 <div class="row">
                     <div class="label">Fund Cluster</div>
-                    <div class="value">{{ data.fund_cluster_display|default:'' }}</div>
+                    <div class="value">{{ data.fund_cluster_display|default:data.fund_cluster_code|default:'—' }}</div>
                 </div>
                 <div class="row">
                     <div class="label">Bank Account/No.</div>
-                    <div class="value" id="meta-account-number-cheque">{{ data.account_number|default:'' }}</div>
+                    <div class="value" id="meta-account-number-cheque">{{ data.account_number|default:data.bank_account|default:'—' }}</div>
                 </div>
             </div>
             <div class="report-meta-right">
@@ -490,42 +644,59 @@
 
         <div class="report-table-wrap">
             <table class="report-table">
+                <colgroup>
+                    <col style="width: 4.5%;">
+                    <col style="width: 4.5%;">
+                    <col style="width: 5.5%;">
+                    <col style="width: 6.5%;">
+                    <col style="width: 4.0%;">
+                    <col style="width: 13.0%;">
+                    <col style="width: 5.0%;">
+                    <col style="width: 15.0%;">
+                    <col style="width: 8.0%;">
+                    <col style="width: 5.5%;">
+                    <col style="width: 5.0%;">
+                    <col style="width: 5.0%;">
+                    <col style="width: 8.0%;">
+                    <col style="width: 10.5%;">
+                </colgroup>
                 <thead>
                     <tr>
-                        <th colspan="2">Check</th>
-                        <th rowspan="2">DV/Payroll No.</th>
-                        <th rowspan="2">ORS/BURS No.</th>
-                        <th rowspan="2">Responsibility Center</th>
-                        <th rowspan="2">Payee</th>
-                        <th rowspan="2">UACS Object Code</th>
-                        <th rowspan="2">Nature of Payments</th>
-                        <th rowspan="2">Gross Amount</th>
-                        <th rowspan="2">Professional Tax</th>
-                        <th colspan="2">Tax</th>
-                        <th rowspan="2">Amount</th>
+                        <th colspan="2" style="text-align:center;">Check</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">DV/Payroll No.</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">ORS/BURS No.</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">Responsibility Center</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">Payee</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">UACS Object Code</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">Nature of Payments</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">Gross Amount</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">Professional Tax</th>
+                        <th colspan="2" style="text-align:center;">Tax</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">Amount</th>
+                        <th rowspan="2" style="vertical-align:middle; text-align:center;">Remarks</th>
                     </tr>
                     <tr>
-                        <th>Check Date</th>
-                        <th>Serial No.</th>
-                        <th>5% / 3%</th>
-                        <th>2% / 1%</th>
+                        <th style="text-align:center;">Check Date</th>
+                        <th style="text-align:center;">Serial No.</th>
+                        <th style="text-align:center;">5% / 3%</th>
+                        <th style="text-align:center;">2% / 1%</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in table_rows %}
                     <tr>
                         {% for value in row %}
-                        <td class="{% if forloop.counter == 6 or forloop.counter == 8 %}wrap-text{% endif %}">
+                        <td class="{% if forloop.counter == 6 or forloop.counter == 8 %}wrap-text{% endif %}{% if forloop.counter == 9 or forloop.counter == 10 or forloop.counter == 11 or forloop.counter == 12 or forloop.counter == 13 %} amount-col{% endif %}{% if forloop.counter == 14 %} no-wrap{% endif %}">
                             {% if value == "" %} {% else %}{{ value }}{% endif %}
                         </td>
                         {% endfor %}
                     </tr>
                     {% endfor %}
                     <tr class="nothing-follows-row">
-                        <td colspan="13" style="text-align:center; font-style:italic; font-weight:600; letter-spacing:0.1em; color:#4b5563; padding: 6px;">*** Nothing Follows ***</td>
+                        <td colspan="14" style="text-align:center; font-style:italic; font-weight:600; letter-spacing:0.1em; color:#4b5563; padding: 6px;">*** Nothing Follows ***</td>
                     </tr>
                     <tr style="background:#000; height:6px;">
-                        <td colspan="13" style="padding:0; border:none;"></td>
+                        <td colspan="14" style="padding:0; border:none;"></td>
                     </tr>
                     <tr style="font-weight:700;">
                         <td></td>
@@ -536,11 +707,12 @@
                         <td></td>
                         <td></td>
                         <td style="text-align:right; font-weight:700;">Total:</td>
-                        <td id="calc-cheque-gross">0.00</td>
-                        <td id="calc-cheque-prof">0.00</td>
-                        <td id="calc-cheque-tax53">0.00</td>
-                        <td id="calc-cheque-tax21">0.00</td>
-                        <td id="calc-cheque-net">0.00</td>
+                        <td id="calc-cheque-gross" class="amount-col">0.00</td>
+                        <td id="calc-cheque-prof" class="amount-col">0.00</td>
+                        <td id="calc-cheque-tax53" class="amount-col">0.00</td>
+                        <td id="calc-cheque-tax21" class="amount-col">0.00</td>
+                        <td id="calc-cheque-net" class="amount-col">0.00</td>
+                        <td></td>
                     </tr>
                 </tbody>
             </table>
@@ -593,6 +765,7 @@
                         <th rowspan="2">Professional Tax</th>
                         <th colspan="2">Tax</th>
                         <th rowspan="2">Amount</th>
+                        <th rowspan="2">Remarks</th>
                     </tr>
                     <tr>
                         <th>Check Date</th>
@@ -612,7 +785,7 @@
                     </tr>
                     {% endfor %}
                     <tr class="nothing-follows-row">
-                        <td colspan="13" style="text-align:center; font-style:italic; font-weight:600; padding:6px;">*** Nothing Follows ***</td>
+                        <td colspan="14" style="text-align:center; font-style:italic; font-weight:600; padding:6px;">*** Nothing Follows ***</td>
                     </tr>
                     <tr style="font-weight:700; background:#f8fafc;">
                         <td colspan="8" style="text-align:right; font-weight:700; padding:6px;">Total:</td>
@@ -621,18 +794,19 @@
                         <td id="calc-supplier-tax53">0.00</td>
                         <td id="calc-supplier-tax21">0.00</td>
                         <td id="calc-supplier-net">0.00</td>
+                        <td></td>
                     </tr>
                 </tbody>
             </table>
         </div>
     </div>
-    {% elif report.report_type == 'radai_summary' %}
+    {% elif report.report_type == 'radai_summary' or report.report_type == 'weekly_radai' or report.report_type == 'monthly_radai' or report.report_type == 'annual_radai' %}
     {% with data=data %}
     <div class="report-sheet">
         <div class="report-sheet-header-container">
             <div style="width: 80px;" aria-hidden="true"></div>
             <div class="report-sheet-titlewrap">
-                <div class="report-sheet-title">REPORT OF ADVICE TO DEBIT ACCOUNT ISSUED{% if data.payee %} - {{ data.payee }}{% endif %}</div>
+                <div class="report-sheet-title">REPORT OF ADVICE TO DEBIT ACCOUNT ISSUED{% if is_lbp_only or data.is_lbp_only or data.payee == 'LBP' or data.payee == 'LAND BANK' %} - LBP{% elif data.payee %} - {{ data.payee }}{% endif %}</div>
                 <div class="report-sheet-period">
                     Period Covered: {{ period_covered }}
                 </div>
@@ -677,7 +851,13 @@
                         <th rowspan="2">Payee</th>
                         <th rowspan="2">UACS Object Code</th>
                         <th rowspan="2">Nature of Payment</th>
+                        {% if has_lbp %}
+                        <th rowspan="2">Gross Amount<br>(as per voucher)</th>
+                        <th rowspan="2">Professional Tax</th>
+                        <th rowspan="2">Total<br>(as per ADA)</th>
+                        {% else %}
                         <th rowspan="2">Amount</th>
+                        {% endif %}
                     </tr>
                     <tr>
                         <th>Date</th>
@@ -695,12 +875,18 @@
                     </tr>
                     {% endfor %}
                     <tr class="nothing-follows-row">
-                        <td colspan="8" style="text-align:center; font-style:italic; font-weight:600; letter-spacing:0.1em; color:#4b5563; padding: 6px;">*** Nothing Follows ***</td>
+                        <td colspan="{% if has_lbp %}10{% else %}8{% endif %}" style="text-align:center; font-style:italic; font-weight:600; letter-spacing:0.1em; color:#4b5563; padding: 6px;">*** Nothing Follows ***</td>
                     </tr>
                     <!--TOTAL-->
                     <tr style="font-weight:700; background:#f8fafc;">
                         <td colspan="7" style="text-align:right; font-weight:700; padding:6px;">Total:</td>
+                        {% if has_lbp %}
+                        <td id="calc-radai-gross" style="padding:6px;">0.00</td>
+                        <td id="calc-radai-prof" style="padding:6px;">0.00</td>
+                        <td id="calc-radai-ada" style="padding:6px;">0.00</td>
+                        {% else %}
                         <td id="calc-radai-total">0.00</td>
+                        {% endif %}
                     </tr>
                 </tbody>
             </table>
@@ -743,76 +929,140 @@
     </div>
 </div>
 
-<div class="table-wrap no-print" style="margin-top:16px;">
-    <table>
-        <thead>
-            <tr>
-                {% if report.report_type == 'radai_summary' %}
-                <th colspan="2">ADA</th>
-                <th rowspan="2">DV/Payroll No.</th>
-                <th rowspan="2">ORS/BURS No.</th>
-                <th rowspan="2">Payee</th>
-                <th rowspan="2">UACS Object Code</th>
-                <th rowspan="2">Nature of Payment</th>
-                <th rowspan="2">Amount</th>
-                {% else %}
-                <th colspan="2">Check</th>
-                <th rowspan="2">DV/Payroll No.</th>
-                <th rowspan="2">ORS/BURS No.</th>
-                <th rowspan="2">Responsibility Center</th>
-                <th rowspan="2">Payee</th>
-                <th rowspan="2">UACS Object Code</th>
-                <th rowspan="2">Nature of Payments</th>
-                <th rowspan="2">Gross Amount</th>
-                <th rowspan="2">Professional Tax</th>
-                <th colspan="2">Tax</th>
-                <th rowspan="2">Amount</th>
-                {% endif %}
-            </tr>
-            <tr>
-                {% if report.report_type == 'radai_summary' %}
-                <th>Date</th>
-                <th>Serial No.</th>
-                {% else %}
-                <th>Check Date</th>
-                <th>Serial No.</th>
-                <th>5% / 3%</th>
-                <th>2% / 1%</th>
-                {% endif %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in table_rows %}
-            <tr>
-                {% for value in row %}
-                <td class="{% if report.report_type == 'cheque_summary' %}{% if forloop.counter == 6 or forloop.counter == 8 %}wrap-text{% endif %}{% elif report.report_type == 'supplier_summary' %}{% if forloop.counter == 9 or forloop.counter == 13 or forloop.counter == 15 %}wrap-text{% endif %}{% elif report.report_type == 'radai_summary' %}{% if forloop.counter == 5 %}wrap-text{% endif %}{% endif %}">
-                    {% if value == "" %} {% else %}{{ value }}{% endif %}
-                </td>
+<div class="report-detail-wrap no-print" style="margin-top:16px;">
+    <div class="report-detail-actions">
+        {% if can_print %}
+        <button type="button" onclick="openReportPreviewModal()" class="btn btn-secondary btn-sm">
+            <i class="fas fa-print"></i> PRINT REPORT
+        </button>
+        {% endif %}
+        <button type="button" onclick="exportReportExcel()" class="btn btn-primary btn-sm">
+            <i class="fas fa-file-excel"></i> EXPORT EXCEL
+        </button>
+    </div>
+
+    <div class="report-meta-bar">
+        <span class="meta-item">
+            <span class="meta-label">Reports</span>
+        </span>
+        <span class="meta-item">
+            <span class="meta-label">Fund Cluster</span>
+            <span class="meta-value">{{ data.fund_cluster_display|default:data.fund_cluster_code|default:"—" }}</span>
+        </span>
+        <span class="meta-item">
+            <span class="meta-label">Report Type</span>
+            <span class="meta-value">{{ report.get_report_type_display }}</span>
+        </span>
+        <span class="meta-item">
+            <span class="meta-label">Duration</span>
+            <span class="meta-value">{{ report.get_period_display|default:report.period|default:"Custom Range" }}</span>
+        </span>
+        <span class="meta-item">
+            <span class="meta-label">Status</span>
+            <span class="meta-value">{{ data.cheque_status|default:"All" }}</span>
+        </span>
+        <span class="meta-item">
+            <span class="meta-label">Date</span>
+            <span class="meta-value">{% if report.date_from %}{{ report.date_from|date:"n/j/Y" }}{% else %}All time{% endif %}{% if report.date_to %} – {{ report.date_to|date:"n/j/Y" }}{% endif %}</span>
+        </span>
+        <span class="meta-item">
+            <span class="meta-label">UACS Code</span>
+            <span class="meta-value">{{ data.uacs_code|default:"—" }}</span>
+        </span>
+    </div>
+
+    <div style="overflow-x:auto; border:1px solid #222; border-top:none;">
+        <table class="report-detail-table">
+            <thead>
+                <tr>
+                    {% if report.report_type == 'radai_summary' or report.report_type == 'weekly_radai' or report.report_type == 'monthly_radai' or report.report_type == 'annual_radai' %}
+                    <th colspan="2">ADA</th>
+                    <th rowspan="2">DV/Payroll No.</th>
+                    <th rowspan="2">ORS/BURS No.</th>
+                    <th rowspan="2">Payee</th>
+                    <th rowspan="2">UACS Object Code</th>
+                    <th rowspan="2">Nature of Payment</th>
+                    {% if has_lbp %}
+                    <th rowspan="2">Gross Amount<br>(as per voucher)</th>
+                    <th rowspan="2">Professional Tax</th>
+                    <th rowspan="2">Total<br>(as per ADA)</th>
+                    {% else %}
+                    <th rowspan="2">Amount</th>
+                    {% endif %}
+                    {% else %}
+                    <th colspan="2">Check</th>
+                    <th rowspan="2">DV/Payroll No.</th>
+                    <th rowspan="2">ORS/BURS No.</th>
+                    <th rowspan="2">Responsibility Center</th>
+                    <th rowspan="2">Payee</th>
+                    <th rowspan="2">UACS Object Code</th>
+                    <th rowspan="2">Nature of Payments</th>
+                    <th rowspan="2">Gross Amount</th>
+                    <th rowspan="2">Professional Tax</th>
+                    <th colspan="2">Tax</th>
+                    <th rowspan="2">Amount</th>
+                    <th rowspan="2">Remarks</th>
+                    {% endif %}
+                </tr>
+                <tr>
+                    {% if report.report_type == 'radai_summary' or report.report_type == 'weekly_radai' or report.report_type == 'monthly_radai' or report.report_type == 'annual_radai' %}
+                    <th>Date</th>
+                    <th>Serial No.</th>
+                    {% else %}
+                    <th>Check Date</th>
+                    <th>Serial No.</th>
+                    <th>5% / 3%</th>
+                    <th>2% / 1%</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in table_rows %}
+                <tr>
+                    {% for value in row %}
+                    <td class="{% if report.report_type == 'cheque_summary' or report.report_type == 'weekly_cheque' or report.report_type == 'monthly_cheque' or report.report_type == 'annual_cheque' %}{% if forloop.counter == 6 or forloop.counter == 8 %}wrap-text{% endif %}{% if forloop.counter == 9 or forloop.counter == 10 or forloop.counter == 11 or forloop.counter == 12 or forloop.counter == 13 %} amount-col{% endif %}{% if forloop.counter == 14 %} no-wrap{% endif %}{% elif report.report_type == 'supplier_summary' %}{% if forloop.counter == 9 or forloop.counter == 13 or forloop.counter == 15 %}wrap-text{% endif %}{% elif report.report_type == 'radai_summary' or report.report_type == 'weekly_radai' or report.report_type == 'monthly_radai' or report.report_type == 'annual_radai' %}{% if forloop.counter == 5 %}wrap-text{% endif %}{% endif %}">
+                        {% if value == "" %} {% else %}{{ value }}{% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
                 {% endfor %}
-            </tr>
-            {% endfor %}
-            {% if report.report_type == 'cheque_summary' %}
-            <tr style="background:#000; height:6px;">
-                <td colspan="13" style="padding:0; border:none;"></td>
-            </tr>
-            <tr style="font-weight:700;">
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td style="text-align:right; font-weight:700; padding:8px 12px;">Total:</td>
-                <td id="screen-cheque-gross">0.00</td>
-                <td id="screen-cheque-prof">0.00</td>
-                <td id="screen-cheque-tax53">0.00</td>
-                <td id="screen-cheque-tax21">0.00</td>
-                <td id="screen-cheque-net">0.00</td>
-            </tr>
-            {% endif %}
-        </tbody>
-    </table>
+                {% if report.report_type == 'cheque_summary' or report.report_type == 'weekly_cheque' or report.report_type == 'monthly_cheque' or report.report_type == 'annual_cheque' %}
+                <tr style="background:#000; height:4px;">
+                    <td colspan="14" style="padding:0; border:none;"></td>
+                </tr>
+                <tr style="font-weight:700;">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td style="text-align:right; font-weight:700; padding:8px 10px;">Total:</td>
+                    <td id="screen-cheque-gross" class="amount-col">0.00</td>
+                    <td id="screen-cheque-prof" class="amount-col">0.00</td>
+                    <td id="screen-cheque-tax53" class="amount-col">0.00</td>
+                    <td id="screen-cheque-tax21" class="amount-col">0.00</td>
+                    <td id="screen-cheque-net" class="amount-col">0.00</td>
+                    <td></td>
+                </tr>
+                {% elif report.report_type == 'radai_summary' or report.report_type == 'weekly_radai' or report.report_type == 'monthly_radai' or report.report_type == 'annual_radai' %}
+                <tr class="nothing-follows-row">
+                    <td colspan="{% if has_lbp %}10{% else %}8{% endif %}" style="text-align:center; font-style:italic; font-weight:600; letter-spacing:0.1em; color:#4b5563; padding:6px;">*** Nothing Follows ***</td>
+                </tr>
+                <tr style="font-weight:700; background:#f8fafc;">
+                    <td colspan="7" style="text-align:right; font-weight:700; padding:6px;">Total:</td>
+                    {% if has_lbp %}
+                    <td id="screen-radai-gross" style="padding:6px;">0.00</td>
+                    <td id="screen-radai-prof" style="padding:6px;">0.00</td>
+                    <td id="screen-radai-ada" style="padding:6px;">0.00</td>
+                    {% else %}
+                    <td id="screen-radai-total" style="padding:6px;">0.00</td>
+                    {% endif %}
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% else %}
 <div style="text-align:center; padding:40px; color:var(--muted);">
@@ -837,7 +1087,6 @@
         const body = document.getElementById('reportModalBody');
         if (!body) return;
 
-        // Clean up combined string variables to capture the raw Bank Account/Account No. sequence
         const chequeAccField = body.querySelector('#meta-account-number-cheque');
         if (chequeAccField && chequeAccField.textContent.includes('/')) {
             chequeAccField.textContent = chequeAccField.textContent.split('/').pop().trim();
@@ -850,7 +1099,7 @@
 
         let chequeGross = 0, chequeProf = 0, chequeTax53 = 0, chequeTax21 = 0, chequeNet = 0;
         let supGross = 0, supProf = 0, supTax53 = 0, supTax21 = 0, supNet = 0;
-        let radaiTotal = 0;
+        let radaiTotal = 0, radaiGross = 0, radaiProf = 0, radaiAda = 0;
 
         let activeSerials = [];
 
@@ -859,18 +1108,18 @@
             if (row.classList.contains('nothing-follows-row') || !row.querySelector('td')) return;
             const cells = row.querySelectorAll('td');
             
-            if (cells.length === 13) {
+            if (cells.length === 14) {
                 let serialText = cells[1].textContent.trim();
                 if (serialText) activeSerials.push(serialText);
 
-                if (document.getElementById('calc-cheque-gross')) {
+                if (body.querySelector('#calc-cheque-gross')) {
                     chequeGross += parseCurrencyValue(cells[8].textContent);
                     chequeProf  += parseCurrencyValue(cells[9].textContent);
                     chequeTax53 += parseCurrencyValue(cells[10].textContent);
                     chequeTax21 += parseCurrencyValue(cells[11].textContent);
                     chequeNet   += parseCurrencyValue(cells[12].textContent);
                 } 
-                else if (document.getElementById('calc-supplier-gross')) {
+                else if (body.querySelector('#calc-supplier-gross')) {
                     supGross += parseCurrencyValue(cells[8].textContent);
                     supProf  += parseCurrencyValue(cells[9].textContent);
                     supTax53 += parseCurrencyValue(cells[10].textContent);
@@ -880,73 +1129,148 @@
             } else if (cells.length === 8) {
                 let serialText = cells[1].textContent.trim();
                 if (serialText) activeSerials.push(serialText);
-
-                radaiTotal += parseCurrencyValue(cells[7].textContent);
+                if (body.querySelector('#calc-radai-total')) {
+                    radaiTotal += parseCurrencyValue(cells[7].textContent);
+                }
+            } else if (cells.length === 10) {
+                let serialText = cells[1].textContent.trim();
+                if (serialText) activeSerials.push(serialText);
+                if (body.querySelector('#calc-radai-gross')) {
+                    radaiGross += parseCurrencyValue(cells[7].textContent);
+                    radaiProf  += parseCurrencyValue(cells[8].textContent);
+                    radaiAda   += parseCurrencyValue(cells[9].textContent);
+                }
             }
         });
 
-        const displaySpan = body.querySelector('.cert-serial-display');
-        if (displaySpan && activeSerials.length > 0) {
-            if (activeSerials.length === 1) {
-                displaySpan.textContent = activeSerials[0];
+        const certSerialEl = body.querySelector('.cert-serial-display');
+        if (certSerialEl) {
+            if (activeSerials.length === 0) {
+                certSerialEl.textContent = '___________';
+            } else if (activeSerials.length === 1 || activeSerials[0] === activeSerials[activeSerials.length - 1]) {
+                certSerialEl.textContent = activeSerials[0];
             } else {
-                displaySpan.textContent = activeSerials[0] + ' to ' + activeSerials[activeSerials.length - 1];
+                certSerialEl.textContent = activeSerials[0] + ' to ' + activeSerials[activeSerials.length - 1];
             }
         }
 
-        if (document.getElementById('calc-cheque-gross')) {
-            document.getElementById('calc-cheque-gross').textContent = formatCurrencyValue(chequeGross);
-            document.getElementById('calc-cheque-prof').textContent  = formatCurrencyValue(chequeProf);
-            document.getElementById('calc-cheque-tax53').textContent = formatCurrencyValue(chequeTax53);
-            document.getElementById('calc-cheque-tax21').textContent = formatCurrencyValue(chequeTax21);
-            document.getElementById('calc-cheque-net').textContent   = formatCurrencyValue(chequeNet);
+        if (body.querySelector('#calc-cheque-gross')) {
+            body.querySelector('#calc-cheque-gross').textContent = formatCurrencyValue(chequeGross);
+            body.querySelector('#calc-cheque-prof').textContent  = formatCurrencyValue(chequeProf);
+            body.querySelector('#calc-cheque-tax53').textContent = formatCurrencyValue(chequeTax53);
+            body.querySelector('#calc-cheque-tax21').textContent = formatCurrencyValue(chequeTax21);
+            body.querySelector('#calc-cheque-net').textContent   = formatCurrencyValue(chequeNet);
         }
-        if (document.getElementById('calc-supplier-gross')) {
-            document.getElementById('calc-supplier-gross').textContent = formatCurrencyValue(supGross);
-            document.getElementById('calc-supplier-prof').textContent  = formatCurrencyValue(supProf);
-            document.getElementById('calc-supplier-tax53').textContent = formatCurrencyValue(supTax53);
-            document.getElementById('calc-supplier-tax21').textContent = formatCurrencyValue(supTax21);
-            document.getElementById('calc-supplier-net').textContent   = formatCurrencyValue(supNet);
+        if (body.querySelector('#calc-supplier-gross')) {
+            body.querySelector('#calc-supplier-gross').textContent = formatCurrencyValue(supGross);
+            body.querySelector('#calc-supplier-prof').textContent  = formatCurrencyValue(supProf);
+            body.querySelector('#calc-supplier-tax53').textContent = formatCurrencyValue(supTax53);
+            body.querySelector('#calc-supplier-tax21').textContent = formatCurrencyValue(supTax21);
+            body.querySelector('#calc-supplier-net').textContent   = formatCurrencyValue(supNet);
         }
-        if (document.getElementById('calc-radai-total')) {
-            document.getElementById('calc-radai-total').textContent = formatCurrencyValue(radaiTotal);
+        if (body.querySelector('#calc-radai-total')) {
+            body.querySelector('#calc-radai-total').textContent = formatCurrencyValue(radaiTotal);
+        }
+        if (body.querySelector('#calc-radai-gross')) {
+            body.querySelector('#calc-radai-gross').textContent = formatCurrencyValue(radaiGross);
+            body.querySelector('#calc-radai-prof').textContent  = formatCurrencyValue(radaiProf);
+            body.querySelector('#calc-radai-ada').textContent   = formatCurrencyValue(radaiAda);
         }
     }
 
-    /* Populate the screen-view totals row for cheque_summary */
     function calculateScreenTotals() {
         var grossEl  = document.getElementById('screen-cheque-gross');
-        if (!grossEl) return; // not a cheque_summary page
+        if (grossEl) {
+            var gross = 0, prof = 0, tax53 = 0, tax21 = 0, net = 0;
+            var screenTable = document.querySelector('.report-detail-table');
+            if (screenTable) {
+                screenTable.querySelectorAll('tbody tr').forEach(function(row) {
+                    var cells = row.querySelectorAll('td');
+                    if (cells.length !== 14) return;
+                    gross += parseCurrencyValue(cells[8].textContent);
+                    prof  += parseCurrencyValue(cells[9].textContent);
+                    tax53 += parseCurrencyValue(cells[10].textContent);
+                    tax21 += parseCurrencyValue(cells[11].textContent);
+                    net   += parseCurrencyValue(cells[12].textContent);
+                });
+            }
+            document.getElementById('screen-cheque-gross').textContent = formatCurrencyValue(gross);
+            document.getElementById('screen-cheque-prof').textContent  = formatCurrencyValue(prof);
+            document.getElementById('screen-cheque-tax53').textContent = formatCurrencyValue(tax53);
+            document.getElementById('screen-cheque-tax21').textContent = formatCurrencyValue(tax21);
+            document.getElementById('screen-cheque-net').textContent   = formatCurrencyValue(net);
+        }
 
-        var gross = 0, prof = 0, tax53 = 0, tax21 = 0, net = 0;
-        var screenTable = document.querySelector('.table-wrap table');
-        if (!screenTable) return;
-
-        screenTable.querySelectorAll('tbody tr').forEach(function(row) {
-            var cells = row.querySelectorAll('td');
-            if (cells.length !== 13) return; // skip totals row itself
-            gross += parseCurrencyValue(cells[8].textContent);
-            prof  += parseCurrencyValue(cells[9].textContent);
-            tax53 += parseCurrencyValue(cells[10].textContent);
-            tax21 += parseCurrencyValue(cells[11].textContent);
-            net   += parseCurrencyValue(cells[12].textContent);
-        });
-
-        document.getElementById('screen-cheque-gross').textContent = formatCurrencyValue(gross);
-        document.getElementById('screen-cheque-prof').textContent  = formatCurrencyValue(prof);
-        document.getElementById('screen-cheque-tax53').textContent = formatCurrencyValue(tax53);
-        document.getElementById('screen-cheque-tax21').textContent = formatCurrencyValue(tax21);
-        document.getElementById('screen-cheque-net').textContent   = formatCurrencyValue(net);
+        var radaiEl = document.getElementById('screen-radai-total');
+        var radaiGrossEl = document.getElementById('screen-radai-gross');
+        if (radaiEl || radaiGrossEl) {
+            var radaiTotal = 0, radaiGross = 0, radaiProf = 0, radaiAda = 0;
+            var screenTable = document.querySelector('.report-detail-table');
+            if (screenTable) {
+                screenTable.querySelectorAll('tbody tr').forEach(function(row) {
+                    var cells = row.querySelectorAll('td');
+                    if (cells.length === 8) {
+                        radaiTotal += parseCurrencyValue(cells[7].textContent);
+                    } else if (cells.length === 10) {
+                        radaiGross += parseCurrencyValue(cells[7].textContent);
+                        radaiProf  += parseCurrencyValue(cells[8].textContent);
+                        radaiAda   += parseCurrencyValue(cells[9].textContent);
+                    }
+                });
+            }
+            if (radaiEl) radaiEl.textContent = formatCurrencyValue(radaiTotal);
+            if (radaiGrossEl) {
+                radaiGrossEl.textContent = formatCurrencyValue(radaiGross);
+                document.getElementById('screen-radai-prof').textContent = formatCurrencyValue(radaiProf);
+                document.getElementById('screen-radai-ada').textContent = formatCurrencyValue(radaiAda);
+            }
+        }
     }
 
-    document.addEventListener('DOMContentLoaded', calculateScreenTotals);
+    document.addEventListener('DOMContentLoaded', function() {
+        calculateScreenTotals();
+        var template = document.getElementById('report-template');
+        if (template) {
+            var measurer = document.createElement('div');
+            measurer.style.cssText = 'position:fixed;top:-99999px;left:-99999px;width:281mm;height:auto;overflow:hidden;visibility:hidden;pointer-events:none;background:white;font-family:Arial,Helvetica,sans-serif;font-size:12px';
+            var clone = template.content.cloneNode(true);
+            clone.style.overflow = 'hidden';
+            clone.style.maxHeight = 'none';
+            clone.style.width = '281mm';
+            clone.style.padding = '0';
+            clone.querySelectorAll('.print-only').forEach(function(el) { el.style.display = 'none'; });
+            clone.querySelectorAll('.report-sheet').forEach(function(el) { el.style.minHeight = '0'; el.style.height = 'auto'; });
+            measurer.appendChild(clone);
+            document.body.appendChild(measurer);
+            var totalHeightPx = measurer.scrollHeight;
+            document.body.removeChild(measurer);
+            var printPageHeightPx = 194 * (96 / 25.4);
+            var realPages = Math.max(1, Math.ceil(totalHeightPx / printPageHeightPx));
+            var certEl = document.querySelector('.cert-sheet-val');
+            if (certEl) certEl.textContent = realPages === 1 ? 'one (1) sheet' : realPages + ' sheets';
 
-    /**
-     * Counts the actual print pages by cloning the modal content into a
-     * hidden container at print width (A4 landscape minus 8mm side margins = 281mm)
-     * and measuring the rendered height vs print page height.
-     * This correctly accounts for text-wrapping that occurs at narrower print widths.
-     */
+            let activeSerials = [];
+            const screenTable = document.querySelector('.report-detail-table');
+            if (screenTable) {
+                screenTable.querySelectorAll('tbody tr').forEach(function(row) {
+                    var cells = row.querySelectorAll('td');
+                    if (cells.length >= 2) {
+                        var s = cells[1].textContent.trim();
+                        if (s && s !== 'Total:') activeSerials.push(s);
+                    }
+                });
+            }
+            var templateCertSerial = template.content.querySelector('.cert-serial-display');
+            if (templateCertSerial && activeSerials.length > 0) {
+                if (activeSerials.length === 1 || activeSerials[0] === activeSerials[activeSerials.length - 1]) {
+                    templateCertSerial.textContent = activeSerials[0];
+                } else {
+                    templateCertSerial.textContent = activeSerials[0] + ' to ' + activeSerials[activeSerials.length - 1];
+                }
+            }
+        }
+    });
+
     function countPrintPages(contentEl) {
         if (!contentEl) return 1;
         var measurer = document.createElement('div');
@@ -954,22 +1278,24 @@
             'position:fixed',
             'top:-99999px',
             'left:-99999px',
-            'width:281mm',       /* A4 landscape 297mm - 8mm×2 side margins */
+            'width:281mm',
             'height:auto',
-            'overflow:visible',
+            'overflow:hidden',
             'visibility:hidden',
             'pointer-events:none',
             'background:white'
         ].join(';');
         var clone = contentEl.cloneNode(true);
-        clone.style.overflow = 'visible';
+        clone.style.overflow = 'hidden';
         clone.style.maxHeight = 'none';
+        clone.style.width = '281mm';
         clone.style.padding = '0';
+        clone.querySelectorAll('.print-only').forEach(function(el) { el.style.display = 'none'; });
+        clone.querySelectorAll('.report-sheet').forEach(function(el) { el.style.minHeight = '0'; el.style.height = 'auto'; });
         measurer.appendChild(clone);
         document.body.appendChild(measurer);
         var totalHeightPx = measurer.scrollHeight;
         document.body.removeChild(measurer);
-        /* A4 landscape printable height: 210mm total − 8mm top − 8mm bottom = 194mm */
         var printPageHeightPx = 194 * (96 / 25.4);
         return Math.max(1, Math.ceil(totalHeightPx / printPageHeightPx));
     }
@@ -985,7 +1311,6 @@
         body.innerHTML = '';
         body.appendChild(template.content.cloneNode(true));
 
-        /* Measure the real page count at print width and update the display */
         var pageCount = countPrintPages(body);
         var sheetsEl = body.querySelector('.no-of-sheets-val');
         if (sheetsEl) sheetsEl.textContent = pageCount;
@@ -1009,6 +1334,42 @@
 
     function printReportFromModal() {
         window.print();
+    }
+
+    function exportReportExcel() {
+        var table = document.querySelector('.report-detail-table');
+        if (!table) { return; }
+        var rows = [];
+        var metaBar = document.querySelector('.report-meta-bar');
+        if (metaBar) {
+            var metaText = metaBar.textContent.replace(/\s+/g, ' ').trim();
+            rows.push([metaText]);
+            rows.push([]);
+        }
+        var trs = table.querySelectorAll('tr');
+        trs.forEach(function(tr) {
+            if (tr.style.height === '4px' || tr.style.height === '6px') return;
+            var cells = [];
+            tr.querySelectorAll('th, td').forEach(function(cell) {
+                var colspan = parseInt(cell.getAttribute('colspan')) || 1;
+                var text = cell.textContent.trim();
+                cells.push(text);
+                for (var c = 1; c < colspan; c++) { cells.push(''); }
+            });
+            if (cells.length > 0) rows.push(cells);
+        });
+        var csv = rows.map(function(r) {
+            return r.map(function(v) {
+                var escaped = v.replace(/"/g, '""');
+                return '"' + escaped + '"';
+            }).join(',');
+        }).join('\n');
+        var blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        var link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = '{{ report.title|escapejs }}.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
     }
 </script>
 {% endblock %}

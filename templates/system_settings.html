@@ -4,23 +4,32 @@
 
 {% block content %}
 <style>
-    .page-center {
+    /* .content .page-center beats base.html's later .page-center { margin: 40px auto } */
+    .content .page-center {
         display: flex;
         justify-content: center;
-        align-items: center;
-        min-height: 80vh;
-        padding: 20px;
+        align-items: flex-start;
+        min-height: 0;
+        height: auto;
+        max-height: none;
+        margin: 0 !important;
+        padding: 0 !important;
+        max-width: none !important;
+        box-sizing: border-box;
+        overflow: visible;
     }
 
-    .settings-wrap {
+    .content .settings-wrap {
         width: 100%;
         max-width: 520px;
+        margin-top: 0;
         background: var(--card);
         border-radius: 14px;
         border: 1px solid var(--line);
         box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
         padding: 30px;
         text-align: center;
+        box-sizing: border-box;
     }
 
     .settings-title {

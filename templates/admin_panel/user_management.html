@@ -155,7 +155,7 @@
     }
 
     #adminPasswordModal {
-        z-index: 1001;
+        z-index: 100002 !important;
     }
 
     .modal-content {
@@ -842,7 +842,7 @@
             </thead>
             <tbody>
                 {% for user in cashiers %}
-                <tr data-user-id="{{ user.id }}" data-status="{{ user.profile.status }}" data-role="{{ user.profile.role }}" data-is-disbursing-officer="{{ user.profile.is_disbursing_officer|yesno:"true,false" }}" data-employee-id="{{ user.profile.employee_id|default:'' }}" data-department="{{ user.profile.department|default:'' }}" data-position="{{ user.profile.position|default:'' }}" data-rfid-uid="{{ user.profile.rfid_uid|default:'' }}" data-profile-picture-url="{% if user.profile.profile_picture %}{{ user.profile.profile_picture.url }}{% endif %}" data-last-name="{{ user.last_name }}" data-first-name="{{ user.first_name }}" data-middle-initial="{{ user.profile.middle_initial|default:'' }}" data-email="{{ user.email }}" data-username="{{ user.username }}">
+                <tr data-user-id="{{ user.id }}" data-status="{{ user.profile.status }}" data-role="{{ user.profile.role }}" data-specific-role="{{ user.profile.specific_role|default:'' }}" data-is-disbursing-officer="{{ user.profile.is_disbursing_officer|yesno:"true,false" }}" data-employee-id="{{ user.profile.employee_id|default:'' }}" data-department="{{ user.profile.department|default:'' }}" data-position="{{ user.profile.position|default:'' }}" data-rfid-uid="{{ user.profile.rfid_uid|default:'' }}" data-profile-picture-url="{% if user.profile.profile_picture %}{{ user.profile.profile_picture.url }}{% endif %}" data-last-name="{{ user.last_name }}" data-first-name="{{ user.first_name }}" data-middle-initial="{{ user.profile.middle_initial|default:'' }}" data-email="{{ user.email }}" data-username="{{ user.username }}">
                     <td>
                         <div class="profile-photo-wrapper{% if user.profile.totp_enabled and user.profile.email_otp_enabled %} mfa-full{% elif user.profile.totp_enabled or user.profile.email_otp_enabled %} mfa-partial{% else %} mfa-none{% endif %}">
                             {% if user.profile.profile_picture %}
@@ -860,7 +860,7 @@
                         </div>
                     </td>
                     <td>{{ user.profile.employee_id|default:"-" }}</td>
-                    <td style="text-transform: capitalize;">{{ user.profile.role|default:"-" }}</td>
+                    <td style="text-transform: capitalize;">{% if user.profile.role == 'guest' and user.profile.specific_role %}{{ user.profile.specific_role }}{% else %}{{ user.profile.role|default:"-" }}{% endif %}</td>
                     <td>{{ user.last_name }}</td>
                     <td>{{ user.first_name }}</td>
                     <td>{{ user.profile.middle_initial }}</td>
@@ -946,7 +946,7 @@
                         <!-- Row 4: Role + info note -->
                         <div class="form-group col-span-3">
                             <label>Role:</label>
-                            <select id="createRoleSelect" name="role" class="create-form-input">
+                            <select id="createRoleSelect" name="role" class="create-form-input" onchange="toggleCreateSpecificRole()">
                                 <option value="admin">Admin</option>
                                 <option value="cashier" selected>Cashier</option>
                                 <option value="guest">Guest Viewer</option>
@@ -955,6 +955,17 @@
                         <div class="form-group col-span-3">
                             <p style="color:#6b7280; font-size:13px; margin-top:26px;">
                                 A username and temporary password will be auto-generated and emailed.
+                            </p>
+                        </div>
+
+                        <!-- Row 4b: Specific Role (only for Guest Viewer) -->
+                        <div class="form-group col-span-3" id="createSpecificRoleWrapper" style="display:none;">
+                            <label>Specific Role:</label>
+                            <input type="text" name="specific_role" id="createSpecificRole" class="create-form-input" placeholder="e.g. Reports Analyst, Auditor">
+                        </div>
+                        <div class="form-group col-span-3" id="createSpecificRoleNote" style="display:none;">
+                            <p style="color:#6b7280; font-size:13px; margin-top:26px;">
+                                Guest users can access <strong>Reports only</strong>.
                             </p>
                         </div>
 
@@ -1038,11 +1049,11 @@
                     <div class="id-card-branch">Cauayan City Isabela</div>
                 </div>
                 <div class="id-card-preview-body">
-                    <div class="id-card-title-line">
+                    <!--<div class="id-card-title-line">
                         <span class="id-card-title-line-bar"></span>
                         <span class="id-card-title-text">IDENTIFICATION CARD</span>
                         <span class="id-card-title-line-bar"></span>
-                    </div>
+                    </div>-->
                     <div class="id-card-content">
                         <div class="id-card-photo-col">
                             <img id="editIdCardPhoto" src="/media/system_assets/2.png?v=2" class="id-card-photo" alt="Photo">
@@ -1136,11 +1147,22 @@
                         </div>
                         <div class="form-group col-span-3">
                             <label>Role:</label>
-                            <select id="editRoleSelect" name="role" class="create-form-input">
+                            <select id="editRoleSelect" name="role" class="create-form-input" onchange="toggleEditSpecificRole()">
                                 <option value="admin">Admin</option>
                                 <option value="cashier">Cashier</option>
                                 <option value="guest">Guest Viewer</option>
                             </select>
+                        </div>
+
+                        <!-- Specific Role (only for Guest Viewer) -->
+                        <div class="form-group col-span-3" id="editSpecificRoleWrapper" style="display:none;">
+                            <label>Specific Role:</label>
+                            <input type="text" name="specific_role" id="editSpecificRole" class="create-form-input" placeholder="e.g. Reports Analyst, Auditor">
+                        </div>
+                        <div class="form-group col-span-3" id="editSpecificRoleNote" style="display:none;">
+                            <p style="color:#6b7280; font-size:13px; margin-top:26px;">
+                                Guest users can access <strong>Reports only</strong>.
+                            </p>
                         </div>
 
                         <!-- Row 5: Status (auto-managed), Disbursing Officer -->
@@ -1317,6 +1339,7 @@
         const email = row.dataset.email;
         const username = row.dataset.username;
         const role = row.dataset.role || 'cashier';
+        const specificRole = row.dataset.specificRole || '';
         const status = row.dataset.status || 'active';
         const isDisbursingOfficer = row.dataset.isDisbursingOfficer === 'true';
         const employeeId = row.dataset.employeeId || '';
@@ -1332,6 +1355,8 @@
         document.getElementById("editUsername").value = username;
         document.getElementById("editPassword").value = "";
         document.getElementById("editRoleSelect").value = role;
+        document.getElementById("editSpecificRole").value = specificRole;
+        toggleEditSpecificRole();
         var statusDisplay = document.getElementById("editStatusDisplay");
         var statusColors = {
             'active': {bg:'#e8f7ee', color:'#117a3d'},
@@ -1473,6 +1498,32 @@
         if(event.target.files[0]) reader.readAsDataURL(event.target.files[0]);
     }
 
+    function toggleCreateSpecificRole() {
+        const roleSelect = document.getElementById("createRoleSelect");
+        const wrapper = document.getElementById("createSpecificRoleWrapper");
+        const note = document.getElementById("createSpecificRoleNote");
+        const isGuest = roleSelect && roleSelect.value === 'guest';
+        wrapper.style.display = isGuest ? '' : 'none';
+        note.style.display = isGuest ? '' : 'none';
+        if (!isGuest) {
+            document.getElementById("createSpecificRole").value = '';
+        }
+        updateIdCardPreview();
+    }
+
+    function toggleEditSpecificRole() {
+        const roleSelect = document.getElementById("editRoleSelect");
+        const wrapper = document.getElementById("editSpecificRoleWrapper");
+        const note = document.getElementById("editSpecificRoleNote");
+        const isGuest = roleSelect && roleSelect.value === 'guest';
+        wrapper.style.display = isGuest ? '' : 'none';
+        note.style.display = isGuest ? '' : 'none';
+        if (!isGuest) {
+            document.getElementById("editSpecificRole").value = '';
+        }
+        updateEditIdCardPreview();
+    }
+
     function updateIdCardPreview() {
         const form = document.getElementById("createCashierForm");
         if (!form) return;
@@ -1487,6 +1538,8 @@
         const roleSelect = form.querySelector('select[name="role"]');
         const role = roleSelect ? roleSelect.options[roleSelect.selectedIndex].text : "Developer";
         const roleValue = roleSelect ? roleSelect.value : 'cashier';
+        const specificRoleInput = form.querySelector('input[name="specific_role"]');
+        const displayRole = (roleValue === 'guest' && specificRoleInput && specificRoleInput.value.trim()) ? specificRoleInput.value.trim() : role;
 
         const fullName = `${firstName}${middleInitial ? ' ' + middleInitial + '.' : ''} ${lastName}`;
 
@@ -1494,7 +1547,7 @@
         document.getElementById("idCardBadge").innerText = position.toUpperCase() || "SOFTWARE ENGINEER";
         document.getElementById("idCardEmpId").innerText = employeeId;
         document.getElementById("idCardDept").innerText = department;
-        document.getElementById("idCardRole").innerText = role;
+        document.getElementById("idCardRole").innerText = displayRole;
         document.getElementById("idCardFooterTitle").innerText = position || "Administrative Officer";
 
         const fileInput = document.getElementById("fileInput");
@@ -1521,6 +1574,8 @@
         const roleSelect = form.querySelector('select[name="role"]');
         const role = roleSelect ? roleSelect.options[roleSelect.selectedIndex].text : "Developer";
         const roleValue = roleSelect ? roleSelect.value : 'cashier';
+        const specificRoleInput = form.querySelector('input[name="specific_role"]');
+        const displayRole = (roleValue === 'guest' && specificRoleInput && specificRoleInput.value.trim()) ? specificRoleInput.value.trim() : role;
 
         const fullName = `${firstName}${middleInitial ? ' ' + middleInitial + '.' : ''} ${lastName}`;
 
@@ -1528,7 +1583,7 @@
         document.getElementById("editIdCardBadge").innerText = position.toUpperCase() || "SOFTWARE ENGINEER";
         document.getElementById("editIdCardEmpId").innerText = employeeId;
         document.getElementById("editIdCardDept").innerText = department;
-        document.getElementById("editIdCardRole").innerText = role;
+        document.getElementById("editIdCardRole").innerText = displayRole;
         document.getElementById("editIdCardFooterTitle").innerText = position || "Administrative Officer";
 
         const fileInput = document.getElementById("editFileInput");
@@ -1548,6 +1603,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
+        toggleCreateSpecificRole();
         const form = document.getElementById("createCashierForm");
         if (form) {
             form.querySelectorAll("input, select").forEach(input => {
@@ -1584,7 +1640,10 @@
 
         const hiddenPassword = document.getElementById(activeAdminPasswordHiddenId);
         if (hiddenPassword && !hiddenPassword.value) {
+            const openModals = document.querySelectorAll('.modal[style*="display: block"]');
+            openModals.forEach(m => { if (m.id !== "adminPasswordModal") m.style.display = "none"; });
             document.getElementById("adminPasswordModal").style.display = "block";
+            document.getElementById("adminPasswordInput").focus();
             return false;
         }
         return true;
@@ -1612,6 +1671,13 @@
     function closeAdminPasswordModal() {
         document.getElementById("adminPasswordModal").style.display = "none";
         document.getElementById("adminPasswordInput").value = "";
+        if (activeAdminProtectedForm && activeAdminProtectedForm.id === "deleteForm") {
+            document.getElementById("deleteModal").style.display = "block";
+        } else if (activeAdminProtectedForm && activeAdminProtectedForm.id === "editForm") {
+            document.getElementById("editModal").style.display = "block";
+        } else if (activeAdminProtectedForm && activeAdminProtectedForm.id === "createCashierForm") {
+            document.getElementById("cashierModal").style.display = "block";
+        }
     }
 
     document.addEventListener("DOMContentLoaded", function () {

@@ -33,6 +33,9 @@ urlpatterns = [
     path('api/cashier-dashboard-data/', views.cashier_dashboard_chart_data, name='cashier_dashboard_chart_data'),
     path('api/cashier-suppliers-chart/', views.cashier_suppliers_chart_data, name='cashier_suppliers_chart_data'),
     path('api/next-supplier-sequences/', views.next_supplier_sequences, name='next_supplier_sequences'),
+    path('api/supplier-serial-check/', views.validate_supplier_serial, name='validate_supplier_serial'),
+    path('api/radai-serial-check/', views.validate_radai_serial, name='validate_radai_serial'),
+    path('api/record-report-number/', views.api_record_report_number, name='api_record_report_number'),
     path('transactions/', views.admin_transactions, name='admin_transactions'),
     path('cashier-transactions/', views.cashier_transactions, name='cashier_transactions'),
 
@@ -48,6 +51,9 @@ urlpatterns = [
     path('suppliers/', views.suppliers, name='suppliers'),
     path('cashier/suppliers/', views.suppliers, name='cashier_suppliers'),
     path('suppliers/<int:pk>/update-remark/', views.update_supplier_remark, name='update_supplier_remark'),
+    path('api/supplier-modal-context/', views.supplier_modal_context, name='supplier_modal_context'),
+    path('api/supplier-create-ajax/', views.supplier_create_ajax, name='supplier_create_ajax'),
+    path('api/radai-modal-context/', views.radai_modal_context, name='radai_modal_context'),
     path('radai/', views.radai, name='radai'),
     path('cashier/radai/', views.radai, name='cashier_radai'),
     path('radai/<int:pk>/detail/', views.radai_detail, name='radai_detail'),
@@ -73,6 +79,7 @@ urlpatterns = [
     path('reports/<int:pk>/print/modal/', views.report_print_modal, name='report_print_modal'),
     path('reports/export/preview/', views.report_export_preview, name='report_export_preview'),
     path('reports/export/pdf/', views.export_report_pdf, name='export_report_pdf'),
+    path('reports/export/excel/', views.export_report_excel, name='export_report_excel'),
     path('reports/fund-cluster-info/', views.fund_cluster_info, name='fund_cluster_info'),
 
     path('import/', views.import_data, name='import_data'),
@@ -113,4 +120,6 @@ urlpatterns = [
     path('chatbot/history/', views.chatbot_history_api, name='chatbot_history_api'),
     path('admin-user-manual/', views.admin_user_manual, name='admin_user_manual'),
     path('cashier-user-manual/', views.cashier_user_manual, name='cashier_user_manual'),
+    path('archives/', views.archives, name='archives'),
+    path('restore/<str:item_type>/<int:pk>/', views.restore_item, name='restore_item'),
 ]

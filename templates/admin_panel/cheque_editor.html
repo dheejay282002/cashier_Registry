@@ -418,6 +418,15 @@
                     <input type="date" name="date" id="fDate"
                         value="{% if cheque %}{{ cheque.date|date:'Y-m-d' }}{% else %}{{ today }}{% endif %}" required>
                 </div>
+
+                {% if not cheque or not cheque.pk %}
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" name="quantity" id="fQuantity" value="1" min="1" max="100"
+                        placeholder="1" style="width:80px;">
+                    <span style="font-size:11px; color:var(--muted); display:block; margin-top:2px;">No. of cheques to create</span>
+                </div>
+                {% endif %}
             </div>
 
             <div class="form-group">
@@ -579,13 +588,15 @@
                                 <label>Tax 5%/3% (₱)</label>
                                 <input type="text" name="tax_5_3" id="fTax53"
                                     value="{{ cheque.tax_5_3|default:'' }}" placeholder="₱0.00"
-                                    autocomplete="off">
+                                    autocomplete="off" readonly
+                                    style="background:#f3f4f6; cursor:not-allowed; color:#6b7280;">
                             </div>
                             <div class="form-group">
                                 <label>Tax 2%/1% (₱)</label>
                                 <input type="text" name="tax_3_1" id="fTax31"
                                     value="{{ cheque.tax_3_1|default:'' }}" placeholder="₱0.00"
-                                    autocomplete="off">
+                                    autocomplete="off" readonly
+                                    style="background:#f3f4f6; cursor:not-allowed; color:#6b7280;">
                             </div>
                         </div>
                         <div
@@ -652,9 +663,8 @@
                 style="position: absolute; right: 0.9in; top: 0.85in; font-size: 12pt; font-weight: normal; text-align: right;">
                 0.00</div>
 
-            <!-- Amount in Words -->
             <div id="pvWords"
-                style="position: absolute; left: 0.80in; top: 1.2in; font-size: 11pt; font-weight: normal; text-transform: uppercase; width: 5.7in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                style="position: absolute; left: 0.80in; top: 1.2in; right: 0.45in; font-size: 11pt; font-weight: normal; text-transform: uppercase; white-space: nowrap; overflow: hidden;">
             </div>
         </div>
         </div>
@@ -838,17 +848,18 @@
 
         // Fit payee and words into single lines by reducing font-size if necessary
         fitTextToWidth(document.getElementById('pvPayee'), 19, 11);
-        fitTextToWidth(document.getElementById('pvWords'), 16, 11);
+        fitTextToWidth(document.getElementById('pvWords'), 15, 6);
     }
 
     function fitTextToWidth(el, maxSizePx, minSizePx) {
         if (!el) return;
-        const parentWidth = el.clientWidth;
         let size = maxSizePx;
         el.style.whiteSpace = 'nowrap';
         el.style.fontSize = size + 'px';
-        while (size > minSizePx && el.scrollWidth > parentWidth) {
-            size -= 1;
+        const targetW = el.clientWidth || (el.offsetWidth || 0);
+        if (!targetW) return;
+        while (size > minSizePx && el.scrollWidth > targetW) {
+            size -= 0.2;
             el.style.fontSize = size + 'px';
         }
     }
@@ -1154,7 +1165,12 @@
             .then(data => {
                 if (data && data.ok) {
                     if (printWin) {
-                        printWin.location.href = data.print_url;
+                        if (data.print_url) {
+                            printWin.location.href = data.print_url;
+                        } else if (data.count && data.count > 1) {
+                            printWin.close();
+                            showToast('success', 'Cheques Created', `${data.count} cheques created successfully.`);
+                        }
                     }
                     window.location.href = data.success_url;
                 } else {
@@ -1197,4 +1213,3 @@
     window.addEventListener('resize', scaleCheque);
 </script>
 {% endblock %}
-{% include 'admin_panel/_supplier_modal.html' %}

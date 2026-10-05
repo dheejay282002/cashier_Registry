@@ -280,12 +280,20 @@
 }
 
 .btn-secondary {
-  background: #f1f5f9;
-  color: #475569;
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
 }
 
 .btn-secondary:hover {
-  background: #e2e8f0;
+  background: #e2e8f0 !important;
+}
+
+html[data-theme="dark"] .btn-secondary,
+html.dark-mode .btn-secondary {
+  background: #4b5563 !important;
+  color: #ffffff !important;
+  border-color: #6b7280 !important;
 }
 
 .alert {
@@ -1212,6 +1220,7 @@
                   <th>Name</th>
                   <th>Description</th>
                   <th>Disbursed</th>
+                  <th>Fund Amount</th>
                   <th>Status</th>
                 </tr>
               </thead>
@@ -1222,6 +1231,7 @@
                   <td>{{ fc.name }}</td>
                   <td>{{ fc.description|default:"-" }}</td>
                   <td>₱{{ fc.disbursed|default:"0.00" }}</td>
+                  <td>{% if fc.fund_amount %}₱{{ fc.fund_amount }}{% else %}-{% endif %}</td>
                   <td>
                     {% if fc.is_archived %}
                     <span class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px;">Archived</span>
@@ -1234,7 +1244,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                  <td colspan="5" class="preview-empty-state">
+                  <td colspan="6" class="preview-empty-state">
                     <i class="fas fa-folder-open"></i>
                     <p>No Fund Clusters in this backup</p>
                   </td>
@@ -1817,6 +1827,7 @@ function createPreviewColumns(key, rows) {
       { h: 'Name', f: r => escHtml(r.name) },
       { h: 'Description', f: r => escHtml(r.description || '-') },
       { h: 'Disbursed', f: r => `₱${escHtml(r.disbursed || '0.00')}` },
+      { h: 'Fund Amount', f: r => r.fund_amount ? `₱${escHtml(String(r.fund_amount))}` : '-' },
       { h: 'Status', f: r => statusBadge(r.is_active ? 'active' : 'inactive', r.is_archived) },
     ],
     suppliers: [

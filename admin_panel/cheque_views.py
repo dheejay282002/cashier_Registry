@@ -75,7 +75,11 @@ def cheque_pdf(request, pk):
     c.drawRightString(box_x + box_w - 6, box_y + box_h/2 - 4, amt_text)
 
     words = _amount_to_words_py(cheque.amount or Decimal('0.00'))
-    c.setFont('Courier-Bold', 9)
+    words_font_size = 9.0
+    max_words_w = right - left - 30
+    while words_font_size > 5.0 and c.stringWidth(words, 'Courier-Bold', words_font_size) > max_words_w:
+        words_font_size -= 0.25
+    c.setFont('Courier-Bold', words_font_size)
     words_y = box_y - 18
     c.drawString(left, words_y, words)
     c.line(left, words_y - 4, right - 30, words_y - 4)
@@ -151,6 +155,134 @@ def cheque_create(request):
     cheque = None
 
     if request.method == "POST":
+        # Check for multi-supplier mode
+        suppliers_json = request.POST.get('suppliers')
+        if suppliers_json:
+            try:
+                suppliers_data = json.loads(suppliers_json)
+            except (json.JSONDecodeError, TypeError):
+                suppliers_data = None
+
+            if suppliers_data and isinstance(suppliers_data, list) and len(suppliers_data) > 0:
+                cheque_date = request.POST.get('date') or date.today().isoformat()
+                status = request.POST.get('status', 'draft')
+                fund_id = request.POST.get('fund_cluster_id') or None
+                created_cheques = []
+                errors_list = []
+
+                for i, sup in enumerate(suppliers_data):
+                    payee_name = sup.get('name', '').strip()
+                    if not payee_name:
+                        errors_list.append(f"Supplier #{i+1}: Missing name")
+                        continue
+
+                    amount = _parse_money(str(sup.get('amount', '0')))
+                    if not amount or amount <= 0:
+                        errors_list.append(f"Supplier #{i+1} ({payee_name}): Missing or zero amount")
+                        continue
+
+                    payee_id = sup.get('id') or None
+                    fund_cluster_id = sup.get('fund_cluster_id') or fund_id
+                    fund_cluster = FundCluster.objects.filter(pk=fund_cluster_id, is_active=True).first() if fund_cluster_id else None
+
+                    if status == 'released':
+                        fund_error = _fund_balance_error(fund_cluster, amount)
+                        if fund_error:
+                            errors_list.append(f"{payee_name}: {fund_error}")
+                            continue
+
+                    try:
+                        cheque_number_value = Cheque.next_cheque_number()
+                    except Exception as exc:
+                        errors_list.append(f"{payee_name}: {str(exc)}")
+                        continue
+
+                    cheque = Cheque(
+                        cheque_number=cheque_number_value,
+                        payee_name=payee_name,
+                        amount=amount,
+                        date=cheque_date,
+                        purpose=sup.get('purpose', '').strip() or request.POST.get('purpose', '').strip(),
+                        bank_name=sup.get('bank_name', '').strip() or request.POST.get('bank_name', '').strip(),
+                        account_number=sup.get('account_number', '').strip() or request.POST.get('account_number', '').strip(),
+                        status=status,
+                        created_by=request.user,
+                        dv_payroll_no=request.POST.get('dv_payroll_no', '').strip() or SystemSetting.next_dv_payroll_no(),
+                        ors_burs_no=request.POST.get('ors_burs_no', '').strip() or SystemSetting.next_ors_burs_no(),
+                        responsibility_center=request.POST.get('responsibility_center', '').strip(),
+                        uacs_object_code=request.POST.get('uacs_object_code', '').strip(),
+                        nature_of_payment=request.POST.get('nature_of_payment', '').strip(),
+                        professional_tax=_parse_money(request.POST.get('professional_tax', '')) or None,
+                        tax_5_3=_parse_money(request.POST.get('tax_5_3', '')) or None,
+                        tax_3_1=_parse_money(request.POST.get('tax_3_1', '')) or None,
+                    )
+                    if payee_id:
+                        cheque.payee_id = payee_id
+                    if fund_cluster_id:
+                        cheque.fund_cluster_id = fund_cluster_id
+
+                    stale_days = request.POST.get('stale_after_days')
+                    try:
+                        cheque.stale_after_days = int(stale_days) if stale_days not in (None, '', 'null') else None
+                    except Exception:
+                        cheque.stale_after_days = None
+
+                    if cheque.status == 'released' and cheque.stale_after_days:
+                        try:
+                            base_date = date.fromisoformat(cheque.date) if isinstance(cheque.date, str) else (cheque.date or date.today())
+                        except Exception:
+                            base_date = date.today()
+                        cheque.stale_at = base_date + timedelta(days=cheque.stale_after_days)
+
+                    cheque.save()
+
+                    # Sync cheque number to supplier only if serial is still empty
+                    try:
+                        supplier_obj = cheque.payee
+                        if not supplier_obj and cheque.payee_name:
+                            supplier_obj = Supplier.objects.filter(account_name__iexact=cheque.payee_name.strip()).first()
+                        if supplier_obj and cheque.cheque_number and not (supplier_obj.mr_or or '').strip():
+                            supplier_obj.mr_or = cheque.cheque_number
+                            supplier_obj.save(update_fields=['mr_or'])
+                    except Exception as sync_err:
+                        logger.warning(f"Failed to sync cheque serial to supplier: {sync_err}")
+
+                    if cheque.status == 'released' and cheque.fund_cluster_id:
+                        _adjust_fund_balance(cheque.fund_cluster, -cheque.amount)
+
+                    settings_obj = SystemSetting.get_settings()
+                    settings_obj.last_cheque_number = cheque.cheque_number
+                    settings_obj.save(update_fields=['last_cheque_number'])
+
+                    _audit(request.user, "Created cheque", {
+                        "id": cheque.pk,
+                        "number": cheque.cheque_number,
+                        "amount": str(amount)
+                    })
+                    created_cheques.append(cheque)
+
+                _invalidate_dashboard_cache()
+
+                if created_cheques:
+                    count = len(created_cheques)
+                    success_msg = f"{count} cheques created successfully"
+                    if errors_list:
+                        success_msg += f". {len(errors_list)} failed: {'; '.join(errors_list[:3])}"
+
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            "ok": True,
+                            "count": count,
+                            "cheques": [{"pk": c.pk, "cheque_number": c.cheque_number, "payee_name": c.payee_name, "amount": str(c.amount)} for c in created_cheques],
+                            "success_url": reverse('cheque_create') + f"?success={success_msg.replace(' ', '%20')}"
+                        })
+                    return redirect(reverse('cheque_create') + f"?success={success_msg.replace(' ', '%20')}")
+                else:
+                    error = "Failed to create any cheques. " + "; ".join(errors_list[:3])
+                    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                        return JsonResponse({"ok": False, "error": error})
+
+        # Single supplier mode (original logic)
         amount = _parse_money(request.POST.get('amount', '0'))
 
         payee_id = request.POST.get('payee_id') or None
@@ -212,12 +344,12 @@ def cheque_create(request):
         else:
             cheque.save()
 
-            # Sync the new/edited cheque number directly to the supplier's check serial (mr_or)
+            # Sync cheque number to supplier only if serial is still empty
             try:
                 supplier_obj = cheque.payee
                 if not supplier_obj and cheque.payee_name:
                     supplier_obj = Supplier.objects.filter(account_name__iexact=cheque.payee_name.strip()).first()
-                if supplier_obj and cheque.cheque_number:
+                if supplier_obj and cheque.cheque_number and not (supplier_obj.mr_or or '').strip():
                     supplier_obj.mr_or = cheque.cheque_number
                     supplier_obj.save(update_fields=['mr_or'])
             except Exception as sync_err:
@@ -314,12 +446,12 @@ def cheque_edit(request, pk):
 
             cheque.save()
 
-            # Sync the new/edited cheque number directly to the supplier's check serial (mr_or)
+            # Sync cheque number to supplier only if serial is still empty
             try:
                 supplier_obj = cheque.payee
                 if not supplier_obj and cheque.payee_name:
                     supplier_obj = Supplier.objects.filter(account_name__iexact=cheque.payee_name.strip()).first()
-                if supplier_obj and cheque.cheque_number:
+                if supplier_obj and cheque.cheque_number and not (supplier_obj.mr_or or '').strip():
                     supplier_obj.mr_or = cheque.cheque_number
                     supplier_obj.save(update_fields=['mr_or'])
             except Exception as sync_err:
@@ -346,6 +478,8 @@ def cheque_print(request, pk):
     cheque.printed_at = timezone.now()
     cheque.save(update_fields=['printed_at'])
     _audit(request.user, "Printed cheque", {"id": cheque.pk, "number": cheque.cheque_number})
+    if request.GET.get('embed'):
+        return render(request, "admin_panel/cheque_print_embed.html", {"cheque": cheque})
     return render(request, "admin_panel/cheque_print.html", {"cheque": cheque})
 
 
@@ -370,8 +504,11 @@ def cheque_delete(request, pk):
         return JsonResponse({"error": "POST required"}, status=405)
     cheque = get_object_or_404(Cheque, pk=pk)
     cheque_number = cheque.cheque_number
-    cheque.delete()
-    _audit(request.user, "Deleted cheque", {"number": cheque_number})
+    cheque.is_archived = True
+    cheque.archived_by = request.user
+    cheque.archived_at = timezone.now()
+    cheque.save(update_fields=['is_archived', 'archived_by', 'archived_at'])
+    _audit(request.user, "Archived cheque", {"number": cheque_number})
     _invalidate_dashboard_cache()
     return JsonResponse({"ok": True})
 

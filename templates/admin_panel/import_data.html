@@ -111,6 +111,7 @@
                     <option value="suppliers" {% if import_type == 'suppliers' %}selected{% endif %}>Suppliers</option>
                     <option value="fund_clusters" {% if import_type == 'fund_clusters' %}selected{% endif %}>Fund Clusters</option>
                     <option value="radai" {% if import_type == 'radai' %}selected{% endif %}>RADAI</option>
+                    <option value="radai_lbp" {% if import_type == 'radai_lbp' %}selected{% endif %}>RADAI (LBP)</option>
                 </select>
             </div>
             <div style="margin-bottom:14px;">
@@ -134,8 +135,9 @@
         </summary>
         <div style="padding:0 18px 16px; font-size:13px; color:#475569; line-height:1.6;">
             <p style="margin-bottom:10px;"><strong>Suppliers:</strong> Check Serial, Check Date, DV/Payroll No., ORS/BURS No., Responsibility Center, UACS Object Code, Payee, Nature of Payments, Gross Amount, Professional Tax, Tax (5%/3%), Tax (2%/1%), Net Amount, Fund Cluster, Remarks, Other Deductions</p>
-            <p style="margin-bottom:10px;"><strong>Fund Clusters:</strong> code, name, description, balance, is_active</p>
-            <p style="margin-bottom:0;"><strong>RADAI:</strong> Date, Serial No., Payee, Amount, ORS/BURS No. & Responsibility Center, Nature of Payment, DV/Payroll No., UACS Object Code, Fund Cluster, Remarks</p>
+            <p style="margin-bottom:10px;"><strong>Fund Clusters:</strong> code, name, description, balance, fund_amount, is_active</p>
+            <p style="margin-bottom:10px;"><strong>RADAI:</strong> Date, Serial No., Payee, Amount, ORS/BURS No. & Responsibility Center, Nature of Payment, DV/Payroll No., UACS Object Code, Fund Cluster, Remarks</p>
+            <p style="margin-bottom:0;"><strong>RADAI (LBP):</strong> ADA Date, ADA Serial No., DV/Payroll No., ORS/BURS No. | Responsibility Center, Payee, UACS Object Code, Nature of Payment, Gross Amount, Professional Tax, Total per ADA, Fund Cluster</p>
         </div>
     </details>
 
@@ -149,7 +151,7 @@
                 <li>Supplier imports create a new row for each imported record</li>
                 <li>RADAI imports create a new row for each imported record</li>
                 <li>Fund cluster imports are matched by <strong>code</strong> and updated if they already exist</li>
-                <li>All imports are logged in the Audit Log</li>
+                <li>All imports are logged in the Activity Log</li>
                 <li>Preview is shown before final import</li>
             </ul>
         </div>

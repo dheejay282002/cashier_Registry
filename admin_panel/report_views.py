@@ -71,8 +71,11 @@ def report_delete(request, pk):
     if request.method != 'POST':
         return JsonResponse({"error": "POST required"}, status=405)
     report = get_object_or_404(Report, pk=pk)
-    report.delete()
-    _audit(request.user, "Deleted report", {"id": pk})
+    report.is_archived = True
+    report.archived_by = request.user
+    report.archived_at = timezone.now()
+    report.save(update_fields=['is_archived', 'archived_by', 'archived_at'])
+    _audit(request.user, "Archived report", {"id": pk})
     return JsonResponse({"ok": True})
 
 

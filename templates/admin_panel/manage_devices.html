@@ -449,7 +449,7 @@
             </form>
 
             <!-- Message User button -->
-            <button type="button" class="btn btn-info btn-sm" onclick="openMessageModal('{{ device.user.pk }}', '{{ device.user.get_full_name|default:device.user.username }}')" title="Send message to user">
+            <button type="button" class="btn btn-info btn-sm" onclick="openMessageModal('{{ device.user.pk }}', '{% if device.user %}{{ device.user.get_full_name|default:device.user.username }}{% else %}System{% endif %}')" title="Send message to user">
                 <i class="fas fa-envelope"></i> Message
             </button>
 

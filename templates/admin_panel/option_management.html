@@ -417,12 +417,68 @@ tbody tr:last-child td{
         {{ heading }}
     </h2>
 
+    {% if heading == 'Tax Management' and tax_tab == 'taxes' %}
     <button class="btn btn-primary" onclick="openModal()">
         <i class="fas fa-plus"></i>
         Add New
     </button>
+    {% endif %}
 </div>
 
+{% if heading == 'Tax Management' %}
+<div class="tax-tabs" style="display:flex; gap:8px; margin-bottom:18px; flex-wrap:wrap;">
+    <a href="{% url 'taxes_management' %}?tab=taxes"
+       class="filter-tab {% if tax_tab == 'taxes' %}active{% endif %}"
+       style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; border:1px solid var(--line); background:{% if tax_tab == 'taxes' %}var(--primary){% else %}#fff{% endif %}; color:{% if tax_tab == 'taxes' %}#fff{% else %}inherit{% endif %}; text-decoration:none; font-weight:600;">
+        <i class="fas fa-percent"></i> Tax Rates
+    </a>
+    <a href="{% url 'taxes_management' %}?tab=goods-services"
+       class="filter-tab {% if tax_tab == 'goods-services' %}active{% endif %}"
+       style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; border-radius:10px; border:1px solid var(--line); background:{% if tax_tab == 'goods-services' %}var(--primary){% else %}#fff{% endif %}; color:{% if tax_tab == 'goods-services' %}#fff{% else %}inherit{% endif %}; text-decoration:none; font-weight:600;">
+        <i class="fas fa-box-open"></i> Goods / Services
+    </a>
+</div>
+{% endif %}
+
+{% if heading == 'Tax Management' and tax_tab == 'goods-services' %}
+<div class="option-card" style="max-width:640px;">
+    <div style="padding:22px 24px;">
+        <h3 style="margin:0 0 6px; font-size:1.1rem; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-box-open"></i> Goods / Services Setup
+        </h3>
+        <p style="margin:0 0 18px; color:var(--muted); font-size:0.9rem;">
+            Rates used by the <strong>Goods/Service</strong> dropdown in the Add Supplier form.
+            VAT base = Gross ÷ 1.12 × rate · Non-VAT base = Gross × rate.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="save_goods_services">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="form-group">
+                    <label>Goods Rate (%)</label>
+                    <input type="number" name="goods_rate" class="form-input" min="0" max="100" step="0.01"
+                           value="{{ goods_rate|default:'1.00' }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Services Rate (%)</label>
+                    <input type="number" name="services_rate" class="form-input" min="0" max="100" step="0.01"
+                           value="{{ services_rate|default:'2.00' }}" required>
+                </div>
+            </div>
+            <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+                <button type="submit" class="btn btn-pill btn-ok">
+                    <i class="fas fa-save"></i> Save Rates
+                </button>
+            </div>
+        </form>
+        <div style="margin-top:22px; padding-top:16px; border-top:1px solid var(--line); font-size:0.88rem; color:var(--muted);">
+            <strong>Example (VAT):</strong> Goods {{ goods_rate|default:'1.00' }}% → base = Gross ÷ 1.12 ·
+            Services {{ services_rate|default:'2.00' }}% → base = Gross ÷ 1.12<br>
+            <strong>Example (Non-VAT):</strong> Goods/Services → base = Gross (no ÷ 1.12)
+        </div>
+    </div>
+</div>
+{% else %}
 <div class="option-card">
     <div class="table-wrap">
         <table>
@@ -431,11 +487,12 @@ tbody tr:last-child td{
                     <th style="width:70px;">#</th>
                     {% if heading == 'Tax Management' %}
                     <th>Tax Name</th>
-                    <th>Value(0%/0% or 0%)</th>
+                    <th>Rate (VAT%/Non-VAT%)</th>
+                    <th style="width:100px;">Status</th>
                     {% else %}
                     <th>Value</th>
                     {% endif %}
-                    <th style="width:140px;">Action</th>
+                    <th style="width:180px;">Actions</th>
                 </tr>
             </thead>
 
@@ -447,30 +504,47 @@ tbody tr:last-child td{
                     {% if heading == 'Tax Management' %}
                     <td>{{ option.value }}</td>
                     <td>{{ option.uacs|default:"—" }}</td>
+                    <td>
+                        <form method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="toggle">
+                            <input type="hidden" name="option_id" value="{{ option.pk }}">
+                            <button type="submit" class="toggle-btn {% if option.is_active %}active{% endif %}" title="{% if option.is_active %}Active{% else %}Inactive{% endif %}">
+                                <span class="toggle-slider"></span>
+                            </button>
+                        </form>
+                    </td>
                     {% else %}
                     <td>{{ option.value }}</td>
                     {% endif %}
 
                     <td>
-                        <form method="post"
-                              onsubmit="return confirm('Delete this item?')"
-                              style="display:inline;">
-                            {% csrf_token %}
-
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="option_id" value="{{ option.pk }}">
-
-                            <button type="submit" class="btn btn-danger btn-sm">
-                                <i class="fas fa-trash"></i>
-                                Delete
+                        <div style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap;">
+                            {% if heading == 'Tax Management' %}
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="openEditModal({{ option.pk }}, '{{ option.value|escapejs }}', '{{ option.uacs|escapejs }}')">
+                                <i class="fas fa-pen"></i> Edit
                             </button>
-                        </form>
+                            {% endif %}
+                            <form method="post"
+                                  onsubmit="return confirm('Delete this item?')"
+                                  style="display:inline; margin:0;">
+                                {% csrf_token %}
+
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="option_id" value="{{ option.pk }}">
+
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="fas fa-trash"></i>
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
 
                 {% empty %}
                 <tr>
-                    <td colspan="3" class="empty-state">
+                    <td colspan="5" class="empty-state">
                         No records yet.
                     </td>
                 </tr>
@@ -479,8 +553,10 @@ tbody tr:last-child td{
         </table>
     </div>
 </div>
+{% endif %}
 
-<!-- MODAL -->
+<!-- MODAL (tax-rates tab only for Tax Management) -->
+{% if heading != 'Tax Management' or tax_tab != 'goods-services' %}
 <div class="modal" id="addModal">
     <div class="modal-box">
         
@@ -506,13 +582,13 @@ tbody tr:last-child td{
                         type="text" 
                         name="value" 
                         class="tax-value-input" 
-                        placeholder="Tax Value" 
+                        placeholder="e.g. 5%/3%" 
                         required
                     >
                 </div>
                 
                 <div class="tax-helper-text">
-                    Tax Value must be 0%/0%, or 0%
+                    Rate format: <strong>VAT%/Non-VAT%</strong> (e.g. 5%/3%) or single rate <strong>0%</strong>
                 </div>
                 {% else %}
                 <div class="form-group">
@@ -532,7 +608,7 @@ tbody tr:last-child td{
                 <button type="button" class="btn btn-pill btn-cancel" onclick="closeModal()">
                     Cancel
                 </button>
-                
+
                 <button type="submit" class="btn btn-pill btn-ok">
                     OK!
                 </button>
@@ -540,20 +616,107 @@ tbody tr:last-child td{
         </form>
     </div>
 </div>
+{% endif %}
+
+{% if heading == 'Tax Management' %}
+<!-- EDIT MODAL -->
+<div class="modal" id="editModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3>Edit Tax</h3>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="option_id" id="editOptionId">
+
+            <div class="modal-body">
+                <div class="tax-input-group">
+                    <input 
+                        type="text" 
+                        name="name" 
+                        id="editTaxName"
+                        class="tax-name-input" 
+                        placeholder="Tax Name" 
+                        required
+                    >
+                    <input 
+                        type="text" 
+                        name="value" 
+                        id="editTaxValue"
+                        class="tax-value-input" 
+                        placeholder="e.g. 5%/3%" 
+                        required
+                    >
+                </div>
+                
+                <div class="tax-helper-text">
+                    Rate format: <strong>VAT%/Non-VAT%</strong> (e.g. 5%/3%) or single rate <strong>0%</strong>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-pill btn-cancel" onclick="closeEditModal()">
+                    Cancel
+                </button>
+                
+                <button type="submit" class="btn btn-pill btn-ok">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.toggle-btn {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    background: #ccc;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s;
+    vertical-align: middle;
+}
+.toggle-btn.active {
+    background: var(--success, #16a34a);
+}
+.toggle-slider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.3s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-btn.active .toggle-slider {
+    transform: translateX(20px);
+}
+</style>
 
 <script>
 const modal = document.getElementById('addModal');
 
 function openModal(){
+    if (!modal) return;
     modal.classList.add('show');
 }
 
 function closeModal(){
+    if (!modal) return;
     modal.classList.remove('show');
 }
 
 window.addEventListener('click', function(e){
-    if(e.target === modal){
+    if(modal && e.target === modal){
         closeModal();
     }
 });
@@ -561,8 +724,28 @@ window.addEventListener('click', function(e){
 window.addEventListener('keydown', function(e){
     if(e.key === 'Escape'){
         closeModal();
+        if (typeof closeEditModal === 'function') closeEditModal();
     }
 });
+
+{% if heading == 'Tax Management' %}
+function openEditModal(pk, name, value) {
+    document.getElementById('editOptionId').value = pk;
+    document.getElementById('editTaxName').value = name;
+    document.getElementById('editTaxValue').value = value;
+    document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('show');
+}
+
+document.addEventListener('click', function(e) {
+    if (e.target === document.getElementById('editModal')) {
+        closeEditModal();
+    }
+});
+{% endif %}
 </script>
 
 {% endblock %}

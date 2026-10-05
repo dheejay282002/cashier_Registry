@@ -14,3 +14,6 @@ build/
 *.swp
 *.swo
 *~
+node_modules/
+dist_electron/
+package-lock.json

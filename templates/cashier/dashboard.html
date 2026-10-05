@@ -182,7 +182,7 @@ html[data-theme="dark"] .guest-welcome h1 {
         {% if current_profile.profile_picture %}<img src="{{ current_profile.profile_picture.url }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">{% else %}<i class="fas fa-user"></i>{% endif %}
     </div>
     <h1>Welcome, {{ request.user.first_name|default:request.user.username }}!</h1>
-    <p>You are logged in as a <strong>Guest Viewer</strong>.<br>You have access to view and generate reports from the system.</p>
+    <p>You are logged in as a <strong>{% if current_profile.specific_role %}{{ current_profile.specific_role }}{% else %}Guest Viewer{% endif %}</strong>.<br>You have access to view and generate reports from the system.</p>
     <a href="{% url 'reports' %}" class="guest-shortcut"><i class="fas fa-chart-bar"></i> Go to Reports</a>
     <div class="guest-access-note">Need more access? Contact your system administrator.</div>
 </div>

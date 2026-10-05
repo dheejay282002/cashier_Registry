@@ -1,66 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
+{% load humanize %}<!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  <title>Cheque Preview</title>
-  <style>
+<meta charset="utf-8">
+<title>Cheque #{{ cheque.cheque_number|default:cheque.pk }}</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 8in; height: 3in; overflow: hidden; background: white; }
+
+@page {
+    size: letter portrait;
+    margin-top: 0.1in;
+    margin-left: 0.6in;
+    margin-right: 1.9in;
+    margin-bottom: 1.9in;
+}
+
+@media print {
     html, body {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
-      background: #ffffff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
     }
     .cheque-wrapper {
-      font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
-      width: 8in !important;
-      height: 3in !important;
-      min-width: 8in !important;
-      min-height: 3in !important;
-      max-width: 8in !important;
-      max-height: 3in !important;
-      box-sizing: border-box;
-      background: white !important;
-      border: none !important;
-      outline: none !important;
-      border-radius: 0 !important;
-      position: relative;
-      overflow: hidden;
-      color: black;
-      box-shadow: none !important;
-      flex-shrink: 0;
+        position: relative !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 8in !important;
+        height: 3in !important;
+        margin: 0 !important;
+        padding-top: 0.6in !important;
+        padding-bottom: 0.8in !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
     }
-  </style>
+}
+
+.cheque-wrapper {
+    background: white; border: none; border-radius: 0;
+    padding: 28px 32px; font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif;
+    box-sizing: border-box; width: 8in; height: 3in; position: relative;
+    overflow: hidden; color: black;
+}
+</style>
 </head>
 <body>
-
-<div class="cheque-wrapper" style="font-family: 'Century Gothic', CenturyGothic, AppleGothic, sans-serif; width: 8in; height: 3in; box-sizing: border-box; background: white; border: none !important; outline: none !important; box-shadow: none !important; border-radius: 0 !important; position: relative; overflow: hidden; color: black;">
+<div class="cheque-wrapper">
     <!-- Fund Cluster Code -->
-    <div style="position: absolute; left: 0.5in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.fund_cluster.code|default:"—" }}</div>
+    <div style="position: absolute; left: 0.5in; top: 0.18in; font-size: 10pt; font-weight: normal;">{{ cheque.fund_cluster.code|default:"—" }}</div>
     
-    <!-- UACS Object Code -->
-    <div style="position: absolute; left: 1in; top: 0.39in; font-size: 10pt; font-weight: normal;">{{ cheque.uacs_object_code|default:"5021199000" }}</div>
-    
-    <!-- Cheque Number -->
-    <div style="position: absolute; right: 0.5in; top: 0.35in; font-size: 10pt; font-weight: normal; text-align: right;">{{ cheque.cheque_number|default:"______" }}</div>
+    <!-- Cheque Number        0-1 right, 1-0 left-->
+    <div style="position: absolute; right: 0.7in; top: 0.22in; font-size: 10pt; font-weight: normal; text-align: right;">{{ cheque.cheque_number|default:"______" }}</div>
     
     <!-- Spaced Date -->
-    <div id="printDate" style="position: absolute; right: 0.45in; top: 0.55in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
+    <div id="printDate" style="position: absolute; right: 0.68 in; top: 0.36in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
     
     <!-- Payee Name -->
-    <div id="printPayee" style="position: absolute; left: 1in; top: 0.90in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cheque.payee_name }}</div>
+    <div id="printPayee" style="position: absolute; left: 1in; top: 0.70in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cheque.payee_name }}</div>
     
     <!-- Amount -->
-    <div style="position: absolute; right: 0.9in; top: 0.85in; font-size: 12pt; font-weight: normal; text-align: right;">{{ cheque.amount|floatformat:2 }}</div>
+    <div id="printAmount" style="position: absolute; right: 1in; top: 0.65in; font-size: 12pt; font-weight: normal; text-align: right;">{{ cheque.amount|floatformat:2|intcomma }}</div>
     
     <!-- Amount in Words -->
-    <div id="wordsLine1" style="position: absolute; left: 0.80in; top: 1.2in; font-size: 11pt; font-weight: normal; text-transform: uppercase; width: 5.7in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></div>
+    <div id="wordsLine1" style="position: absolute; left: 0.69in; top: 1.0in; right: 0.27in; font-size: 11pt; font-weight: normal; text-transform: uppercase; white-space: nowrap; overflow: hidden;"></div>
 </div>
-
 <script>
 function amountToWords(amount) {
     if (!amount || isNaN(amount) || amount <= 0) return '';
@@ -85,23 +91,41 @@ function amountToWords(amount) {
     const centsFormatted = String(centavos).padStart(2, '0');
     return (pesosText + ' & ' + centsFormatted + '/100 ONLY').toUpperCase();
 }
-
 function formatSpacedDate(dateStr) {
     if (!dateStr) return '____________';
     const parts = dateStr.split('-');
     if (parts.length !== 3) return '____________';
-    const year = parts[0];
-    const month = parts[1];
-    const day = parts[2];
+    const year = parts[0], month = parts[1], day = parts[2];
     return month.charAt(0) + '   ' + month.charAt(1) + '      ' + day.charAt(0) + '   ' + day.charAt(1) + '      ' + year.charAt(0) + '   ' + year.charAt(1) + '   ' + year.charAt(2) + '   ' + year.charAt(3);
 }
-
 const rawDate = '{{ cheque.date|date:"Y-m-d" }}';
 document.getElementById('printDate').textContent = formatSpacedDate(rawDate);
-
 const amt = parseFloat('{{ cheque.amount|floatformat:2 }}');
-const words = amountToWords(amt);
-document.getElementById('wordsLine1').textContent = words;
-</script>
+const wordsEl = document.getElementById('wordsLine1');
+wordsEl.textContent = amountToWords(amt);
+
+// Precision auto-shrink Amount in Words until it fits right up to the end boundary
+(function autoShrinkWords(){
+    if(!wordsEl) return;
+    wordsEl.style.whiteSpace = 'nowrap';
+    var fontSize = 11;
+    wordsEl.style.fontSize = fontSize + 'pt';
+    var targetW = wordsEl.clientWidth || (6.9 * 96);
+    while (wordsEl.scrollWidth > targetW && fontSize > 4.5) {
+        fontSize -= 0.1;
+        wordsEl.style.fontSize = fontSize + 'pt';
+    }
+})();
+
+(function(){
+    var el=document.getElementById('printAmount');
+    if(!el)return;
+    el.style.whiteSpace='nowrap';
+    var maxW=el.parentElement.offsetWidth*0.35;
+    while(el.scrollWidth>maxW&&parseFloat(getComputedStyle(el).fontSize)>6){
+        el.style.fontSize=(parseFloat(getComputedStyle(el).fontSize)-0.5)+'pt';
+    }
+})();
+h</script>
 </body>
 </html>

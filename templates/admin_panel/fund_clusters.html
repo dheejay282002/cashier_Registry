@@ -72,6 +72,8 @@
                 <th>Cheques</th>
                 <th>Released</th>
                 <th>Total Disbursed</th>
+                <th>Fund Amount</th>
+                <th>Remaining</th>
                 <th>Description</th>
                 <th>Status</th>
                 {% if is_admin %}<th>Actions</th>{% endif %}
@@ -90,6 +92,25 @@
 
             <!-- TOTAL DISBURSED (STRING SAFE) -->
             <td><strong>₱{{ fc.total_released|default:0|floatformat:2|intcomma }}</strong></td>
+
+            <!-- FUND AMOUNT (OPTIONAL) -->
+            <td>
+                {% if fc.has_fund_amount %}
+                <strong>₱{{ fc.fund_amount|floatformat:2|intcomma }}</strong>
+                {% else %}
+                <span style="color:var(--muted);">—</span>
+                {% endif %}
+            </td>
+
+            <!-- REMAINING (FUND AMOUNT − TOTAL DISBURSED) -->
+            <td>
+                {% if fc.has_fund_amount %}
+                <strong style="color:{% if fc.is_overdrawn %}#dc2626{% else %}#0d3a1e{% endif %};">₱{{ fc.remaining_amount|floatformat:2|intcomma }}</strong>
+                {% if fc.is_overdrawn %}<div style="font-size:11px; color:#dc2626;">Over by</div>{% endif %}
+                {% else %}
+                <span style="color:var(--muted);">—</span>
+                {% endif %}
+            </td>
 
             <td style="color:var(--muted);">
                 {{ fc.description|default:"—"|truncatechars:60 }}
@@ -111,18 +132,19 @@
                             '{{ fc.description|escapejs }}',
                             '{{ fc.bank_name|escapejs }}',
                             '{{ fc.account_number|escapejs }}',
-                            {{ fc.is_active|yesno:'true,false' }}
+                            {{ fc.is_active|yesno:'true,false' }},
+                            {% if fc.has_fund_amount %}'{{ fc.fund_amount|stringformat:"f"|escapejs }}'{% else %}''{% endif %}
                         )">
                     <i class="fas fa-pen"></i>
                 </button>
 
-                <form method="post" style="display:inline;" onsubmit="requestDeleteConfirmation(event, this, 'Please enter an admin password to confirm deletion of this fund cluster:')">
+                <form method="post" style="display:inline;" onsubmit="requestDeleteConfirmation(event, this, 'Please enter an admin password to confirm archiving of this fund cluster:')">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="fc_id" value="{{ fc.pk }}">
 
                     <button type="submit" class="btn btn-sm btn-danger">
-                        <i class="fas fa-trash"></i>
+                        <i class="fas fa-box-archive"></i>
                     </button>
                 </form>
             </td>
@@ -132,9 +154,9 @@
         {% empty %}
         <tr>
             {% if is_admin %}
-            <td colspan="10" style="text-align:center; padding:30px; color:var(--muted);">
+            <td colspan="12" style="text-align:center; padding:30px; color:var(--muted);">
             {% else %}
-            <td colspan="9" style="text-align:center; padding:30px; color:var(--muted);">
+            <td colspan="11" style="text-align:center; padding:30px; color:var(--muted);">
             {% endif %}
                 No fund clusters yet.
             </td>
@@ -187,6 +209,18 @@
                     <input type="text"
                            name="bank_name"
                            placeholder="Enter Bank Name"
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; margin-top:4px;">
+                </div>
+
+                <!-- FUND AMOUNT (OPTIONAL) -->
+                <div style="grid-column:1 / -1;">
+                    <label style="font-size:13px; font-weight:600;">Fund Amount <span style="font-weight:400; color:#6b7280;">(optional)</span></label>
+                    <input type="number"
+                           name="fund_amount"
+                           id="fund_amount"
+                           min="0"
+                           step="0.01"
+                           placeholder="Leave blank if not applicable"
                            style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px; margin-top:4px;">
                 </div>
 
@@ -294,6 +328,13 @@ function formatAccountNumber(input) {
                            style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
                 </div>
 
+                <div style="grid-column:1 / -1;">
+                    <label style="font-size:13px; font-weight:600;">Fund Amount <span style="font-weight:400; color:#6b7280;">(optional)</span></label>
+                    <input type="number" name="fund_amount" id="editFundAmount" min="0" step="0.01"
+                           placeholder="Leave blank if not applicable"
+                           style="width:100%; padding:9px; border:1px solid #ddd; border-radius:7px;">
+                </div>
+
             </div>
 
             <div style="margin-bottom:12px;">
@@ -328,7 +369,7 @@ function formatAccountNumber(input) {
 </div>
 
 <script>
-function editFC(id, code, name, desc, bankName, account, isActive) {
+function editFC(id, code, name, desc, bankName, account, isActive, fundAmount) {
     document.getElementById('editFcId').value = id;
     document.getElementById('editCode').value = code;
     document.getElementById('editName').value = name;
@@ -336,16 +377,17 @@ function editFC(id, code, name, desc, bankName, account, isActive) {
     document.getElementById('editBank').value = bankName;
     document.getElementById('editAccount').value = account;
     document.getElementById('editActive').checked = isActive;
+    document.getElementById('editFundAmount').value = (fundAmount === undefined || fundAmount === null) ? '' : fundAmount;
 
     document.getElementById('editModal').style.display = 'flex';
 }
 </script>
 
-<!-- Deletion Password Confirmation Modal -->
+<!-- Archive Password Confirmation Modal -->
 <div id="deleteConfirmModal" style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; backdrop-filter: blur(4px);">
     <div style="background: white; border-radius: 12px; padding: 24px; width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid var(--line); color: var(--ink);">
         <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> Confirm Deletion
+            <i class="fas fa-box-archive" style="color: var(--warning);"></i> Confirm Archive
         </h3>
         <p id="deleteConfirmPromptText" style="font-size: 14px; margin-bottom: 16px; color: var(--muted);"></p>
         <div style="margin-bottom: 16px;">
@@ -354,7 +396,7 @@ function editFC(id, code, name, desc, bankName, account, isActive) {
         </div>
         <div style="display: flex; justify-content: flex-end; gap: 10px;">
             <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Cancel</button>
-            <button type="button" class="btn btn-danger" onclick="submitDeleteConfirm()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Delete</button>
+            <button type="button" class="btn btn-warning" onclick="submitDeleteConfirm()" style="padding: 8px 14px; border-radius: 8px; font-size: 13px;">Archive</button>
         </div>
     </div>
 </div>

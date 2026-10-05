@@ -635,7 +635,7 @@
 <div id="supplierModal" class="supplier-modal-backdrop" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="supplier-modal">
         <div class="supplier-modal-head">
-            <h3 id="supplierModalTitle"><i class="fas fa-plus"></i> Add Supplier</h3>
+            <h3 id="supplierModalTitle"><i class="fas fa-plus"></i> Add Registry Record</h3>
             <button type="button" class="modal-close-btn" onclick="closeSupplierModal()" aria-label="Close">
                 <i class="fas fa-times"></i>
             </button>
@@ -897,7 +897,7 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
                 <div class="supplier-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="supplierSubmitBtn"><i class="fas fa-check"></i>
-                        Add Supplier</button>
+                        Add Record</button>
                 </div>
             </form>
         </div>
@@ -1444,9 +1444,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 setFieldValue('fieldStatus', trigger.dataset.status || 'active');
                 updateAllTaxesAndGross();
             } else {
-                title.innerHTML = '<i class="fas fa-plus"></i> Add Supplier';
+                title.innerHTML = '<i class="fas fa-plus"></i> Add Registry Record';
                 action.value = 'create';
-                submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Supplier';
+                submitBtn.innerHTML = '<i class="fas fa-check"></i> Add Record';
 
                 // Compute fresh sequences from current table data
                 computeDefaultSequences();

@@ -1021,17 +1021,21 @@ class ChequeDeletionTests(TestCase):
 			fund_cluster=self.fund
 		)
 
-	def test_delete_draft_cheque_succeeds(self):
+	def test_archive_draft_cheque_soft_archives(self):
 		response = self.client.post(reverse('cheque_delete', args=[self.cheque.pk]))
 		self.assertEqual(response.status_code, 302)
+		# Gone from the live list, but still present (restorable) in Archives
 		self.assertFalse(Cheque.objects.filter(pk=self.cheque.pk).exists())
+		archived = Cheque.all_objects.get(pk=self.cheque.pk)
+		self.assertTrue(archived.is_archived)
+		self.assertEqual(archived.archived_by, self.admin)
 
 	def test_delete_released_cheque_fails(self):
 		self.cheque.status = 'released'
 		self.cheque.save()
 		response = self.client.post(reverse('cheque_delete', args=[self.cheque.pk]))
 		self.assertEqual(response.status_code, 302)
-		self.assertIn('error=Released%20cheques%20cannot%20be%20deleted.', response.url)
+		self.assertIn('error=Released%20cheques%20cannot%20be%20archived.', response.url)
 		self.assertTrue(Cheque.objects.filter(pk=self.cheque.pk).exists())
 
 	def test_delete_released_cheque_ajax_fails(self):
@@ -1044,7 +1048,7 @@ class ChequeDeletionTests(TestCase):
 		self.assertEqual(response.status_code, 400)
 		data = response.json()
 		self.assertFalse(data['ok'])
-		self.assertEqual(data['error'], 'Released cheques cannot be deleted.')
+		self.assertEqual(data['error'], 'Released cheques cannot be archived.')
 		self.assertTrue(Cheque.objects.filter(pk=self.cheque.pk).exists())
 
 
@@ -1723,3 +1727,26 @@ class CashierPermissionsTests(TestCase):
 		self.assertEqual(response.status_code, 302)
 		from cashier.models import Cheque
 		self.assertFalse(Cheque.objects.filter(pk=cheque.pk).exists())
+
+
+class RadaiModalContextTests(TestCase):
+	def setUp(self):
+		self.admin = User.objects.create_superuser(username='admin', email='admin@example.com', password='pass12345')
+
+	def test_requires_login(self):
+		response = self.client.get(reverse('radai_modal_context'))
+		self.assertEqual(response.status_code, 302)
+
+	def test_returns_modal_choices(self):
+		from cashier.models import Radai
+		FundCluster.objects.create(code='FC-100', name='Test Fund', is_active=True)
+		Radai.objects.create(account_name='Payee A', mr_or='MR-007')
+		self.client.force_login(self.admin)
+		response = self.client.get(reverse('radai_modal_context'))
+		self.assertEqual(response.status_code, 200)
+		data = json.loads(response.content)
+		for key in ('ok', 'payee_choices', 'account_title_groups', 'fund_clusters', 'auto_radai_defaults'):
+			self.assertIn(key, data)
+		self.assertIn('Payee A', data['payee_choices'])
+		self.assertEqual(data['fund_clusters'][0]['code'], 'FC-100')
+		self.assertEqual(data['auto_radai_defaults']['mr_or'], 'MR-8')

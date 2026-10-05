@@ -11,7 +11,7 @@
         <div style="text-align:right; font-size:12px;">
             <div>{{ report.generated_at|date:"F d, Y" }}</div>
             <div style="margin-top:8px;"><strong>Report No.</strong> {{ report.data_snapshot.report_no|default:report.pk }}</div>
-            <div><strong>No. Of Sheets</strong> {{ report.data_snapshot.sheet_count|default:1 }}</div>
+            <div><strong>No. Of Sheets</strong> {{ sheet_count|default:data.sheet_count|default:report.data_snapshot.sheet_count|default:1 }}</div>
         </div>
     </div>
     <div class="cheque-title">REPORTS OF CHECK ISSUED</div>

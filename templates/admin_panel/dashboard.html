@@ -572,11 +572,11 @@
         <div class="stat-card">
             <div class="stat-value">{{ total_cheques }}</div>
             <div class="stat-label">Total Cheques</div>
-            <div class="stat-meta">All recorded cheques</div>
+            <div class="stat-meta">All recorded Check</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ pending_cheques }}</div>
-            <div class="stat-label">Pending Cheques</div>
+            <div class="stat-label">Unreleased Cheques</div>
             <div class="stat-meta">Waiting for release</div>
         </div>
         <div class="stat-card">
@@ -584,10 +584,10 @@
             <div class="stat-label">Released Cheques</div>
             <div class="stat-meta">Already disbursed</div>
         </div>
-        <div class="stat-card" style="border-color: #fed7aa;">
-            <div class="stat-value" style="color: #ea580c;">{{ unreleased_cheques }}</div>
-            <div class="stat-label" style="color: #ea580c;">Not Released</div>
-            <div class="stat-meta">Draft &amp; Pending only</div>
+        <div class="stat-card" style="border-color: #8c918f;">
+            <div class="stat-value" style="color: rgb(212, 5, 5);">{{ unreleased_cheques }}</div>
+            <div class="stat-label" style="color: #672400;">Not Released</div>
+            <div class="stat-meta">Draft &amp; Unreleased only</div>
         </div>
         <div class="stat-card">
             <div class="stat-value" style="font-size:1.25rem;">₱{{ total_amount|floatformat:2|intcomma }}</div>
@@ -603,91 +603,6 @@
             <div class="stat-value">{{ radai_total }}</div>
             <div class="stat-label">RADAI Entries</div>
             <div class="stat-meta">₱{{ radai_amount|floatformat:2|intcomma }} total</div>
-        </div>
-    </div>
-
-    <!-- Today's Activity + Processing Speed -->
-    <div class="charts-row" style="margin-bottom:18px;">
-        <div class="section-card" style="margin:0;">
-            <div class="section-card-head">
-                <h3><i class="fas fa-calendar-day" style="margin-right:6px;"></i> Today's Activity</h3>
-            </div>
-            <div class="fund-distribution-body" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; padding:18px;">
-                <div>
-                    <div class="fund-distribution-title">Created</div>
-                    <div class="fund-distribution-total">{{ today_created }}</div>
-                    <div class="fund-distribution-caption">cheques today</div>
-                </div>
-                <div>
-                    <div class="fund-distribution-title">Released</div>
-                    <div class="fund-distribution-total" style="color:#16a34a;">{{ today_released }}</div>
-                    <div class="fund-distribution-caption">cheques released</div>
-                </div>
-                <div>
-                    <div class="fund-distribution-title">Amount Released</div>
-                    <div class="fund-distribution-total" style="color:#2563eb; font-size:1.125rem;">₱{{ today_amount|floatformat:2|intcomma }}</div>
-                    <div class="fund-distribution-caption">disbursed today</div>
-                </div>
-            </div>
-        </div>
-        <div class="section-card" style="margin:0;">
-            <div class="section-card-head">
-                <h3><i class="fas fa-gauge-high" style="margin-right:6px;"></i> Processing Speed</h3>
-            </div>
-            <div class="fund-distribution-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;">
-                <div class="fund-distribution-total" style="font-size:2rem; color:#0f766e;">{{ avg_processing_days }}</div>
-                <div class="fund-distribution-caption">avg. days to release</div>
-                <div style="margin-top:10px; font-size:0.6875rem; color:var(--muted);">Based on all released cheques</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="charts-row">
-        <div class="chart-card">
-            <div class="chart-card-head">
-                <h3><i class="fas fa-chart-pie" style="margin-right:6px;"></i> Cheque Status Distribution</h3>
-            </div>
-            <div class="chart-card-body" style="height:280px;">
-                <canvas id="chequeStatusChart"></canvas>
-            </div>
-        </div>
-        <div class="chart-card">
-            <div class="chart-card-head">
-                <h3><i class="fas fa-chart-bar" style="margin-right:6px;"></i> Cheques Released</h3>
-                <div class="chart-period-toggle" id="releasedPeriodToggle">
-                    <button class="period-btn" data-period="daily">Daily</button>
-                    <button class="period-btn" data-period="weekly">Weekly</button>
-                    <button class="period-btn active" data-period="monthly">Monthly</button>
-                    <button class="period-btn" data-period="yearly">Yearly</button>
-                </div>
-            </div>
-            <div class="chart-card-body" style="height:280px;">
-                <div class="chart-empty" id="releasedChartEmpty">
-                    <i class="fas fa-chart-bar"></i>
-                    <p>No released cheque data available</p>
-                </div>
-                <canvas id="releasedChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="charts-row">
-        <div class="chart-card" style="grid-column: 1 / -1;">
-            <div class="chart-card-head">
-                <h3><i class="fas fa-truck-arrow-right" style="margin-right:6px;"></i> New Suppliers Added</h3>
-                <div class="chart-period-toggle" id="suppliersPeriodToggle">
-                    <button class="period-btn" data-period="weekly">This Week</button>
-                    <button class="period-btn active" data-period="monthly">This Month</button>
-                    <button class="period-btn" data-period="yearly">This Year</button>
-                </div>
-            </div>
-            <div class="chart-card-body" style="height:260px;">
-                <div class="chart-empty" id="suppliersChartEmpty">
-                    <i class="fas fa-truck-arrow-right"></i>
-                    <p>No new supplier data available</p>
-                </div>
-                <canvas id="suppliersChart"></canvas>
-            </div>
         </div>
     </div>
 
@@ -711,6 +626,91 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- Today's Activity + Processing Speed -->
+    <div class="charts-row" style="margin-bottom:18px;">
+        <div class="section-card" style="margin:0;">
+            <div class="section-card-head">
+                <h3><i class="fas fa-calendar-day" style="margin-right:6px;"></i> Today's Activity</h3>
+            </div>
+            <div class="fund-distribution-body" style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; padding:18px;">
+                <div>
+                    <div class="fund-distribution-title">Created</div>
+                    <div class="fund-distribution-total">{{ today_created }}</div>
+                    <div class="fund-distribution-caption">checks today</div>
+                </div>
+                <div>
+                    <div class="fund-distribution-title">Released</div>
+                    <div class="fund-distribution-total" style="color:#16a34a;">{{ today_released }}</div>
+                    <div class="fund-distribution-caption">Check released</div>
+                </div>
+                <div>
+                    <div class="fund-distribution-title">Amount Released</div>
+                    <div class="fund-distribution-total" style="color:#2563eb; font-size:1.125rem;">₱{{ today_amount|floatformat:2|intcomma }}</div>
+                    <div class="fund-distribution-caption">disbursed today</div>
+                </div>
+            </div>
+        </div>
+        <div class="section-card" style="margin:0;">
+            <div class="section-card-head">
+                <h3><i class="fas fa-gauge-high" style="margin-right:6px;"></i> Processing Speed</h3>
+            </div>
+            <div class="fund-distribution-body" style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; text-align:center;">
+                <div class="fund-distribution-total" style="font-size:2rem; color:#0f766e;">{{ avg_processing_days }}</div>
+                <div class="fund-distribution-caption">avg. days to release</div>
+                <div style="margin-top:10px; font-size:0.6875rem; color:var(--muted);">Based on all released checks</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-chart-pie" style="margin-right:6px;"></i> Check Status Distribution</h3>
+            </div>
+            <div class="chart-card-body" style="height:280px;">
+                <canvas id="chequeStatusChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-chart-bar" style="margin-right:6px;"></i> Check Released</h3>
+                <div class="chart-period-toggle" id="releasedPeriodToggle">
+                    <button class="period-btn" data-period="daily">Daily</button>
+                    <button class="period-btn" data-period="weekly">Weekly</button>
+                    <button class="period-btn active" data-period="monthly">Monthly</button>
+                    <button class="period-btn" data-period="yearly">Yearly</button>
+                </div>
+            </div>
+            <div class="chart-card-body" style="height:280px;">
+                <div class="chart-empty" id="releasedChartEmpty">
+                    <i class="fas fa-chart-bar"></i>
+                    <p>No released Check data available</p>
+                </div>
+                <canvas id="releasedChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="charts-row">
+        <div class="chart-card" style="grid-column: 1 / -1;">
+            <div class="chart-card-head">
+                <h3><i class="fas fa-truck-arrow-right" style="margin-right:6px;"></i> New Payees Added</h3>
+                <div class="chart-period-toggle" id="suppliersPeriodToggle">
+                    <button class="period-btn" data-period="weekly">This Week</button>
+                    <button class="period-btn active" data-period="monthly">This Month</button>
+                    <button class="period-btn" data-period="yearly">This Year</button>
+                </div>
+            </div>
+            <div class="chart-card-body" style="height:260px;">
+                <div class="chart-empty" id="suppliersChartEmpty">
+                    <i class="fas fa-truck-arrow-right"></i>
+                    <p>No new Payees data available</p>
+                </div>
+                <canvas id="suppliersChart"></canvas>
+            </div>
+        </div>
+    </div>
 
     <!-- Monthly Trend Sparkline + Top Funds + Cashier Performance + Stale Cheques -->
     <div class="section-grid" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:18px;">
@@ -737,10 +737,16 @@
                         <div style="font-weight:700; color:#102033;">{{ fund.code }}</div>
                         <div class="mini-subtle">{{ fund.name|truncatechars:25 }}</div>
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight:800; color:#0d3a1e;">₱{{ fund.released_amount|floatformat:2|intcomma }}</div>
-                        <div class="mini-subtle">total disbursed</div>
-                    </div>
+            <div style="text-align:right;">
+                <div style="font-weight:800; color:#0d3a1e;">₱{{ fund.released_amount|floatformat:2|intcomma }}</div>
+                <div class="mini-subtle">Total disbursed</div>
+                {% if fund.has_fund_amount %}
+                <div style="font-weight:800; color:#0d3a1e; margin-top:6px;">₱{{ fund.fund_amount|floatformat:2|intcomma }}</div>
+                <div class="mini-subtle">Fund amount</div>
+                <div style="font-weight:800; margin-top:6px; color:{% if fund.is_overdrawn %}#dc2626{% else %}#0d3a1e{% endif %};">₱{{ fund.remaining_amount|floatformat:2|intcomma }}</div>
+                <div class="mini-subtle">{% if fund.is_overdrawn %}Over by{% else %}Remaining{% endif %}</div>
+                {% endif %}
+            </div>
                 </div>
                 {% empty %}
                 <div class="mini-row empty-state">No fund clusters available.</div>
@@ -774,7 +780,7 @@
         <div class="dashboard-footer" style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
             <div class="footer-card">
                 <div class="footer-card-head">
-                    <h3><i class="fas fa-money-check-dollar"></i> Recent Cheques</h3>
+                    <h3><i class="fas fa-money-check-dollar"></i> Recent Check</h3>
                     <a href="{% url 'cheque_list' %}" class="btn btn-sm btn-primary">View All</a>
                 </div>
                 <div class="quick-list" style="padding:0;">
@@ -790,7 +796,7 @@
                         </div>
                     </div>
                     {% empty %}
-                    <div class="mini-row empty-state">No cheques yet.</div>
+                    <div class="mini-row empty-state">No Check yet.</div>
                     {% endfor %}
                 </div>
             </div>
@@ -814,8 +820,9 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        {% endblock %}
+{% endblock %}
 
 {% block extra_js %}
 <script src="/media/chartjs/chart.umd.min.js"></script>
