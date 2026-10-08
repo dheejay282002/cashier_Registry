@@ -84,12 +84,26 @@
 
 <script>
 function printChequeOnly() {
+    const html = buildPrintableChequeHtml();
+    if (!html) return window.print();
+
+    const w = window.open('', '_blank', 'toolbar=0,location=0,menubar=0');
+    if (!w) return printChequeInCurrentWindow() || window.print();
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => {
+        w.print();
+    }, 350);
+}
+
+function buildPrintableChequeHtml() {
     const cheque = document.querySelector('.cheque-wrapper');
-    if (!cheque) return window.print();
-    
+    if (!cheque) return null;
+
     const chequeClone = cheque.cloneNode(true);
     chequeClone.style.border = 'none';
-    const chequeHtml = chequeClone.outerHTML;
 
     const printCss = `
         @page {
@@ -119,17 +133,93 @@ function printChequeOnly() {
     `;
 
     const head = `<head><meta charset="utf-8"><title>Print Cheque</title><style>${printCss}</style></head>`;
-    const html = `<!doctype html><html>${head}<body><div class="print-stage">${chequeHtml}</div></body></html>`;
+    return `<!doctype html><html>${head}<body><div class="print-stage">${chequeClone.outerHTML}</div></body></html>`;
+}
 
-    const w = window.open('', '_blank', 'toolbar=0,location=0,menubar=0');
-    if (!w) return window.print();
-    w.document.open();
-    w.document.write(html);
-    w.document.close();
-    w.focus();
+function printChequeInCurrentWindow() {
+    const printable = buildPrintableChequeHtml();
+    if (!printable) return false;
+
+    const backUrl = location.pathname;
+    const boot = `
+<script>
+(function () {
+    var done = false;
+    function finish() {
+        if (done) return;
+        done = true;
+        try { location.replace(${JSON.stringify(backUrl)}); } catch (e) {}
+    }
+    window.addEventListener('afterprint', finish);
+    setTimeout(function () {
+        try { window.focus(); window.print(); } catch (e) {}
+    }, 300);
+    setTimeout(finish, 120000);
+})();
+<\/script>`;
+
+    try {
+        document.open();
+        document.write(printable.replace('</body>', boot + '</body>'));
+        document.close();
+    } catch (err) {
+        return false;
+    }
+    return true;
+}
+
+function printChequeInFrame() {
+    const html = buildPrintableChequeHtml();
+    if (!html) return false;
+
+    const frame = document.createElement('iframe');
+    frame.setAttribute('title', 'Cheque print preview');
+    frame.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;border:0;outline:none;z-index:2147483647;background:#fff;';
+    document.body.appendChild(frame);
+
+    let cleaned = false;
+    const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        if (frame.parentNode) frame.parentNode.removeChild(frame);
+    };
+
+    try {
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+    } catch (err) {
+        cleanup();
+        return false;
+    }
+
+    try {
+        frame.contentWindow.addEventListener('afterprint', cleanup, { once: true });
+    } catch (err) {}
+
     setTimeout(() => {
-        w.print();
+        try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+        } catch (err) {
+            cleanup();
+            return;
+        }
+        setTimeout(cleanup, 60000);
     }, 350);
+
+    return true;
+}
+
+function autoPrintCheque() {
+    if (printChequeInCurrentWindow()) return;
+    if (printChequeInFrame()) return;
+    try {
+        printChequeOnly();
+    } catch (err) {
+        try { window.print(); } catch (e2) {}
+    }
 }
 
 function amountToWords(amount) {
@@ -195,6 +285,21 @@ wordsEl.textContent = words;
     while(el.scrollWidth>maxW&&parseFloat(getComputedStyle(el).fontSize)>6){
         el.style.fontSize=(parseFloat(getComputedStyle(el).fontSize)-0.5)+'pt';
     }
+})();
+
+// Auto-open the browser print dialog when arriving from Save & Print (?autoprint=1)
+(function () {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('autoprint') !== '1') return;
+        setTimeout(function () {
+            try {
+                autoPrintCheque();
+            } catch (err) {
+                try { window.print(); } catch (e) {}
+            }
+        }, 700);
+    } catch (err) {}
 })();
 </script>
 {% endblock %}

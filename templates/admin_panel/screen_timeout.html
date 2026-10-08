@@ -2,6 +2,8 @@
 {% block title %}Screen Timeout{% endblock %}
 {% block content %}
 <style>
+/* hide Registry / RADAI / Check FABs on settings pages */
+body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body #chequeMasterFab, body #chequeMasterMenu { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
     /* .content .page-center beats base.html's later .page-center { margin: 40px auto } */
     .content .page-center {
         display: flex;

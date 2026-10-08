@@ -168,6 +168,41 @@
         transform: translateY(-1px);
     }
 
+    .supplier-actions .btn-print {
+        background: linear-gradient(135deg, #0e7490, #155e75) !important;
+        color: #ffffff !important;
+        border: 1px solid #164e63 !important;
+        box-shadow: 0 3px 10px rgba(14, 116, 144, 0.3) !important;
+    }
+
+    .supplier-actions .btn-print:hover {
+        background: linear-gradient(135deg, #155e75, #164e63) !important;
+        box-shadow: 0 5px 14px rgba(14, 116, 144, 0.45) !important;
+        transform: translateY(-1px);
+    }
+
+    .supplier-actions .btn-print:disabled {
+        opacity: 0.7 !important;
+        cursor: wait !important;
+        transform: none !important;
+    }
+
+    html[data-theme="dark"] .supplier-actions .btn-print,
+    html.dark-mode .supplier-actions .btn-print,
+    [data-theme="dark"] .supplier-actions .btn-print {
+        background: linear-gradient(135deg, #06b6d4, #0891b2) !important;
+        color: #ffffff !important;
+        border: 1px solid #22d3ee !important;
+        box-shadow: 0 4px 14px rgba(6, 182, 212, 0.4) !important;
+    }
+
+    html[data-theme="dark"] .supplier-actions .btn-print:hover,
+    html.dark-mode .supplier-actions .btn-print:hover,
+    [data-theme="dark"] .supplier-actions .btn-print:hover {
+        background: linear-gradient(135deg, #0891b2, #0e7490) !important;
+        box-shadow: 0 6px 18px rgba(6, 182, 212, 0.55) !important;
+    }
+
     html[data-theme="dark"] .supplier-actions .btn-primary,
     html[data-theme="dark"] #supplierSubmitBtn,
     html.dark-mode .supplier-actions .btn-primary,
@@ -648,6 +683,7 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
                 {% csrf_token %}
                 <input type="hidden" name="action" id="supplierAction" value="create">
                 <input type="hidden" name="sup_id" id="supplierId" value="">
+                <input type="hidden" name="save_and_print" id="supplierSaveAndPrint" value="">
 
 <div class="supplier-section">
     <h4>Registry Details</h4>
@@ -896,6 +932,8 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
 
                 <div class="supplier-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeSupplierModal()">Cancel</button>
+                    <button type="button" class="btn btn-print" id="supplierSavePrintBtn"><i class="fas fa-print"></i>
+                        Save &amp; Print</button>
                     <button type="submit" class="btn btn-primary" id="supplierSubmitBtn"><i class="fas fa-check"></i>
                         Add Record</button>
                 </div>
@@ -1360,6 +1398,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof clearSerialFeedback === 'function') clearSerialFeedback();
 
         function populateModeFields() {
+            resetSaveAndPrintFlag();
             if (mode === 'edit' && trigger) {
                 title.innerHTML = '<i class="fas fa-pen"></i> Edit Supplier';
                 action.value = 'edit';
@@ -1820,7 +1859,117 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
+
+        if (saveAndPrintRequested) {
+            e.preventDefault();
+            resetSaveAndPrintFlag();
+            runSupplierSaveAndPrint(this);
+            return false;
+        }
     });
+
+    // ── Save & Print: save the registry record, then open the print check ──
+    var saveAndPrintRequested = false;
+
+    function resetSaveAndPrintFlag() {
+        saveAndPrintRequested = false;
+        const flag = document.getElementById('supplierSaveAndPrint');
+        if (flag) flag.value = '';
+    }
+
+    document.getElementById('supplierSavePrintBtn')?.addEventListener('click', function () {
+        const form = document.getElementById('supplierForm');
+        if (!form) return;
+        if (!form.reportValidity()) return;
+
+        const flag = document.getElementById('supplierSaveAndPrint');
+        if (flag) flag.value = '1';
+        saveAndPrintRequested = true;
+
+        if (typeof form.requestSubmit === 'function') {
+            form.requestSubmit();
+            // Clear the flag if the submit handler aborted on a validation error.
+            setTimeout(resetSaveAndPrintFlag, 0);
+        } else {
+            // No requestSubmit support → post natively (server redirects to print page).
+            HTMLFormElement.prototype.submit.call(form);
+        }
+    });
+
+    function runSupplierSaveAndPrint(form) {
+        const btn = document.getElementById('supplierSavePrintBtn');
+        const originalHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Printing...';
+        }
+
+        const printWin = window.open('about:blank', '_blank');
+        if (!printWin) {
+            // Popup blocked → fall back to a normal post that redirects to the print page.
+            if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+            const flag = document.getElementById('supplierSaveAndPrint');
+            if (flag) flag.value = '1';
+            HTMLFormElement.prototype.submit.call(form);
+            return;
+        }
+
+        try {
+            printWin.document.write('<!doctype html><html><head><title>Preparing Print...</title><style>' +
+                'body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
+                'font-family:"Segoe UI",Arial,sans-serif;background:#eef3f7;color:#1f2a37;}' +
+                '.box{text-align:center;}' +
+                '.spin{width:38px;height:38px;border:4px solid rgba(14,45,10,.12);border-top:4px solid #0e2d0a;' +
+                'border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 12px;}' +
+                '@keyframes sp{to{transform:rotate(360deg);}}' +
+                '</style></head><body><div class="box"><div class="spin"></div>' +
+                '<div style="font-weight:600">Generating print page...</div>' +
+                '<div style="font-size:12px;color:#667085;margin-top:4px">Please wait while the record is saved.</div>' +
+                '</div></body></html>');
+            printWin.document.close();
+        } catch (err) { }
+
+        const formData = new FormData(form);
+        formData.set('save_and_print', '1');
+
+        fetch(form.getAttribute('action') || window.location.href, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(response => response.json().catch(() => ({ ok: false, error: 'Server error (' + response.status + ')' })))
+            .then(data => {
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+                if (data && data.ok && data.print_url) {
+                    printWin.location.replace(data.print_url);
+                    if (typeof showToast === 'function') {
+                        showToast('success', 'Saved', 'Registry record saved. Opening the print check...');
+                    }
+                    setTimeout(() => {
+                        window.location.href = data.success_url || window.location.href;
+                    }, 500);
+                } else {
+                    printWin.close();
+                    const msg = (data && data.error) || 'Failed to save the registry record.';
+                    if (typeof showToast === 'function') {
+                        showToast('error', (data && data.saved) ? 'Saved, not printed' : 'Save Failed', msg);
+                    } else {
+                        alert(msg);
+                    }
+                    if (data && data.saved && data.success_url) {
+                        setTimeout(() => { window.location.href = data.success_url; }, 1500);
+                    }
+                }
+            })
+            .catch(err => {
+                if (btn) { btn.disabled = false; btn.innerHTML = originalHtml; }
+                printWin.close();
+                const msg = (err && err.message) || 'Network error while saving.';
+                if (typeof showToast === 'function') showToast('error', 'Save Failed', msg);
+                else alert(msg);
+            });
+    }
 
     function updateGrossLayout() {
         const gross = document.getElementById('grossWrapper');

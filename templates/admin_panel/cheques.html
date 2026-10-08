@@ -174,16 +174,57 @@
 
 {% if error %}<div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
 
-<div class="page-header">   
+<div class="page-header">
     <h2><i class="fas fa-money-check-dollar"></i> Cheques</h2>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <select id="chequeStatusFilter"
-            style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px;">
-            <option value="">All Statuses</option>
-            {% for val, label in status_choices %}
-            <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
+        <form onsubmit="return false;" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <select id="chequeYearFilter" onchange="applyChequeFilters()"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:120px;">
+                <option value="all">All Years</option>
+            </select>
+
+            <select id="chequePeriodFilter" onchange="applyChequeFilters()"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:190px;">
+                <option value="all">All Records</option>
+            </select>
+
+            <select id="chequeSortFilter" onchange="sortCheques(this.value)"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:180px; background:var(--card-bg, #fff); color:var(--ink, #111);">
+                <option value="default">Sort by: Default</option>
+                <option value="payee_asc">Payee (A &rarr; Z)</option>
+                <option value="payee_desc">Payee (Z &rarr; A)</option>
+                <option value="date_desc">Date (Newest First)</option>
+                <option value="date_asc">Date (Oldest First)</option>
+                <option value="serial_asc">Cheque No. (Ascending)</option>
+                <option value="serial_desc">Cheque No. (Descending)</option>
+                <option value="amount_desc">Amount (High &rarr; Low)</option>
+                <option value="amount_asc">Amount (Low &rarr; High)</option>
+            </select>
+
+            <select id="chequeFundFilter" onchange="applyChequeFilters()"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:170px;">
+                <option value="all">All Fund Clusters</option>
+            </select>
+
+            <input type="text" id="chequeSearch" oninput="applyChequeFilters()"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();}"
+                placeholder="Search Payee or Cheque No..."
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:210px;">
+
+            <input type="text" id="chequeUacsSearch" oninput="this.value=this.value.replace(/[^0-9]/g,''); applyChequeFilters()"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();}"
+                placeholder="Search UACS Code..."
+                inputmode="numeric" pattern="[0-9]*"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px; min-width:160px;">
+
+            <select id="chequeStatusFilter"
+                style="padding:8px 12px; border:1px solid var(--line); border-radius:7px; font-size:13px;">
+                <option value="">All Statuses</option>
+                {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </form>
         {% if is_admin %}
         <a href="{% url 'export_cheques' %}" class="btn btn-secondary btn-sm"><i class="fas fa-file-excel"></i>
             Export</a>
@@ -210,7 +251,14 @@
             </thead>
             <tbody id="chequesTableBody">
                 {% for c in cheques %}
-                <tr id="cheque-row-{{ c.pk }}">
+                <tr id="cheque-row-{{ c.pk }}" data-order="{{ forloop.counter0 }}"
+                    data-date="{{ c.date|date:'Y-m-d' }}"
+                    data-payee="{{ c.payee_name }}"
+                    data-serial="{{ c.real_cheque_number|default:c.pk }}"
+                    data-amount="{{ c.amount|floatformat:2 }}"
+                    data-fund="{{ c.fund_cluster.code|default:'' }}"
+                    data-uacs="{{ c.uacs_object_code|default:'' }}"
+                    data-status="{{ c.status }}">
                     <td>{{ c.desc_index }}</td>
                     <td><strong>{{ c.real_cheque_number|default:c.pk }}</strong></td>
                     <td>
@@ -389,6 +437,7 @@
                 const row = document.getElementById('cheque-row-' + deleteTargetPk);
                 if (row) row.remove();
                 closeDelete();
+                applyChequeFilters();
                 showToast('success', 'Archived', 'Cheque archived successfully.');
             })
             .catch(() => {
@@ -398,6 +447,189 @@
     }
 
     const CHEQUES_URL = '{% url "cheque_list" %}';
+
+    const CHEQUE_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+        'August', 'September', 'October', 'November', 'December'];
+
+    function getChequeRows() {
+        const tbody = document.getElementById('chequesTableBody');
+        if (!tbody) return [];
+        return Array.from(tbody.querySelectorAll('tr[data-order]'));
+    }
+
+    function chequeStorageGet(key, fallback) {
+        try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; }
+    }
+
+    function chequeStorageSet(key, value) {
+        try { localStorage.setItem(key, value); } catch (e) {}
+    }
+
+    function chequeFilterValue(id, fallback) {
+        const el = document.getElementById(id);
+        return el ? el.value : (fallback || '');
+    }
+
+    function formatChequeDate(iso) {
+        const p = (iso || '').split('-');
+        if (p.length !== 3) return iso || '';
+        return CHEQUE_MONTHS[parseInt(p[1], 10) - 1].slice(0, 3) + ' ' + parseInt(p[2], 10) + ', ' + p[0];
+    }
+
+    function formatChequeMonth(ym) {
+        const p = (ym || '').split('-');
+        if (p.length !== 2) return ym || '';
+        return CHEQUE_MONTHS[parseInt(p[1], 10) - 1] + ' ' + p[0];
+    }
+
+    function fillChequeSelect(id, options, allLabel) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const current = el.value;
+        let html = '<option value="all">' + allLabel + '</option>';
+        options.forEach(function (o) {
+            html += '<option value="' + o.v + '">' + o.l + '</option>';
+        });
+        el.innerHTML = html;
+        el.value = options.some(function (o) { return o.v === current; }) ? current : 'all';
+    }
+
+    function rebuildChequeFilterOptions() {
+        const rows = getChequeRows();
+        const dates = [], years = [], funds = [];
+        rows.forEach(function (r) {
+            const d = r.dataset.date || '';
+            if (d && dates.indexOf(d) === -1) dates.push(d);
+            const y = d.slice(0, 4);
+            if (y && years.indexOf(y) === -1) years.push(y);
+            const f = (r.dataset.fund || '').trim();
+            if (f && funds.indexOf(f) === -1) funds.push(f);
+        });
+        dates.sort().reverse();
+        years.sort().reverse();
+        funds.sort();
+
+        fillChequeSelect('chequeYearFilter', years.map(function (y) { return { v: y, l: y }; }), 'All Years');
+        fillChequeSelect('chequeFundFilter', funds.map(function (f) { return { v: f, l: f }; }), 'All Fund Clusters');
+
+        const periodEl = document.getElementById('chequePeriodFilter');
+        if (periodEl) {
+            const currentPeriod = periodEl.value;
+            const months = [];
+            dates.forEach(function (d) {
+                const m = d.slice(0, 7);
+                if (months.indexOf(m) === -1) months.push(m);
+            });
+            let html = '<option value="all">All Records</option>';
+            if (dates.length) {
+                html += '<optgroup label="Dates">';
+                dates.forEach(function (d) {
+                    html += '<option value="date|' + d + '">' + formatChequeDate(d) + '</option>';
+                });
+                html += '</optgroup>';
+            }
+            if (months.length) {
+                html += '<optgroup label="Months">';
+                months.forEach(function (m) {
+                    html += '<option value="month|' + m + '">' + formatChequeMonth(m) + '</option>';
+                });
+                html += '</optgroup>';
+            }
+            periodEl.innerHTML = html;
+            periodEl.value = currentPeriod;
+            if (!periodEl.value) periodEl.value = 'all';
+        }
+    }
+
+    function applyChequeFilters() {
+        const year = chequeFilterValue('chequeYearFilter', 'all') || 'all';
+        const period = chequeFilterValue('chequePeriodFilter', 'all') || 'all';
+        const fund = chequeFilterValue('chequeFundFilter', 'all') || 'all';
+        const search = (chequeFilterValue('chequeSearch', '') || '').toLowerCase().trim();
+        const uacs = (chequeFilterValue('chequeUacsSearch', '') || '').replace(/\D/g, '');
+        const tbody = document.getElementById('chequesTableBody');
+        const rows = getChequeRows();
+        let visible = 0;
+
+        rows.forEach(function (row) {
+            const d = row.dataset.date || '';
+            const okYear = (year === 'all') || (d.slice(0, 4) === year);
+
+            let okPeriod = true;
+            if (period !== 'all') {
+                const bits = period.split('|');
+                okPeriod = (bits[0] === 'date') ? (d === bits[1]) : (d.slice(0, 7) === bits[1]);
+            }
+
+            const okFund = (fund === 'all') || ((row.dataset.fund || '').trim() === fund);
+
+            const hay = ((row.dataset.payee || '') + ' ' + (row.dataset.serial || '')).toLowerCase();
+            const okSearch = !search || hay.indexOf(search) !== -1;
+
+            const rowUacs = (row.dataset.uacs || '').replace(/\D/g, '');
+            const okUacs = !uacs || rowUacs.indexOf(uacs) !== -1;
+
+            const show = okYear && okPeriod && okFund && okSearch && okUacs;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        const existing = document.getElementById('chequeNoMatchRow');
+        if (existing) existing.remove();
+        if (tbody && rows.length && visible === 0) {
+            const tr = document.createElement('tr');
+            tr.id = 'chequeNoMatchRow';
+            tr.innerHTML = '<td colspan="9" style="text-align:center; padding:30px; color:var(--muted);">No cheques match the selected filters.</td>';
+            tbody.appendChild(tr);
+        }
+    }
+
+    function sortCheques(sortType, save) {
+        if (save !== false) chequeStorageSet('chequeSortFilter', sortType);
+
+        const tbody = document.getElementById('chequesTableBody');
+        const rows = getChequeRows();
+        if (!tbody || rows.length <= 1) { applyChequeFilters(); return; }
+
+        const num = function (v) {
+            const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
+            return isNaN(n) ? 0 : n;
+        };
+
+        rows.sort(function (a, b) {
+            switch (sortType) {
+                case 'payee_asc':
+                    return (a.dataset.payee || '').localeCompare(b.dataset.payee || '', undefined, { sensitivity: 'base' });
+                case 'payee_desc':
+                    return (b.dataset.payee || '').localeCompare(a.dataset.payee || '', undefined, { sensitivity: 'base' });
+                case 'date_desc':
+                    return (b.dataset.date || '').localeCompare(a.dataset.date || '');
+                case 'date_asc':
+                    return (a.dataset.date || '').localeCompare(b.dataset.date || '');
+                case 'serial_asc':
+                    return (a.dataset.serial || '').localeCompare(b.dataset.serial || '', undefined, { numeric: true, sensitivity: 'base' });
+                case 'serial_desc':
+                    return (b.dataset.serial || '').localeCompare(a.dataset.serial || '', undefined, { numeric: true, sensitivity: 'base' });
+                case 'amount_desc':
+                    return num(b.dataset.amount) - num(a.dataset.amount);
+                case 'amount_asc':
+                    return num(a.dataset.amount) - num(b.dataset.amount);
+                default:
+                    return (parseInt(a.dataset.order, 10) || 0) - (parseInt(b.dataset.order, 10) || 0);
+            }
+        });
+
+        rows.forEach(function (r) { tbody.appendChild(r); });
+        applyChequeFilters();
+    }
+
+    function refreshChequeFilters() {
+        const savedSort = chequeStorageGet('chequeSortFilter', 'default');
+        const sortEl = document.getElementById('chequeSortFilter');
+        if (sortEl) sortEl.value = savedSort;
+        rebuildChequeFilterOptions();
+        sortCheques(savedSort, false);
+    }
 
     function loadCheques(status) {
         const tbody = document.getElementById('chequesTableBody');
@@ -410,6 +642,7 @@
             .then(function (data) {
                 if (data.ok) {
                     tbody.innerHTML = data.html;
+                    refreshChequeFilters();
                 } else {
                     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--danger);">Error: ' + (data.error || 'unknown') + ' <a href="#" onclick="loadCheques(\'' + status + '\'); return false;" style="color:var(--brand);font-weight:600;">Retry</a></td></tr>';
                 }
@@ -421,10 +654,18 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         const sel = document.getElementById('chequeStatusFilter');
-        if (!sel) return;
-        sel.addEventListener('change', function () {
-            loadCheques(this.value);
-        });
+        if (sel) {
+            sel.addEventListener('change', function () {
+                loadCheques(this.value);
+            });
+        }
+
+        const savedSort = chequeStorageGet('chequeSortFilter', 'default');
+        const sortEl = document.getElementById('chequeSortFilter');
+        if (sortEl) sortEl.value = savedSort;
+
+        rebuildChequeFilterOptions();
+        sortCheques(savedSort, false);
     });
 </script>
 {% endblock %}

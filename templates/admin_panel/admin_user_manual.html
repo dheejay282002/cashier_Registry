@@ -11,6 +11,8 @@
     <a href="{% url 'admin_dashboard' %}" class="manual-modal-close" title="Close"><i class="fas fa-xmark"></i></a>
 </div>
 <style>
+/* hide Registry / RADAI / Check FABs on settings pages */
+body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body #chequeMasterFab, body #chequeMasterMenu { display: none !important; visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
     :root {
         --primary: #1a3a2e;
         --accent: #3b82f6;

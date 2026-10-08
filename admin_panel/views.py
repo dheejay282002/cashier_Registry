@@ -6154,8 +6154,103 @@ def suppliers(request):
 
     today = timezone.localdate()
 
+    def _registry_extras(sup):
+        return ((sup.raw_import or {}).get('supplier_extras') or {})
+
+    def _registry_money(raw):
+        text = str(raw or '').strip().replace(',', '').replace('₱', '').replace('\u20B1', '')
+        if not text:
+            return None
+        try:
+            return Decimal(text).quantize(Decimal('0.01'))
+        except (InvalidOperation, ValueError):
+            return None
+
+    def _save_and_print_cheque(sup):
+        """
+        Create (or refresh) the Cheque that belongs to a registry record so the
+        check can be printed right after saving. Returns (cheque, error_message).
+        """
+        extras = _registry_extras(sup)
+        serial = (sup.mr_or or '').strip()
+        try:
+            cheque_number = Cheque.normalize_cheque_number(serial) if serial else Cheque.next_cheque_number()
+        except Exception:
+            cheque_number = Cheque.next_cheque_number()
+
+        cheque = Cheque.objects.filter(payee=sup).order_by('-pk').first()
+        if cheque is None and cheque_number:
+            clash = Cheque.objects.filter(cheque_number=cheque_number).first()
+            if clash is not None:
+                same_payee = clash.payee_id == sup.pk or (
+                    not clash.payee_id
+                    and (clash.payee_name or '').strip().lower() == (sup.account_name or '').strip().lower()
+                )
+                if not same_payee:
+                    return None, f"Check No. {cheque_number} is already issued to another payee."
+                cheque = clash
+
+        fund = None
+        fund_id = str(extras.get('fund_cluster_id') or '').strip()
+        if fund_id.isdigit():
+            fund = FundCluster.objects.filter(pk=int(fund_id), is_active=True).first()
+
+        if cheque is None:
+            cheque = Cheque(
+                cheque_number=cheque_number,
+                created_by=request.user,
+                status='unreleased',
+                remarks='Unreleased',
+            )
+
+        cheque.cheque_number = cheque_number
+        cheque.payee = sup
+        cheque.payee_name = sup.account_name or cheque.payee_name
+        cheque.amount = sup.amount or Decimal('0.00')
+        cheque.date = sup.date or today
+        cheque.purpose = sup.nature_of_collections or cheque.purpose
+        cheque.nature_of_payment = sup.nature_of_collections or cheque.nature_of_payment
+        cheque.dv_payroll_no = str(extras.get('dv_payroll') or '') or cheque.dv_payroll_no
+        cheque.ors_burs_no = str(extras.get('ors_burs') or '') or cheque.ors_burs_no
+        cheque.responsibility_center = str(extras.get('responsibility_center') or '') or cheque.responsibility_center
+        cheque.uacs_object_code = str(extras.get('uacs') or '') or cheque.uacs_object_code
+        cheque.account_number = sup.account_number or cheque.account_number
+        if fund:
+            cheque.fund_cluster = fund
+            cheque.bank_name = fund.bank_name or cheque.bank_name
+        professional_tax = _registry_money(extras.get('professional_tax'))
+        if professional_tax is not None:
+            cheque.professional_tax = professional_tax
+        tax_5_3 = _registry_money(extras.get('tax_5'))
+        if tax_5_3 is not None:
+            cheque.tax_5_3 = tax_5_3
+        tax_3_1 = _registry_money(extras.get('tax_2'))
+        if tax_3_1 is not None:
+            cheque.tax_3_1 = tax_3_1
+        if not cheque.created_by_id:
+            cheque.created_by = request.user
+        if not cheque.status:
+            cheque.status = 'unreleased'
+            cheque.remarks = cheque.remarks or 'Unreleased'
+        cheque.save()
+
+        try:
+            Cheque.record_generated_cheque_number(cheque.cheque_number)
+        except Exception:
+            pass
+
+        _audit(request.user, "Created cheque from registry record", {
+            "id": cheque.pk,
+            "number": cheque.cheque_number,
+            "supplier_id": sup.pk,
+            "amount": str(cheque.amount),
+        })
+        return cheque, None
+
     if request.method == "POST":
         action = request.POST.get('action', 'create')
+        save_and_print = str(request.POST.get('save_and_print', '') or '').strip().lower() in ('1', 'true', 'on', 'yes')
+        is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
         if action == 'delete':
             from cashier.models import DEFAULT_ROLE_PERMISSIONS
             role_config = DEFAULT_ROLE_PERMISSIONS.get(profile.role if profile else 'guest', {"permissions": {}})
@@ -6218,6 +6313,26 @@ def suppliers(request):
                     sup.save()
                     _audit(request.user, "Edited supplier", {"id": sup_id})
                     msg = f"Supplier '{sup.account_name}' updated."
+                    if save_and_print:
+                        cheque, print_error = _save_and_print_cheque(sup)
+                        if print_error:
+                            if is_xhr:
+                                return JsonResponse({
+                                    "ok": False,
+                                    "saved": True,
+                                    "error": print_error,
+                                    "success_url": f"{reverse('suppliers')}?success={quote(msg)}",
+                                })
+                            return redirect(f"{reverse('suppliers')}?error={quote(print_error)}")
+                        if is_xhr:
+                            return JsonResponse({
+                                "ok": True,
+                                "supplier_id": sup.pk,
+                                "cheque_id": cheque.pk,
+                                "print_url": f"{reverse('cheque_print', args=[cheque.pk])}?autoprint=1",
+                                "success_url": f"{reverse('suppliers')}?success={quote(msg)}",
+                            })
+                        return redirect(f"{reverse('cheque_print', args=[cheque.pk])}?autoprint=1")
                     return redirect(f"{reverse('suppliers')}?success={quote(msg)}")
         else:
             data = _parse_supplier_form(request.POST)
@@ -6245,7 +6360,33 @@ def suppliers(request):
                 )
                 _audit(request.user, "Created supplier", {"id": sup.pk, "name": data['account_name']})
                 msg = f"Supplier '{data['account_name']}' added."
+                if save_and_print:
+                    cheque, print_error = _save_and_print_cheque(sup)
+                    if print_error:
+                        if is_xhr:
+                            return JsonResponse({
+                                "ok": False,
+                                "saved": True,
+                                "error": print_error,
+                                "success_url": f"{reverse('suppliers')}?success={quote(msg)}",
+                            })
+                        return redirect(f"{reverse('suppliers')}?error={quote(print_error)}")
+                    if is_xhr:
+                        return JsonResponse({
+                            "ok": True,
+                            "supplier_id": sup.pk,
+                            "cheque_id": cheque.pk,
+                            "print_url": f"{reverse('cheque_print', args=[cheque.pk])}?autoprint=1",
+                            "success_url": f"{reverse('suppliers')}?success={quote(msg)}",
+                        })
+                    return redirect(f"{reverse('cheque_print', args=[cheque.pk])}?autoprint=1")
                 return redirect(f"{reverse('suppliers')}?success={quote(msg)}")
+
+        if save_and_print and action in ('create', 'edit'):
+            if is_xhr:
+                return JsonResponse({"ok": False, "error": error or "Unable to save the registry record."})
+            if error:
+                return redirect(f"{reverse('suppliers')}?error={quote(error)}")
 
     def _supplier_sort_value(value):
         text = str(value or '').strip()

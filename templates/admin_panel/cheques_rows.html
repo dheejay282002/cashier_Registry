@@ -1,6 +1,13 @@
 {% load humanize %}
 {% for c in cheques %}
-<tr id="cheque-row-{{ c.pk }}">
+<tr id="cheque-row-{{ c.pk }}" data-order="{{ forloop.counter0 }}"
+    data-date="{{ c.date|date:'Y-m-d' }}"
+    data-payee="{{ c.payee_name }}"
+    data-serial="{{ c.real_cheque_number|default:c.pk }}"
+    data-amount="{{ c.amount|floatformat:2 }}"
+    data-fund="{{ c.fund_cluster.code|default:'' }}"
+    data-uacs="{{ c.uacs_object_code|default:'' }}"
+    data-status="{{ c.status }}">
     <td>{{ c.desc_index }}</td>
     <td><strong>{{ c.real_cheque_number|default:c.pk }}</strong></td>
     <td>
