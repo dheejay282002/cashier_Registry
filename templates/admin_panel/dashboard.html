@@ -571,17 +571,17 @@
     <div class="stat-grid">
         <div class="stat-card">
             <div class="stat-value">{{ total_cheques }}</div>
-            <div class="stat-label">Total Cheques</div>
+            <div class="stat-label">Total Checks</div>
             <div class="stat-meta">All recorded Check</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ pending_cheques }}</div>
-            <div class="stat-label">Unreleased Cheques</div>
+            <div class="stat-label">Unreleased Checks</div>
             <div class="stat-meta">Waiting for release</div>
         </div>
         <div class="stat-card">
             <div class="stat-value">{{ released_cheques }}</div>
-            <div class="stat-label">Released Cheques</div>
+            <div class="stat-label">Released Checks</div>
             <div class="stat-meta">Already disbursed</div>
         </div>
         <div class="stat-card" style="border-color: #8c918f;">
@@ -764,7 +764,7 @@
                 <div class="mini-row">
                     <div>
                         <div style="font-weight:700; color:#102033;">{{ cashier.first_name|default:cashier.username }}</div>
-                        <div class="mini-subtle">cheques created this month</div>
+                        <div class="mini-subtle">Checks created this month</div>
                     </div>
                     <div style="text-align:right;">
                         <div style="font-weight:800; color:#2563eb;">{{ cashier.cheque_count }}</div>

@@ -1231,7 +1231,7 @@ function sendDisableTotpOtp() {
     const section = document.getElementById('disableTotpSection');
     const otpSection = document.getElementById('disableTotpOtpSection');
     section.innerHTML = '<div style="font-size:12px; color:var(--muted);"><i class="fas fa-spinner fa-spin"></i> Sending verification code...</div>';
-    const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]') ? document.querySelector('input[name="csrfmiddlewaretoken"]').value : getCookie('csrftoken');
+    const csrfToken = getCsrfToken();
     fetch("{% url 'mfa_send_disable_totp_otp' %}", {
         method: 'POST',
         headers: {

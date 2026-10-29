@@ -187,6 +187,118 @@ body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body
         margin-bottom: 10px;
     }
 
+    /* ── ALLOWED HOSTS ── */
+    .host-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .host-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .host-name {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--ink);
+        text-align: left;
+        word-break: break-all;
+    }
+
+    .host-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .host-empty {
+        padding: 18px;
+        text-align: center;
+        font-size: 13px;
+        color: var(--muted);
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+    }
+
+    .host-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+    .host-modal-overlay.open {
+        display: flex;
+    }
+
+    .host-modal-box {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        width: 100%;
+        max-width: 430px;
+        padding: 22px;
+        text-align: left;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.3);
+        box-sizing: border-box;
+    }
+
+    .host-modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        margin-bottom: 14px;
+    }
+
+    .host-modal-box label {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 6px;
+    }
+
+    .host-modal-box input {
+        width: 100%;
+        padding: 11px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        box-sizing: border-box;
+    }
+
+    .host-modal-box input:focus {
+        outline: none;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 3px rgba(47, 128, 237, 0.14);
+    }
+
+    .host-modal-box .hint {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-top: 6px;
+    }
+
+    .host-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
 
 
     /* ── MASTER DARK MODE OVERRIDES FOR SYSTEM SETTINGS ── */
@@ -247,6 +359,18 @@ body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body
 
     [data-theme="dark"] .submit-btn:hover {
         background: #166534 !important;
+    }
+
+    [data-theme="dark"] .host-row,
+    [data-theme="dark"] .host-modal-box {
+        background: #111827 !important;
+        background-color: #111827 !important;
+        border-color: #1a1a1a !important;
+    }
+
+    [data-theme="dark"] .host-name,
+    [data-theme="dark"] .host-modal-title {
+        color: #f8fafc !important;
     }
 </style>
 
@@ -456,8 +580,67 @@ body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body
 
         </form>
 
+        <!-- ALLOWED HOSTS -->
+        <div class="details-section" style="margin-top:20px;">
+            <h4><i class="fas fa-globe" style="margin-right:6px;"></i>Allowed Hosts</h4>
+            <p style="font-size:12px; color:var(--muted); margin:-4px 0 12px; text-align:center;">
+                Hostnames permitted to access this system. Changes apply on the next request — no restart needed.<br>
+                <strong>localhost</strong> and <strong>127.0.0.1</strong> are always allowed.
+            </p>
+            <div class="host-list">
+                {% for h in allowed_hosts %}
+                <div class="host-row">
+                    <span class="host-name"><i class="fas fa-server" style="opacity:.55; margin-right:8px;"></i>{{ h.host }}</span>
+                    <span class="host-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" title="Edit"
+                                onclick="openEditHostModal('{{ h.pk }}', '{{ h.host|escapejs }}')">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <form method="post" style="display:inline;"
+                              onsubmit="return confirm('Remove {{ h.host|escapejs }} from the allowed hosts?')">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_host">
+                            <input type="hidden" name="host_id" value="{{ h.pk }}">
+                            <button type="submit" class="btn btn-danger btn-sm" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </form>
+                    </span>
+                </div>
+                {% empty %}
+                <div class="host-empty">
+                    <i class="fas fa-inbox" style="font-size:22px; opacity:.35; display:block; margin-bottom:6px;"></i>
+                    No hosts configured yet — only localhost / 127.0.0.1 are allowed.
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" style="margin-top:12px;" onclick="openAddHostModal()">
+                <i class="fas fa-plus"></i> Add Host
+            </button>
+        </div>
+
     </div>
 
+</div>
+
+<!-- ADD / EDIT ALLOWED HOST MODAL -->
+<div class="host-modal-overlay" id="hostModal" onclick="if(event.target===this)closeHostModal()">
+    <div class="host-modal-box">
+        <div class="host-modal-title"><i class="fas fa-globe"></i> <span id="hostModalTitle">Add Allowed Host</span></div>
+        <form method="post" id="hostModalForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" id="hostAction" value="add_host">
+            <input type="hidden" name="host_id" id="hostModalId" value="">
+            <label for="hostModalInput">Hostname</label>
+            <input type="text" id="hostModalInput" name="host" autocomplete="off" required
+                   placeholder="e.g. example.com or 192.168.1.10">
+            <div class="hint">Hostname only — no http:// and no port. Use .example.com to allow all subdomains.</div>
+            <div class="host-modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeHostModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <script>
@@ -607,6 +790,48 @@ body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body
         if (retentionMaxAge) retentionMaxAge.addEventListener("input", check);
         if (retentionMaxCount) retentionMaxCount.addEventListener("input", check);
     })();
+
+    /* ── ALLOWED HOSTS MODAL ── */
+    function openHostModal() {
+        document.getElementById('hostModal').classList.add('open');
+    }
+
+    function closeHostModal() {
+        document.getElementById('hostModal').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeHostModal();
+    });
+
+    function openAddHostModal() {
+        document.getElementById('hostAction').value = 'add_host';
+        document.getElementById('hostModalId').value = '';
+        document.getElementById('hostModalInput').value = '';
+        document.getElementById('hostModalTitle').textContent = 'Add Allowed Host';
+        openHostModal();
+        setTimeout(function () { document.getElementById('hostModalInput').focus(); }, 80);
+    }
+
+    function openEditHostModal(id, host) {
+        document.getElementById('hostAction').value = 'edit_host';
+        document.getElementById('hostModalId').value = id;
+        document.getElementById('hostModalInput').value = host;
+        document.getElementById('hostModalTitle').textContent = 'Edit Allowed Host';
+        openHostModal();
+        setTimeout(function () { document.getElementById('hostModalInput').focus(); }, 80);
+    }
+
+    {% if host_modal == 'add' %}
+    document.addEventListener('DOMContentLoaded', function () {
+        openAddHostModal();
+        document.getElementById('hostModalInput').value = '{{ host_input|escapejs }}';
+    });
+    {% elif host_modal == 'edit' %}
+    document.addEventListener('DOMContentLoaded', function () {
+        openEditHostModal('{{ host_id }}', '{{ host_input|escapejs }}');
+    });
+    {% endif %}
 
 
 

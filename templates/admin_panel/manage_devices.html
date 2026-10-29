@@ -586,7 +586,7 @@ body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-CSRFToken': getCsrfToken(),
                 },
                 body: JSON.stringify({
                     recipient_id: messageRecipientId,

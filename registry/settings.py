@@ -33,8 +33,15 @@ SECRET_KEY = 'django-insecure-9g&3tghxo@=c59z&9v)(_v(gqw2sz8h1xjlrar%xa+qrdihut*
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['disproportional-jo-sternly.ngrok-free.dev', '127.0.0.1', 'path-lending-varieties-naturals.trycloudflare.com', 'railway.com', 'localhost', '10.89.248.213']
+# Local fallback hosts ONLY — the real list is managed in the admin UI
+# (System Settings -> Allowed Hosts) and loaded from the database on every
+# request by admin_panel.middleware.AllowedHostsMiddleware. Never add other
+# hosts here; add them in the UI instead (no restart needed).
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
+# Static origins below are fallbacks for host:port dev URLs. Origins for the
+# admin-managed allowed hosts (both http and https) are derived automatically
+# by admin_panel.middleware.AllowedHostsMiddleware on every request.
 CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://localhost:8000',
@@ -43,6 +50,33 @@ CSRF_TRUSTED_ORIGINS = [
     'https://railway.com',
     
 ]
+
+# HTTPS — TLS terminates at the tunnel/proxy in front of the server (ngrok,
+# Cloudflare, Railway), which forwards plain HTTP and reports the original
+# scheme via X-Forwarded-Proto. Without this Django would see every request
+# as http:// even when the visitor used https://.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# http -> https is enforced per-request by admin_panel.middleware.
+# HttpsRedirectMiddleware: proxy-fronted public hosts get upgraded (301),
+# while localhost and private LAN addresses keep working over plain http
+# (they have no certificate). Set REGISTRY_FORCE_HTTPS=0 to disable.
+# The same middleware drops the Secure flag from cookies on http responses,
+# so both flags stay on without breaking http LAN logins.
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# ZAP 2.17.0: csrftoken cookie was readable from JS (XSS cookie theft).
+# Templates now read the token from <meta name="csrf-token">, so the cookie
+# can be marked HttpOnly (verified by test suite after refactor).
+CSRF_COOKIE_HTTPONLY = True
+
+# ZAP 2.17.0: X-Content-Type-Options missing. SecurityMiddleware then emits
+# nosniff on every response.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Sent on https responses so browsers stop trying the http URL again.
+SECURE_HSTS_SECONDS = 86400
 
 
 # Application definition
@@ -53,17 +87,23 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    # Before staticfiles so admin_panel's runserver subclass wins command
+    # precedence and can apply security headers to /static/* responses.
+    'admin_panel',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'admin_panel',
     'cashier',
 ]
 
 MIDDLEWARE = [
+    # First in list so its process_response runs last and sets final headers.
+    'admin_panel.middleware.SecurityHeadersMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'admin_panel.middleware.AllowedHostsMiddleware',
+    'admin_panel.middleware.HttpsRedirectMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'admin_panel.middleware.DynamicCsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -82,6 +122,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+                'django.template.context_processors.csrf',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'admin_panel.context_processors.system_settings',

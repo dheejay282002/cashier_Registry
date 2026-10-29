@@ -478,12 +478,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function fetchChartData(period){
-        fetch('{% url "cashier_dashboard_chart_data" %}?period='+encodeURIComponent(period),{headers:{'X-CSRFToken':getCookie('csrftoken'),'X-Requested-With':'XMLHttpRequest'}})
+        fetch('{% url "cashier_dashboard_chart_data" %}?period='+encodeURIComponent(period),{headers:{'X-CSRFToken':getCsrfToken(),'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){return r.json();}).then(function(d){initStatusChart(d);initMonthlyChart(d);}).catch(function(e){console.error('Chart error:',e);});
     }
 
     function fetchSuppliersChart(period){
-        fetch('{% url "cashier_suppliers_chart_data" %}?period='+encodeURIComponent(period),{headers:{'X-CSRFToken':getCookie('csrftoken'),'X-Requested-With':'XMLHttpRequest'}})
+        fetch('{% url "cashier_suppliers_chart_data" %}?period='+encodeURIComponent(period),{headers:{'X-CSRFToken':getCsrfToken(),'X-Requested-With':'XMLHttpRequest'}})
         .then(function(r){return r.json();}).then(function(d){if(d.error){console.warn('Suppliers chart API error:',d.error);return;}initSuppliersChart(d);}).catch(function(e){console.error('Suppliers chart error:',e);});
     }
 

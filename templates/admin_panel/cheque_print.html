@@ -243,7 +243,7 @@ function amountToWords(amount) {
     result += below1000(pesos % 1000);
     const pesosText = (result.replace(/\s+/g, ' ').trim() || 'ZERO') + ' PESOS';
     const centsFormatted = String(centavos).padStart(2, '0');
-    return (pesosText + ' & ' + centsFormatted + '/100 ONLY').toUpperCase();
+    return (pesosText + ' AND ' + centsFormatted + '/100 ONLY').toUpperCase();
 }
 
 function formatSpacedDate(dateStr) {

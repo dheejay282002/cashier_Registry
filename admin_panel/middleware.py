@@ -1,5 +1,164 @@
 from django.shortcuts import redirect
 
+import ipaddress
+import os
+from collections import defaultdict
+from urllib.parse import urlsplit
+
+from django.conf import settings as django_settings
+from django.http import HttpResponsePermanentRedirect
+from django.middleware.csrf import CsrfViewMiddleware
+
+# Set REGISTRY_FORCE_HTTPS=0 to disable the http -> https upgrade entirely.
+_FORCE_HTTPS = os.getenv("REGISTRY_FORCE_HTTPS", "1").strip().lower() not in ("0", "false", "no")
+
+# Snapshots of the static values defined in registry/settings.py, captured at
+# import time (before any request mutates them). The ALLOWED_HOSTS entries
+# here are permanent local fallbacks (localhost / 127.0.0.1).
+_BASE_ALLOWED_HOSTS = tuple(django_settings.ALLOWED_HOSTS)
+_BASE_CSRF_TRUSTED_ORIGINS = tuple(django_settings.CSRF_TRUSTED_ORIGINS)
+
+# Hosts loaded from the database on the previous request (None = first run).
+_DB_HOSTS = None
+
+
+def refresh_allowed_hosts():
+    """Sync settings.ALLOWED_HOSTS and settings.CSRF_TRUSTED_ORIGINS with the
+    hosts configured in the admin UI (System Settings -> Allowed Hosts).
+
+    Uses a delta against the previous request so entries added elsewhere
+    (e.g. "testserver" appended by Django's test runner) are preserved while
+    hosts deleted in the UI are dropped immediately — no restart needed.
+    """
+    global _DB_HOSTS
+    try:
+        from .models import AllowedHost
+        db_hosts = AllowedHost.get_hosts()
+    except Exception:
+        # Database unreachable (e.g. before the first migrate) — keep the
+        # current list so the static fallback in registry/settings.py applies.
+        return
+    db_set = set(db_hosts)
+    current = list(django_settings.ALLOWED_HOSTS)
+    removed = set() if _DB_HOSTS is None else (_DB_HOSTS - db_set)
+    new_hosts = [h for h in current if h not in removed]
+    new_hosts.extend(h for h in db_hosts if h not in new_hosts)
+    new_hosts.extend(h for h in _BASE_ALLOWED_HOSTS if h not in new_hosts)
+    django_settings.ALLOWED_HOSTS = list(dict.fromkeys(new_hosts))
+    _DB_HOSTS = db_set
+
+    # Keep CSRF trusted origins in sync so forms POSTed from a newly added
+    # host pass Django's Origin check. Deployments sit behind TLS-terminating
+    # proxies (ngrok, Cloudflare, Railway), so both schemes are trusted for
+    # every host — the proxy makes Django see http while the browser sends an
+    # https Origin.
+    origins = list(_BASE_CSRF_TRUSTED_ORIGINS)
+    for host in django_settings.ALLOWED_HOSTS:
+        if host == "*":
+            continue
+        pattern = f"*{host}" if host.startswith(".") else host
+        origins.append(f"https://{pattern}")
+        origins.append(f"http://{pattern}")
+    django_settings.CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(origins))
+
+
+class AllowedHostsMiddleware:
+    """Loads the admin-managed allowed hosts before anything validates the
+    request host. Place it right after SecurityMiddleware so every
+    request.get_host() call (CSRF, redirects, views) sees the current list.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        refresh_allowed_hosts()
+        return self.get_response(request)
+
+
+def _is_local_host(raw_host):
+    """True for localhost / loopback / private LAN hosts (no TLS available)."""
+    host = (raw_host or "").strip().lower()
+    if host.startswith("["):                      # IPv6 literal, e.g. [::1]:8000
+        host = host[1:host.find("]")] if "]" in host else host
+        return host in ("::1", "0:0:0:0:0:0:0:1")
+    host = host.split(":", 1)[0]                  # drop :port (hostname / IPv4)
+    if host in ("localhost", "127.0.0.1"):
+        return True
+    try:
+        return ipaddress.ip_address(host).is_private   # loopback + 10/172.192 LAN
+    except ValueError:
+        return False
+
+
+class HttpsRedirectMiddleware:
+    """Keeps public traffic on https while plain-http local access keeps working.
+
+    TLS terminates at the tunnel/proxy in front of the server (ngrok,
+    Cloudflare, Railway), which forwards plain HTTP and reports the original
+    scheme via X-Forwarded-Proto — trusted through SECURE_PROXY_SSL_HEADER in
+    registry/settings.py.
+
+    - Request: a proxy-fronted http:// visit to a public host is redirected
+      (301) to https://. localhost / 127.0.0.1 / private LAN addresses are
+      exempt (they have no certificate), as are direct connections without an
+      X-Forwarded-Proto header. REGISTRY_FORCE_HTTPS=0 disables this.
+    - Response: on plain-http requests the Secure flag is dropped from the
+      session/CSRF cookies, so SESSION_COOKIE_SECURE / CSRF_COOKIE_SECURE can
+      stay on for https without breaking http LAN logins.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if _FORCE_HTTPS and not request.is_secure() and "HTTP_X_FORWARDED_PROTO" in request.META:
+            try:
+                host = request.get_host()
+            except Exception:
+                host = None
+            if host and not _is_local_host(host):
+                return HttpResponsePermanentRedirect(f"https://{host}{request.get_full_path()}")
+        response = self.get_response(request)
+        if not request.is_secure():
+            for cookie_name in (django_settings.SESSION_COOKIE_NAME, django_settings.CSRF_COOKIE_NAME):
+                morsel = response.cookies.get(cookie_name)
+                if morsel is not None:
+                    morsel.pop("secure", None)
+        return response
+
+
+class DynamicCsrfViewMiddleware(CsrfViewMiddleware):
+    """Drop-in replacement for Django's CsrfViewMiddleware.
+
+    Django computes the CSRF trusted-origin sets with @cached_property, i.e.
+    once per process, so hosts added later in the admin UI would not be
+    trusted until a restart. These properties re-read
+    settings.CSRF_TRUSTED_ORIGINS on every request instead.
+    """
+
+    @property
+    def csrf_trusted_origins_hosts(self):
+        return [
+            urlsplit(origin).netloc.lstrip("*")
+            for origin in django_settings.CSRF_TRUSTED_ORIGINS
+        ]
+
+    @property
+    def allowed_origins_exact(self):
+        return {origin for origin in django_settings.CSRF_TRUSTED_ORIGINS if "*" not in origin}
+
+    @property
+    def allowed_origin_subdomains(self):
+        allowed_origin_subdomains = defaultdict(list)
+        for parsed in (
+            urlsplit(origin)
+            for origin in django_settings.CSRF_TRUSTED_ORIGINS
+            if "*" in origin
+        ):
+            allowed_origin_subdomains[parsed.scheme].append(parsed.netloc.lstrip("*"))
+        return allowed_origin_subdomains
+
 
 class LockScreenMiddleware:
     """
@@ -11,6 +170,51 @@ class LockScreenMiddleware:
 
     def __call__(self, request):
         return self.get_response(request)
+
+
+class SecurityHeadersMiddleware:
+    """ZAP 2.17.0 passive-scan remediation.
+
+    Emits three headers on every dynamic response:
+
+    * Content-Security-Policy — the app loads no external resources (all JS,
+      CSS, icons and fonts are local; every fetch()/XHR is same-origin, and
+      the AI chatbot is proxied server-side via /chatbot/message/). The code
+      base uses extensive inline <script>, inline event handlers and inline
+      <style> blocks, so 'unsafe-inline' is required for script-src/style-src
+      until those are externalised.
+    * X-Content-Type-Options — also set via SECURE_CONTENT_TYPE_NOSNIFF in
+      settings; kept here as defence-in-depth so no response can miss it.
+    * Server — wsgiref's runserver adds "Server: WSGIServer/0.2 CPython/x"
+      only when the application did not already send a Server header (see
+      wsgiref/handlers.py send_headers). Setting an empty value suppresses
+      the version disclosure. In production the reverse proxy / WSGI server
+      (Apache, nginx, gunicorn) controls this header.
+    """
+
+    CONTENT_SECURITY_POLICY = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline'; "
+        "img-src 'self' data:; "
+        "font-src 'self' data:; "
+        "connect-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'; "
+        "frame-ancestors 'none'"
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        response.headers["Server"] = ""
+        if "Content-Security-Policy" not in response.headers:
+            response.headers["Content-Security-Policy"] = self.CONTENT_SECURITY_POLICY
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        return response
 
 
 from django.urls import resolve

@@ -453,7 +453,7 @@ function restoreItem(itemType, pk) {
     fetch('/restore/' + itemType + '/' + pk + '/', {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || getCookie('csrftoken'),
+            'X-CSRFToken': getCsrfToken(),
             'Content-Type': 'application/json',
         },
     })

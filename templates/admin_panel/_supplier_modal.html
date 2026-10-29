@@ -317,6 +317,16 @@
         min-height: 90px;
     }
 
+    #fieldNature {
+        field-sizing: content;
+        min-height: 40px;
+        max-height: 300px;
+        resize: none;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
     .serial-feedback {
         display: none;
         font-size: 12px;
@@ -569,6 +579,159 @@
     color: #14532d !important;
 }
 
+/* Computation breakdown — full formula visibility (Gross → Rate → Tax → Net) */
+.tax-breakdown {
+    margin-top: 14px;
+    border: 1px solid #e5eaf0;
+    border-radius: 12px;
+    background: #fff;
+    padding: 12px 14px;
+}
+
+.tax-breakdown-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.tax-breakdown-head h6 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #163c2a;
+}
+
+.tax-formula-btn {
+    background: #fff;
+    border: 1px solid #d6dde7;
+    border-radius: 14px;
+    padding: 4px 10px;
+    min-width: 72px;
+    height: 26px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #163c2a;
+    cursor: pointer;
+}
+
+.tax-formula-btn:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.tax-breakdown-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.tax-breakdown-table th,
+.tax-breakdown-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #eef2f7;
+    text-align: left;
+    vertical-align: top;
+    color: #334155;
+}
+
+.tax-breakdown-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #64748b;
+    font-weight: 700;
+    background: #f8fafc;
+}
+
+.tax-breakdown-table td.amt,
+.tax-breakdown-table th.amt {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.tax-breakdown-table .bd-formula {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    font-size: 11px;
+    color: #475569;
+    word-break: break-word;
+}
+
+.tax-breakdown-table .bd-gross-row td {
+    font-weight: 700;
+    color: #163c2a;
+    background: #f8fbff;
+}
+
+.tax-breakdown-table tfoot td {
+    border-bottom: 0;
+    font-weight: 700;
+}
+
+.tax-breakdown-table .bd-ded-row td {
+    color: #92400e;
+}
+
+.tax-breakdown-table .bd-net-row td {
+    color: #14532d;
+    background: #f0fdf4;
+    font-size: 13px;
+}
+
+.tax-formula-ref {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #d6dde7;
+}
+
+.tax-formula-ref-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.tax-formula-ref table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11.5px;
+}
+
+.tax-formula-ref th,
+.tax-formula-ref td {
+    border: 1px solid #e5eaf0;
+    padding: 5px 7px;
+    text-align: left;
+}
+
+.tax-formula-ref th {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.tax-formula-ref .ref-group td {
+    background: #f8fbff;
+    font-weight: 700;
+    color: #163c2a;
+}
+
+.tax-formula-ref .ref-formula {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    color: #475569;
+    white-space: nowrap;
+}
+
 /* Payment layout tweaks */
 .payment-meta-row {
     margin-top: 12px;
@@ -643,6 +806,78 @@
     background: #0b1220 !important;
     border-color: #166534 !important;
     color: #bbf7d0 !important;
+}
+
+[data-theme="dark"] .tax-breakdown {
+    background: #0b1220;
+    border-color: #1f2937;
+}
+
+[data-theme="dark"] .tax-breakdown-head h6 {
+    color: #e5e7eb;
+}
+
+[data-theme="dark"] .tax-formula-btn {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+[data-theme="dark"] .tax-formula-btn:hover {
+    background: #1f2937;
+    border-color: #6b7280;
+}
+
+[data-theme="dark"] .tax-breakdown-table th,
+[data-theme="dark"] .tax-breakdown-table td {
+    border-color: #1f2937;
+    color: #d1d5db;
+}
+
+[data-theme="dark"] .tax-breakdown-table th {
+    background: #111827;
+    color: #9ca3af;
+}
+
+[data-theme="dark"] .tax-breakdown-table .bd-formula {
+    color: #9ca3af;
+}
+
+[data-theme="dark"] .tax-breakdown-table .bd-gross-row td {
+    color: #bbf7d0;
+    background: #0f172a;
+}
+
+[data-theme="dark"] .tax-breakdown-table .bd-ded-row td {
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .tax-breakdown-table .bd-net-row td {
+    background: #052e16;
+    color: #bbf7d0;
+}
+
+[data-theme="dark"] .tax-formula-ref {
+    border-top-color: #374151;
+}
+
+[data-theme="dark"] .tax-formula-ref th,
+[data-theme="dark"] .tax-formula-ref td {
+    border-color: #374151;
+}
+
+[data-theme="dark"] .tax-formula-ref th {
+    background: #111827;
+    color: #e5e7eb;
+}
+
+[data-theme="dark"] .tax-formula-ref .ref-group td {
+    background: #0f172a;
+    color: #bbf7d0;
+}
+
+[data-theme="dark"] .tax-formula-ref .ref-formula {
+    color: #9ca3af;
 }
 
 [data-theme="dark"] .other-line,
@@ -821,7 +1056,7 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
     <div class="supplier-grid-4 payment-meta-row">
         <div class="supplier-field" style="grid-column: span 2;">
             <label>Nature of Payments</label>
-            <input type="text" name="nature_of_payments" id="fieldNature">
+            <textarea name="nature_of_payments" id="fieldNature" rows="1"></textarea>
         </div>
         <div class="supplier-field">
             <label>Gross Amount</label>
@@ -859,6 +1094,89 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
                 <label>Net Amount</label>
                 <input type="text" name="amount" id="fieldGrossAmount" class="auto-readonly" readonly tabindex="-1" placeholder="0.00">
                 <input type="hidden" id="fieldCalculatedGross" name="calculated_gross" value="0.00">
+            </div>
+        </div>
+        <div class="tax-breakdown" id="taxBreakdown">
+            <div class="tax-breakdown-head">
+                <h6><i class="fas fa-calculator"></i> Computation Breakdown</h6>
+                <button type="button" class="tax-formula-btn" id="taxFormulaBtn" aria-expanded="false"
+                    onclick="toggleTaxFormulaRef()">FORMULA</button>
+            </div>
+            <table class="tax-breakdown-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Rate</th>
+                        <th>Formula</th>
+                        <th class="amt">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="taxBreakdownBody"></tbody>
+                <tfoot>
+                    <tr class="bd-ded-row">
+                        <td>Total Deductions</td>
+                        <td colspan="2"></td>
+                        <td class="amt" id="bdTotalDeductions">₱0.00</td>
+                    </tr>
+                    <tr class="bd-net-row">
+                        <td>Net Disbursement</td>
+                        <td colspan="2"></td>
+                        <td class="amt" id="bdNetDisbursement">₱0.00</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div class="tax-formula-ref" id="taxFormulaRef" style="display:none;">
+                <div class="tax-formula-ref-title">Formula Reference (Tax Table)</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Compensation</th>
+                            <th>TAX</th>
+                            <th>Tax Table</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>General</td>
+                            <td>Professional TAX</td>
+                            <td>5%</td>
+                            <td class="ref-formula">GROSS &times; 5%</td>
+                        </tr>
+                        <tr class="ref-group">
+                            <td rowspan="3">VAT</td>
+                            <td>VAT</td>
+                            <td>5%</td>
+                            <td class="ref-formula">GROSS &divide; 1.12 &times; 5%</td>
+                        </tr>
+                        <tr>
+                            <td>GOODS</td>
+                            <td>1%</td>
+                            <td class="ref-formula">GROSS &divide; 1.12 &times; 1%</td>
+                        </tr>
+                        <tr>
+                            <td>SERVICES</td>
+                            <td>2%</td>
+                            <td class="ref-formula">GROSS &divide; 1.12 &times; 2%</td>
+                        </tr>
+                        <tr class="ref-group">
+                            <td rowspan="3">NON-VAT</td>
+                            <td>VAT</td>
+                            <td>2%</td>
+                            <td class="ref-formula">GROSS &times; 2%</td>
+                        </tr>
+                        <tr>
+                            <td>GOODS</td>
+                            <td>1%</td>
+                            <td class="ref-formula">GROSS &times; 1%</td>
+                        </tr>
+                        <tr>
+                            <td>SERVICES</td>
+                            <td>2%</td>
+                            <td class="ref-formula">GROSS &times; 2%</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -957,7 +1275,7 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
     function computeDefaultSequences() {
         var xhr = new XMLHttpRequest();
         xhr.open('GET', '{% url "next_supplier_sequences" %}', false);
-        xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+        xhr.setRequestHeader('X-CSRFToken', getCsrfToken());
         xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
         xhr.send();
         if (xhr.status === 200) {
@@ -1010,6 +1328,32 @@ data-tax2-rate="{{ tax_2_rate|default:'' }}">
         const field = document.getElementById(id);
         if (field) field.value = value || '';
     }
+
+    // Nature of Payments: auto-grow so wrapped text is always fully visible
+    function growFieldNature() {
+        const el = document.getElementById('fieldNature');
+        if (!el) return;
+        if (!el.getClientRects().length) { el.style.height = ''; return; }
+        const cs = getComputedStyle(el);
+        el.style.height = 'auto';
+        const border = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+        el.style.height = (el.scrollHeight + border) + 'px';
+    }
+
+    (function () {
+        const el = document.getElementById('fieldNature');
+        if (!el) return;
+        ['input', 'change'].forEach(evt => el.addEventListener(evt, growFieldNature));
+        const desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+        if (desc && desc.get && desc.set) {
+            Object.defineProperty(el, 'value', {
+                configurable: true,
+                enumerable: true,
+                get() { return desc.get.call(this); },
+                set(v) { desc.set.call(this, v); growFieldNature(); },
+            });
+        }
+    })();
 
     function escapeHtml(value) {
         return String(value || '')
@@ -1328,6 +1672,87 @@ function updateNetOnly() {
     document.getElementById('fieldCalculatedGross').value = formatAmountHidden(finalNet);
     const proHidden = document.getElementById('fieldProfessionalTax');
     if (proHidden) proHidden.value = formatAmountHidden(pro);
+
+    renderTaxBreakdown();
+}
+
+// --- 2b. COMPUTATION BREAKDOWN — Gross Amount · Rate % · Tax Amount · Net Disbursement ---
+function renderTaxBreakdown() {
+    const body = document.getElementById('taxBreakdownBody');
+    if (!body) return;
+    const gross = parseNumber(document.getElementById('fieldAmount')?.value);
+    const vat = isVatChecked();
+    const exempt = isTaxExemptChecked();
+    const grossStr = formatAmount(gross);
+    const pct = n => (Math.round(n * 100) / 100) + '%';
+    const formulaFor = rate => vat ? grossStr + ' ÷ 1.12 × ' + pct(rate) : grossStr + ' × ' + pct(rate);
+
+    let rows = '<tr class="bd-gross-row"><td>Gross Amount</td><td>—</td>' +
+        '<td class="bd-formula">Entered amount</td><td class="amt">' + grossStr + '</td></tr>';
+    let totalDed = 0;
+
+    // Tax slots (Tax 1, Tax 3… + Goods/Service) — skipped when Tax Type = None
+    if (!exempt) {
+        document.querySelectorAll('#taxSlotsWrap .tax-slot').forEach(slot => {
+            const sel = slot.querySelector('.tax-rate-select');
+            const amtEl = sel ? document.getElementById(sel.dataset.amountId) : null;
+            const labelEl = slot.querySelector('label');
+            const label = escapeHtml(labelEl ? labelEl.textContent.trim() : 'Tax');
+            const amount = amtEl ? parseNumber(amtEl.value) : 0;
+            let rateLabel = '—';
+            let formula = 'Not applied';
+            if (sel && isCustomRate(sel)) {
+                rateLabel = 'Custom';
+                formula = 'Manually entered';
+            } else if (sel && sel.classList.contains('goods-service-select')) {
+                if (sel.value) {
+                    const p = getGoodsServiceRatePct(sel.value);
+                    rateLabel = pct(p);
+                    formula = formulaFor(p);
+                }
+            } else if (sel && sel.value !== '' && !isNaN(parseFloat(sel.value))) {
+                const p = parseFloat(sel.value);
+                rateLabel = pct(p);
+                formula = formulaFor(p);
+            }
+            totalDed += amount;
+            rows += '<tr><td>' + label + '</td><td>' + rateLabel + '</td>' +
+                '<td class="bd-formula">' + escapeHtml(formula) + '</td>' +
+                '<td class="amt">' + formatAmount(amount) + '</td></tr>';
+        });
+    }
+
+    // Professional Tax — independent of Tax Type (5% of Gross when enabled)
+    const profOn = !!document.getElementById('fieldEnableProfTax')?.checked;
+    const prof = parseNumber(document.getElementById('fieldProfessionalTaxAmount')?.value);
+    totalDed += prof;
+    rows += '<tr><td>Prof. Tax (5%)</td><td>' + (profOn ? '5%' : '—') + '</td>' +
+        '<td class="bd-formula">' + (profOn ? escapeHtml(grossStr + ' × 5%') : 'Not enabled') + '</td>' +
+        '<td class="amt">' + formatAmount(prof) + '</td></tr>';
+
+    // Other Deductions
+    const other = parseNumber(document.getElementById('fieldOtherDeductions')?.value);
+    totalDed += other;
+    rows += '<tr><td>Other Deductions</td><td>—</td>' +
+        '<td class="bd-formula">Fixed amount</td><td class="amt">' + formatAmount(other) + '</td></tr>';
+
+    body.innerHTML = rows;
+
+    const dedEl = document.getElementById('bdTotalDeductions');
+    if (dedEl) dedEl.textContent = formatAmount(totalDed);
+    const netEl = document.getElementById('bdNetDisbursement');
+    if (netEl) netEl.textContent = formatAmount(document.getElementById('fieldGrossAmount')?.value);
+}
+
+// Formula reference table (Tax Table) toggle
+function toggleTaxFormulaRef() {
+    const ref = document.getElementById('taxFormulaRef');
+    const btn = document.getElementById('taxFormulaBtn');
+    if (!ref || !btn) return;
+    const show = !ref.style.display || ref.style.display === 'none';
+    ref.style.display = show ? 'block' : 'none';
+    btn.setAttribute('aria-expanded', show ? 'true' : 'false');
+    btn.textContent = show ? 'HIDE' : 'FORMULA';
 }
 
 // Back-compat aliases
@@ -1353,6 +1778,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // First paint from server-rendered Taxes page list
     populateTaxRateOptions();
+    renderTaxBreakdown();
 });
 
 
@@ -1536,6 +1962,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try { toggleOtherDetails(mode !== 'create'); } catch (e) { }
             modal.classList.add('active');
             modal.setAttribute('aria-hidden', 'false');
+            growFieldNature();
         }
 
         // Close any open Actions dropdown
@@ -1570,6 +1997,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // First open: show backdrop now, fill fields when context arrives
         modal.classList.add('active');
         modal.setAttribute('aria-hidden', 'false');
+        growFieldNature();
         fetch('/api/supplier-modal-context/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(r => r.json())
             .then(data => {

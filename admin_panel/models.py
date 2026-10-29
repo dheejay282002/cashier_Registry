@@ -213,6 +213,33 @@ class SystemSetting(models.Model):
 		return cls.next_dv_payroll_no()
 
 
+class AllowedHost(models.Model):
+    """A hostname permitted in ALLOWED_HOSTS.
+
+    Managed from the admin UI (System Settings -> Allowed Hosts) so new hosts
+    can be added without editing registry/settings.py. Loaded on every request
+    by admin_panel.middleware.AllowedHostsMiddleware.
+    """
+
+    host = models.CharField(
+        max_length=253,
+        unique=True,
+        help_text="Hostname only, e.g. example.com or 192.168.1.10 (no http:// and no port)",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['host']
+
+    def __str__(self):
+        return self.host
+
+    @classmethod
+    def get_hosts(cls):
+        """Return the list of allowed hosts. Raises if the DB is unreachable."""
+        return list(cls.objects.values_list('host', flat=True))
+
+
 class AuditLog(models.Model):
     admin = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
     action = models.CharField(max_length=200)

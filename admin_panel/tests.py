@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -1750,3 +1750,94 @@ class RadaiModalContextTests(TestCase):
 		self.assertIn('Payee A', data['payee_choices'])
 		self.assertEqual(data['fund_clusters'][0]['code'], 'FC-100')
 		self.assertEqual(data['auto_radai_defaults']['mr_or'], 'MR-8')
+
+
+class SupplierEditCheckSerialTests(TestCase):
+	def setUp(self):
+		self.admin = User.objects.create_superuser(username='admin', email='admin@example.com', password='pass12345')
+		self.client.force_login(self.admin)
+		self.supplier = Supplier.objects.create(account_name='Acme Corp', mr_or='000456', created_by=self.admin)
+		self.cheque = Cheque.objects.create(
+			cheque_number='000456', payee=self.supplier, amount=Decimal('100.00'),
+			created_by=self.admin, status='unreleased',
+		)
+
+	def _validator(self, serial, exclude_id=None):
+		payload = {'serial': serial}
+		if exclude_id is not None:
+			payload['exclude_id'] = exclude_id
+		res = self.client.get(reverse('validate_supplier_serial'), payload)
+		self.assertEqual(res.status_code, 200)
+		return json.loads(res.content)
+
+	def _save(self, **extra):
+		payload = {'payee': 'Acme Corp', 'amount': '250.00', 'status': 'active'}
+		payload.update(extra)
+		return self.client.post(reverse('supplier_create_ajax'), payload)
+
+	def test_own_cheque_does_not_flag_own_serial(self):
+		data = self._validator('000456', self.supplier.pk)
+		self.assertFalse(data['exists'], data)
+
+	def test_same_serial_still_flagged_without_exclude(self):
+		data = self._validator('000456')
+		self.assertTrue(data['exists'], data)
+
+	def test_serial_of_another_payees_cheque_still_flagged(self):
+		other = Supplier.objects.create(account_name='Other Corp', mr_or='000789', created_by=self.admin)
+		Cheque.objects.create(cheque_number='000789', payee=other, amount=Decimal('50.00'), created_by=self.admin, status='unreleased')
+		data = self._validator('000789', self.supplier.pk)
+		self.assertTrue(data['exists'], data)
+
+	def test_editing_supplier_keeps_its_own_serial(self):
+		res = self._save(action='edit', sup_id=self.supplier.pk, check_serial='000456')
+		self.assertEqual(res.status_code, 200, res.content)
+		body = json.loads(res.content)
+		self.assertTrue(body['ok'], body)
+		self.supplier.refresh_from_db()
+		self.assertEqual(self.supplier.mr_or, '000456')
+
+	def test_editing_supplier_rejects_someone_elses_serial(self):
+		other = Supplier.objects.create(account_name='Other Corp', mr_or='000789', created_by=self.admin)
+		res = self._save(action='edit', sup_id=self.supplier.pk, check_serial='000789')
+		self.assertEqual(res.status_code, 400, res.content)
+		self.assertTrue(json.loads(res.content).get('serial_exists'))
+		self.supplier.refresh_from_db()
+		self.assertEqual(self.supplier.mr_or, '000456')
+		self.assertTrue(Supplier.objects.filter(pk=other.pk).exists())
+
+	def test_creating_supplier_rejects_serial_owned_by_a_cheque(self):
+		res = self._save(action='create', check_serial='000456')
+		self.assertEqual(res.status_code, 400, res.content)
+		self.assertTrue(json.loads(res.content).get('serial_exists'))
+
+
+class SystemSettingsContextProcessorTests(TestCase):
+	def setUp(self):
+		self.factory = RequestFactory()
+
+	def test_returns_settings_without_reading_cache(self):
+		from admin_panel import context_processors as cp
+		from unittest import mock
+
+		poisoned = ModuleNotFoundError("No module named 'django.db.models.fetch_modes'")
+		with mock.patch('django.core.cache.cache.get', side_effect=poisoned):
+			ctx = cp.system_settings(self.factory.get('/'))
+
+		for key in ('system_name', 'system_logo', 'system_logo_hover', 'entity_name',
+					'lockscreen_wallpaper', 'login_background', 'auto_lock_seconds',
+					'auto_logout_seconds', 'role_permissions'):
+			self.assertIn(key, ctx)
+		self.assertEqual(ctx['auto_lock_seconds'], 30)
+		self.assertEqual(ctx['auto_logout_seconds'], 3600)
+
+	def test_login_page_renders(self):
+		# The original 500 happened on GET / inside this very view, because the
+		# DB cache held a model-instance pickle written by another Django
+		# version. A broken cache entry must never take the site down.
+		from unittest import mock
+
+		poisoned = ModuleNotFoundError("No module named 'django.db.models.fetch_modes'")
+		with mock.patch('django.core.cache.cache.get', side_effect=poisoned):
+			res = self.client.get(reverse('login'))
+		self.assertEqual(res.status_code, 200)

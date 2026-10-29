@@ -1,13 +1,13 @@
-from django.core.cache import cache
 from .models import SystemSetting
 from cashier.models import Profile, DEFAULT_ROLE_PERMISSIONS
 
 
 def system_settings(request):
-    settings_obj = cache.get('system_settings_obj')
-    if not settings_obj:
-        settings_obj = SystemSetting.get_settings()
-        cache.set('system_settings_obj', settings_obj, 300)
+    # Read straight from the database. Caching the model instance here pickled
+    # a Django-owned object, so a cache written by one Django version broke
+    # every request on any other version (ModuleNotFoundError on unpickling).
+    # A PK lookup costs the same as the cache read it replaces.
+    settings_obj = SystemSetting.get_settings()
     auto_lock = getattr(settings_obj, 'auto_lock_seconds', 30)
     auto_logout = getattr(settings_obj, 'auto_logout_seconds', 3600)
     try:

@@ -1405,8 +1405,7 @@ body .supplier-master-fab, body .create-radai-fab, body .cheque-master-fab, body
         const pwd = prompt('Enter your admin password to confirm:');
         if (!pwd) return;
 
-        const csrfMatch = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
-        const csrfToken = csrfMatch ? csrfMatch[1] : '';
+        const csrfToken = getCsrfToken();
 
         const formData = new FormData();
         formData.append('action', 'resend');

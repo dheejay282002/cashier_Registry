@@ -6,8 +6,9 @@
   "scripts": {
     "start": "electron .",
     "dev": "cross-env NODE_ENV=development electron .",
-    "build": "electron-builder --win",
-    "build:dir": "electron-builder --win --dir",
+    "build": "npm run build:runtime && electron-builder --win",
+    "build:dir": "npm run build:runtime && electron-builder --win --dir",
+    "build:runtime": "node scripts/build_python_runtime.js",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
@@ -16,6 +17,8 @@
     "directories": {
       "output": "dist_electron"
     },
+    "asar": false,
+    "compression": "store",
     "files": [
       "electron-main.js",
       "electron-preload.js",
@@ -28,7 +31,10 @@
       "scripts/**/*",
       "manage.py",
       "db.sqlite3",
+      "server-config.json",
       "requirements.txt",
+      "runtime/**/*",
+      "!runtime/cache/**/*",
       "!**/.venv/**",
       "!**/__pycache__/**",
       "!**/*.pyc",
@@ -55,6 +61,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": true,
       "shortcutName": "Registry",
       "installerIcon": "static/icon.ico",
       "uninstallerIcon": "static/icon.ico",

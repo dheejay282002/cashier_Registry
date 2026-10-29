@@ -571,6 +571,9 @@ tbody tr:last-child td{
             <input type="hidden" name="action" value="add">
 
             <div class="modal-body">
+                {% if error %}
+                <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>
+                {% endif %}
                 {% if heading == 'Tax Management' %}
                 <div class="tax-input-group">
                     <input 
@@ -578,6 +581,7 @@ tbody tr:last-child td{
                         name="name" 
                         class="tax-name-input" 
                         placeholder="Tax Name" 
+                        value="{{ form_name }}"
                         required
                     >
                     <input 
@@ -585,6 +589,7 @@ tbody tr:last-child td{
                         name="value" 
                         class="tax-value-input" 
                         placeholder="e.g. 5%/3%" 
+                        value="{{ form_value }}"
                         required
                     >
                 </div>
@@ -600,6 +605,7 @@ tbody tr:last-child td{
                         name="value" 
                         class="form-input" 
                         placeholder="{{ placeholder }}" 
+                        value="{{ form_name }}"
                         required
                     >
                 </div>
@@ -634,6 +640,9 @@ tbody tr:last-child td{
             <input type="hidden" name="option_id" id="editOptionId">
 
             <div class="modal-body">
+                {% if error %}
+                <div class="alert alert-error"><i class="fas fa-circle-exclamation"></i> {{ error }}</div>
+                {% endif %}
                 <div class="tax-input-group">
                     <input 
                         type="text" 
@@ -641,6 +650,7 @@ tbody tr:last-child td{
                         id="editTaxName"
                         class="tax-name-input" 
                         placeholder="Tax Name" 
+                        value="{{ form_name }}"
                         required
                     >
                     <input 
@@ -649,6 +659,7 @@ tbody tr:last-child td{
                         id="editTaxValue"
                         class="tax-value-input" 
                         placeholder="e.g. 5%/3%" 
+                        value="{{ form_value }}"
                         required
                     >
                 </div>
@@ -729,6 +740,14 @@ window.addEventListener('keydown', function(e){
         if (typeof closeEditModal === 'function') closeEditModal();
     }
 });
+
+{% if error and form_action == 'add' %}
+openModal();
+{% elif error and form_action == 'edit' and form_option_id %}
+document.addEventListener('DOMContentLoaded', function(){
+    openEditModal('{{ form_option_id|escapejs }}', '{{ form_name|escapejs }}', '{{ form_value|escapejs }}');
+});
+{% endif %}
 
 {% if heading == 'Tax Management' %}
 function openEditModal(pk, name, value) {

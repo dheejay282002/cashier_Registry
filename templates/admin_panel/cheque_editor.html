@@ -768,7 +768,7 @@
         const pesosText = (result ? (result + ' PESOS') : 'ZERO PESOS');
 
         const centsFormatted = String(centavos).padStart(2, '0');
-        return pesosText + ' & ' + centsFormatted + '/100 ONLY';
+        return pesosText + ' AND ' + centsFormatted + '/100 ONLY';
     }
 
     function parseNumber(value) {

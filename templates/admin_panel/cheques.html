@@ -385,8 +385,10 @@
     let deleteTargetPk = null;
 
     function getCsrfToken() {
-        const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
-        return match ? decodeURIComponent(match[1]) : '';
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta && meta.content) return meta.content;
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        return (input && input.value) || '';
     }
 
     function openVoid(pk) {

@@ -50,7 +50,7 @@ from reportlab.pdfgen import canvas
 import re
 
 from cashier.models import Profile, Transaction, FundCluster, Supplier, Cheque, Report, Radai, RadaiSetting
-from .models import SystemSetting, AuditLog, ManagementOption, AccountTitleGroup
+from .models import SystemSetting, AuditLog, ManagementOption, AccountTitleGroup, AllowedHost
 from admin_panel.fields import decrypt_value
 from .utils import _email_setup_configured
 
@@ -2641,12 +2641,13 @@ def _get_backup_restore_models():
     )
     from admin_panel.models import (
         SystemSetting, ChatbotConfig, AccountTitleGroup, ManagementOption,
-        ChatMessage, UserMessage, AuditLog
+        ChatMessage, UserMessage, AuditLog, AllowedHost
     )
     return [
         User,
         RoleConfig,
         SystemSetting,
+        AllowedHost,
         ChatbotConfig,
         RadaiSetting,
         AccountTitleGroup,
@@ -4906,20 +4907,16 @@ def validate_supplier_serial(request):
         return JsonResponse({'serial': '', 'exists': False, 'source': ''})
 
     exclude_id = request.GET.get('exclude_id') or ''
+    exclude_pk = int(exclude_id) if exclude_id.isdigit() else None
     supplier_qs = Supplier.objects.filter(mr_or=serial)
-    if exclude_id.isdigit():
-        supplier_qs = supplier_qs.exclude(pk=int(exclude_id))
+    if exclude_pk is not None:
+        supplier_qs = supplier_qs.exclude(pk=exclude_pk)
     if supplier_qs.exists():
         return JsonResponse({'serial': serial, 'exists': True, 'source': 'supplier'})
 
-    # Cheque numbers may be zero-padded variants of the same serial
-    cheque = _find_cheque_by_number(serial)
-    if cheque is not None:
-        return JsonResponse({'serial': serial, 'exists': True, 'source': 'cheque'})
-
-    # Broader exact/padded scan so archived or non-normalized rows still hit
-    padded = serial.zfill(6) if serial.isdigit() and len(serial) < 6 else serial
-    if Cheque.all_objects.filter(cheque_number__in=[serial, padded]).exists():
+    # Cheque numbers may be zero-padded variants of the same serial.
+    # Cheques belonging to the supplier being edited never count as a clash.
+    if _cheque_clashing_with_serial(serial, exclude_payee_id=exclude_pk) is not None:
         return JsonResponse({'serial': serial, 'exists': True, 'source': 'cheque'})
 
     return JsonResponse({'serial': serial, 'exists': False, 'source': ''})
@@ -7261,10 +7258,12 @@ def supplier_create_ajax(request):
 
     # Reject Check Serial values already used by another supplier or a cheque
     if check_serial:
+        editing_pk = int(sup_id) if sup_id.isdigit() else None
         conflict_qs = Supplier.objects.filter(mr_or=check_serial)
-        if sup_id.isdigit():
-            conflict_qs = conflict_qs.exclude(pk=int(sup_id))
-        if conflict_qs.exists() or _find_cheque_by_number(check_serial) is not None:
+        if editing_pk is not None:
+            conflict_qs = conflict_qs.exclude(pk=editing_pk)
+        # Cheques issued for the supplier being edited keep its own serial.
+        if conflict_qs.exists() or _cheque_clashing_with_serial(check_serial, exclude_payee_id=editing_pk) is not None:
             return JsonResponse({
                 'error': f"Check Serial '{check_serial}' is already used.",
                 'field': 'fieldCheckSerial',
@@ -8963,7 +8962,52 @@ def cheque_advance_status(request, pk):
 CHECK_VALIDATOR_DEFAULT_STALE_DAYS = 180
 
 
-def _find_cheque_by_number(check_no):
+def _cheque_clashing_with_serial(serial, exclude_payee_id=None):
+    """Find a cheque that already owns ``serial`` as its check number.
+
+    Only real number collisions count here (exact, zero-padded, or
+    numerically-equal cheque numbers, plus cheques whose linked supplier
+    carries the same serial).  Unlike ``_find_cheque_by_number`` this never
+    matches on cheque PK, payee name, or partial substrings, so a serial is
+    not reported as "already used" just because some unrelated row happens to
+    line up with it.
+
+    ``exclude_payee_id`` skips cheques belonging to the supplier being
+    edited, so re-saving a registry record keeps its own Check Serial.
+    """
+    q = str(serial or '').strip()
+    if not q:
+        return None
+
+    qs = Cheque.all_objects.all()
+    if exclude_payee_id:
+        qs = qs.exclude(payee_id=exclude_payee_id)
+
+    candidates = [q]
+    if q.isdigit() and len(q) < 6:
+        candidates.append(q.zfill(6))
+    stripped = q.lstrip('0')
+    if stripped and stripped not in candidates:
+        candidates.append(stripped)
+
+    for candidate in candidates:
+        hit = qs.filter(cheque_number__iexact=candidate).first()
+        if hit is not None:
+            return hit
+
+    digits_only = re.sub(r'\D', '', q)
+    if digits_only:
+        value = int(digits_only)
+        if value:
+            for item in qs.exclude(cheque_number='').only('pk', 'cheque_number'):
+                other = re.sub(r'\D', '', item.cheque_number or '')
+                if other and int(other) == value:
+                    return item
+
+    return qs.filter(payee__mr_or__iexact=q).first()
+
+
+def _find_cheque_by_number(check_no, exclude_payee_id=None):
     if not check_no:
         return None
     q = str(check_no).strip()
@@ -8972,6 +9016,8 @@ def _find_cheque_by_number(check_no):
 
     # Use all_objects to search active AND archived cheques
     qs = Cheque.all_objects.select_related('payee', 'fund_cluster').order_by('-created_at')
+    if exclude_payee_id:
+        qs = qs.exclude(payee_id=exclude_payee_id)
 
     # 1. Exact match on cheque_number
     c = qs.filter(cheque_number__iexact=q).first()
@@ -13069,6 +13115,28 @@ def profile_settings(request):
     return render(request, "profile_settings.html", context)
 
 
+def _clean_allowed_host(raw):
+    """Normalize a host entered in the admin UI; returns '' when invalid.
+
+    Django matches ALLOWED_HOSTS patterns against the domain only (the port
+    is stripped before validation), so a typed port is dropped here too.
+    """
+    host = (raw or "").strip().lower()
+    if host.startswith(("http://", "https://")):
+        host = host.split("://", 1)[1]
+    host = host.split("/", 1)[0].split("?", 1)[0].split("#", 1)[0].rstrip(".")
+    if ":" in host:
+        name, _, port = host.rpartition(":")
+        if not port.isdigit():
+            return ""
+        host = name
+    if not host or len(host) > 253:
+        return ""
+    if ".." in host or not re.fullmatch(r"\.?[a-z0-9][a-z0-9._-]*", host):
+        return ""
+    return host
+
+
 @login_required
 def business_info(request):
     if not _is_admin(request.user):
@@ -13076,51 +13144,104 @@ def business_info(request):
     system_setting = SystemSetting.get_settings()
     error = None
     success = None
+    host_modal = ""   # 'add' or 'edit' reopens the host modal after a failed save
+    host_input = ""
+    host_id = ""
     if request.method == "POST":
-        system_name = request.POST.get("system_name", "").strip()
-        entity_name = request.POST.get("entity_name", "").strip()
-        system_logo = request.FILES.get("system_logo")
-        system_logo_hover = request.FILES.get("system_logo_hover")
-        lockscreen_wallpaper = request.FILES.get("lockscreen_wallpaper")
-        login_background = request.FILES.get("login_background")
-        if not system_name:
-            error = "System name is required"
+        action = request.POST.get("action", "").strip()
+        if action in ("add_host", "edit_host", "delete_host"):
+            host_id = request.POST.get("host_id", "").strip()
+            if not host_id.isdigit():
+                host_id = ""
+            host_input = request.POST.get("host", "").strip()
+            host = _clean_allowed_host(host_input)
+            if action == "delete_host":
+                target = AllowedHost.objects.filter(pk=host_id).first()
+                if target is None:
+                    error = "Host not found."
+                else:
+                    deleted_host = target.host
+                    target.delete()
+                    _audit(request.user, "Removed allowed host", {"host": deleted_host})
+                    success = f"Allowed host {deleted_host} removed."
+                    host_id = ""
+                    host_input = ""
+            else:
+                host_modal = action.replace("_host", "")
+                if not host:
+                    error = "Enter a valid hostname, e.g. example.com"
+                else:
+                    clash = AllowedHost.objects.filter(host=host)
+                    if host_id:
+                        clash = clash.exclude(pk=host_id)
+                    if clash.exists():
+                        error = "That host is already in the allowed list."
+                    elif action == "add_host":
+                        AllowedHost.objects.create(host=host)
+                        _audit(request.user, "Added allowed host", {"host": host})
+                        success = f"Allowed host {host} added."
+                        host_modal = ""
+                        host_input = ""
+                    else:
+                        target = AllowedHost.objects.filter(pk=host_id).first()
+                        if target is None:
+                            error = "Host not found."
+                        else:
+                            old_host = target.host
+                            target.host = host
+                            target.save()
+                            _audit(request.user, "Updated allowed host", {"old": old_host, "host": host})
+                            success = f"Allowed host updated to {host}."
+                            host_modal = ""
+                            host_input = host
+                            host_id = ""
         else:
-            system_setting.system_name = system_name
-            system_setting.entity_name = entity_name
-            system_setting.address = request.POST.get("address", "").strip()
-            if system_logo:
-                system_setting.system_logo = system_logo
-            if system_logo_hover:
-                system_setting.system_logo_hover = system_logo_hover
-            if lockscreen_wallpaper:
-                system_setting.lockscreen_wallpaper = lockscreen_wallpaper
-            if login_background:
-                system_setting.login_background = login_background
-            # Retention settings
-            system_setting.retention_enabled = request.POST.get("retention_enabled") == "on"
-            system_setting.retention_auto_delete = request.POST.get("retention_auto_delete") == "on"
-            try:
-                system_setting.retention_max_age_days = int(request.POST.get("retention_max_age_days", 90))
-            except (ValueError, TypeError):
-                system_setting.retention_max_age_days = 90
-            try:
-                system_setting.retention_max_count = int(request.POST.get("retention_max_count", 10))
-            except (ValueError, TypeError):
-                system_setting.retention_max_count = 10
-            system_setting.save()
-            _audit(request.user, "Updated system information", {
-                "system_name": system_name,
-                "entity_name": entity_name,
-                "logo_updated": bool(system_logo),
-                "logo_hover_updated": bool(system_logo_hover),
-                "wallpaper_updated": bool(lockscreen_wallpaper),
-                "login_bg_updated": bool(login_background),
-            })
-            success = "System Information updated successfully"
+            system_name = request.POST.get("system_name", "").strip()
+            entity_name = request.POST.get("entity_name", "").strip()
+            system_logo = request.FILES.get("system_logo")
+            system_logo_hover = request.FILES.get("system_logo_hover")
+            lockscreen_wallpaper = request.FILES.get("lockscreen_wallpaper")
+            login_background = request.FILES.get("login_background")
+            if not system_name:
+                error = "System name is required"
+            else:
+                system_setting.system_name = system_name
+                system_setting.entity_name = entity_name
+                system_setting.address = request.POST.get("address", "").strip()
+                if system_logo:
+                    system_setting.system_logo = system_logo
+                if system_logo_hover:
+                    system_setting.system_logo_hover = system_logo_hover
+                if lockscreen_wallpaper:
+                    system_setting.lockscreen_wallpaper = lockscreen_wallpaper
+                if login_background:
+                    system_setting.login_background = login_background
+                # Retention settings
+                system_setting.retention_enabled = request.POST.get("retention_enabled") == "on"
+                system_setting.retention_auto_delete = request.POST.get("retention_auto_delete") == "on"
+                try:
+                    system_setting.retention_max_age_days = int(request.POST.get("retention_max_age_days", 90))
+                except (ValueError, TypeError):
+                    system_setting.retention_max_age_days = 90
+                try:
+                    system_setting.retention_max_count = int(request.POST.get("retention_max_count", 10))
+                except (ValueError, TypeError):
+                    system_setting.retention_max_count = 10
+                system_setting.save()
+                _audit(request.user, "Updated system information", {
+                    "system_name": system_name,
+                    "entity_name": entity_name,
+                    "logo_updated": bool(system_logo),
+                    "logo_hover_updated": bool(system_logo_hover),
+                    "wallpaper_updated": bool(lockscreen_wallpaper),
+                    "login_bg_updated": bool(login_background),
+                })
+                success = "System Information updated successfully"
     context = _page_context(request, is_admin=True, page_title=" System Information", extra={
         "error": error, "success": success, "system_setting": system_setting,
         "next_report_number": system_setting.next_report_number(),
+        "allowed_hosts": AllowedHost.objects.all(),
+        "host_modal": host_modal, "host_input": host_input, "host_id": host_id,
     })
     return render(request, "system_settings.html", context)
 
@@ -13598,30 +13719,46 @@ def taxes_management(request):
 
     error = None
     success = None
+    form_name = ''
+    form_value = ''
+    form_option_id = ''
+    form_action = ''
     tab = request.GET.get('tab', 'taxes').strip()
     if tab not in ('taxes', 'goods-services'):
         tab = 'taxes'
 
     if request.method == 'POST':
         action = request.POST.get('action', '').strip().lower()
+        form_action = action
         if action == 'add':
             name = request.POST.get('name', '').strip()
             value = request.POST.get('value', '').strip()
+            form_name, form_value = name, value
             if not name or not value:
                 error = 'Both Tax Name and Tax Value are required.'
+            elif ManagementOption.objects.filter(
+                category=ManagementOption.CATEGORY_TAX, value__iexact=name,
+            ).exists():
+                error = f'Tax "{name}" already exists.'
             else:
-                ManagementOption.objects.get_or_create(
+                ManagementOption.objects.create(
                     category=ManagementOption.CATEGORY_TAX,
                     value=name,
-                    defaults={'uacs': value, 'is_active': True},
+                    uacs=value,
+                    is_active=True,
                 )
                 success = 'Tax saved.'
         elif action == 'edit':
             option_id = request.POST.get('option_id', '').strip()
             new_name = request.POST.get('name', '').strip()
             new_value = request.POST.get('value', '').strip()
+            form_name, form_value, form_option_id = new_name, new_value, option_id
             if not new_name or not new_value:
                 error = 'Both Tax Name and Tax Value are required.'
+            elif ManagementOption.objects.filter(
+                category=ManagementOption.CATEGORY_TAX, value__iexact=new_name,
+            ).exclude(pk=option_id).exists():
+                error = f'Tax "{new_name}" already exists.'
             else:
                 try:
                     opt = ManagementOption.objects.get(pk=option_id, category=ManagementOption.CATEGORY_TAX)
@@ -13685,6 +13822,10 @@ def taxes_management(request):
         'heading': 'Tax Management',
         'placeholder': 'Add tax label',
         'tax_tab': tab,
+        'form_name': form_name,
+        'form_value': form_value,
+        'form_option_id': form_option_id,
+        'form_action': form_action,
         'goods_service_rates': goods_service_rates,
         'goods_rate': goods_service_rates.get('goods', '1.00'),
         'services_rate': goods_service_rates.get('services', '2.00'),
@@ -13920,15 +14061,17 @@ def mfa_regenerate_recovery_codes(request):
 @login_required
 def mfa_totp_qr(request):
     from .mfa_utils import get_totp_uri
-    import qrcode.image.svg
+    import io
+    import qrcode
     secret = request.GET.get("secret", "")
     if not secret:
         return HttpResponse("Missing secret", status=400)
     uri = get_totp_uri(secret, request.user.username)
-    img = qrcode.make(uri, image_factory=qrcode.image.svg.SvgImage)
-    response = HttpResponse(content_type="image/svg+xml")
-    img.save(response)
-    return response
+    # PNG via Pillow — the SVG factory imports lxml, which is broken on this Python
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return HttpResponse(buf.getvalue(), content_type="image/png")
 
 
 @csrf_exempt

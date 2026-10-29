@@ -3,3 +3,4 @@ cryptography
 pymysql
 pyotp
 reportlab
+openpyxl

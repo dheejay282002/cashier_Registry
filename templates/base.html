@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
     <title>{% block title %}{{ system_name|default:"Registry" }}{% endblock %}</title>
     {% if system_logo %}
     <link rel="icon" type="image/png" href="{{ system_logo.url }}">
@@ -2977,7 +2978,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': cvkGetCookie('csrftoken'),
+                    'X-CSRFToken': getCsrfToken(),
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({ check_no: cvkCurrentCheck })
@@ -3524,7 +3525,7 @@
 
                 fetch(SEND_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                     body: JSON.stringify({ recipient_id: currentConvoUserId, content: content })
                 }).then(function(r) { return r.json(); }).then(function(data) {
                     if (data.ok) {
@@ -3546,7 +3547,7 @@
 
                 fetch(SEND_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
                     body: JSON.stringify({ recipient_id: recipientId, content: content })
                 }).then(function(res) { return res.json(); }).then(function(data) {
                     if (data.ok) {
@@ -3720,7 +3721,7 @@
         const res = await fetch('{% url "rfid_auth" %}', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': getCookie('csrftoken')
+                'X-CSRFToken': getCsrfToken()
             },
             body: form
         });
@@ -4643,7 +4644,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': getCsrfToken()
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({ message: msg })
@@ -6658,13 +6659,10 @@ function attachPasswordValidation(inputId) {
   let currentLoadedCheck = null;
 
   function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    if (meta && meta.content) return meta.content;
     const input = document.querySelector('[name=csrfmiddlewaretoken]');
     if (input) return input.value;
-    const cookies = document.cookie.split(';');
-    for (let c of cookies) {
-      const [name, val] = c.trim().split('=');
-      if (name === 'csrftoken') return decodeURIComponent(val);
-    }
     return '';
   }
 

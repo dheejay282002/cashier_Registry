@@ -89,16 +89,18 @@ def mfa_regenerate_recovery_codes(request):
 @login_required
 def mfa_totp_qr(request):
     from .mfa_utils import get_totp_uri
-    import qrcode.image.svg
+    import io
+    import qrcode
     secret = request.GET.get("secret", "")
     if not secret:
         return JsonResponse({"error": "Missing secret"}, status=400)
     uri = get_totp_uri(secret, request.user.username)
-    img = qrcode.make(uri, image_factory=qrcode.image.svg.SvgImage)
+    # PNG via Pillow — the SVG factory imports lxml, which is broken on this Python
+    img = qrcode.make(uri)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
     from django.http import HttpResponse
-    response = HttpResponse(content_type="image/svg+xml")
-    img.save(response)
-    return response
+    return HttpResponse(buf.getvalue(), content_type="image/png")
 
 
 @csrf_exempt

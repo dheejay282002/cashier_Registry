@@ -56,7 +56,7 @@ html, body { width: 8in; height: 3in; overflow: hidden; background: white; }
     <div style="position: absolute; right: 0.7in; top: 0.22in; font-size: 10pt; font-weight: normal; text-align: right;">{{ cheque.cheque_number|default:"______" }}</div>
     
     <!-- Spaced Date -->
-    <div id="printDate" style="position: absolute; right: 0.68 in; top: 0.36in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
+    <div id="printDate" style="position: absolute; right: 0.68in; top: 0.36in; font-size: 10pt; font-weight: normal; text-align: right; white-space: pre;">______________</div>
     
     <!-- Payee Name -->
     <div id="printPayee" style="position: absolute; left: 1in; top: 0.70in; font-size: 13pt; font-weight: normal; text-transform: uppercase; width: 5.0in; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ cheque.payee_name }}</div>
@@ -89,7 +89,7 @@ function amountToWords(amount) {
     result += below1000(pesos % 1000);
     const pesosText = (result.replace(/\s+/g, ' ').trim() || 'ZERO') + ' PESOS';
     const centsFormatted = String(centavos).padStart(2, '0');
-    return (pesosText + ' & ' + centsFormatted + '/100 ONLY').toUpperCase();
+    return (pesosText + ' AND ' + centsFormatted + '/100 ONLY').toUpperCase();
 }
 function formatSpacedDate(dateStr) {
     if (!dateStr) return '____________';
