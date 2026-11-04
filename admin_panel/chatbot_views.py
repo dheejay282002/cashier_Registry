@@ -34,6 +34,12 @@ def _fetch_live_financial_data():
 
 
 def _call_ai_provider(prompt, system_prompt=""):
+    return (
+        "Offline mode is enabled. The AI chatbot is unavailable unless a "
+        "locally running model is configured."
+    )
+
+"""
     try:
         config = ChatbotConfig.objects.first()
         if not config or not config.api_key:
@@ -62,6 +68,7 @@ def _call_ai_provider(prompt, system_prompt=""):
             return result['choices'][0]['message']['content']
     except Exception as e:
         return f"Error: {str(e)}"
+"""
 
 
 @login_required

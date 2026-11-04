@@ -2,7 +2,6 @@ import os
 import getpass
 import platform
 import socket
-import urllib.request
 import json
 import re
 
@@ -97,22 +96,9 @@ def _get_client_device_and_os(request):
 
 
 def _get_location_from_ip(ip):
-    if ip in ('127.0.0.1', 'localhost', '::1') or ip.startswith('192.168.') or ip.startswith('10.'):
+    if ip in ('127.0.0.1', 'localhost', '::1') or ip.startswith(('192.168.', '10.', '172.16.')):
         return "Local Network"
-    try:
-        url = f"http://ip-api.com/json/{ip}"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=3) as response:
-            data = json.loads(response.read().decode())
-            if data.get('status') == 'success':
-                city = data.get('city', '')
-                country = data.get('country', '')
-                if city and country:
-                    return f"{city}, {country}"
-                return country or "Unknown Location"
-    except Exception:
-        pass
-    return "Unknown Location"
+    return "Remote Network"
 
 
 def _is_device_blocked(ip, device_name, windows_username, user_agent):

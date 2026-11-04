@@ -1,7 +1,6 @@
 const { app, BrowserWindow, shell, dialog, ipcMain, Menu, Tray } = require('electron');
 const path = require('path');
 const http = require('http');
-const https = require('https');
 const net = require('net');
 const { spawn, execFile } = require('child_process');
 const fs = require('fs');
@@ -16,8 +15,6 @@ let djangoLog = '';
 const DJANGO_PORT = 8000;
 const DJANGO_URL = `http://127.0.0.1:${DJANGO_PORT}`;
 const PYTHON_VERSION = '3.12.4';
-const PYTHON_INSTALLER = `python-${PYTHON_VERSION}-amd64.exe`;
-const PYTHON_URL = `https://www.python.org/ftp/python/${PYTHON_VERSION}/${PYTHON_INSTALLER}`;
 const TEMP_DIR = path.join(os.tmpdir(), 'registry-setup');
 
 function getAppDir() {
@@ -618,56 +615,6 @@ function updateLoading(message, percent) {
   }
 }
 
-function downloadFile(url, destPath, onProgress) {
-  return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(destPath);
-    const protocol = url.startsWith('https') ? https : http;
-
-    const request = protocol.get(url, (response) => {
-      if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-        file.close();
-        fs.unlinkSync(destPath);
-        downloadFile(response.headers.location, destPath, onProgress).then(resolve).catch(reject);
-        return;
-      }
-
-      if (response.statusCode !== 200) {
-        file.close();
-        fs.unlinkSync(destPath);
-        reject(new Error(`Download failed with status ${response.statusCode}`));
-        return;
-      }
-
-      const totalBytes = parseInt(response.headers['content-length'], 10);
-      let downloadedBytes = 0;
-
-      response.on('data', (chunk) => {
-        downloadedBytes += chunk.length;
-        if (onProgress && totalBytes) {
-          onProgress(downloadedBytes, totalBytes);
-        }
-      });
-
-      response.pipe(file);
-
-      file.on('finish', () => {
-        file.close(resolve);
-      });
-    });
-
-    request.on('error', (err) => {
-      file.close();
-      if (fs.existsSync(destPath)) fs.unlinkSync(destPath);
-      reject(err);
-    });
-
-    request.setTimeout(120000, () => {
-      request.destroy();
-      reject(new Error('Download timed out'));
-    });
-  });
-}
-
 function isSupportedPythonVersion(output) {
   const match = /Python\s+(\d+)\.(\d+)\.(\d+)([^\s]*)/i.exec(String(output || ''));
   if (!match) return false;
@@ -713,78 +660,19 @@ async function findSystemPython() {
 }
 
 async function installPython() {
-  updateLoading('Python not found. Downloading Python installer...', 0);
-
-  if (!fs.existsSync(TEMP_DIR)) {
-    fs.mkdirSync(TEMP_DIR, { recursive: true });
-  }
-
-  const installerPath = path.join(TEMP_DIR, PYTHON_INSTALLER);
-
-  // Download if not cached
-  if (!fs.existsSync(installerPath)) {
-    await downloadFile(PYTHON_URL, installerPath, (downloaded, total) => {
-      const pct = Math.round((downloaded / total) * 100);
-      const mb = (downloaded / 1048576).toFixed(1);
-      const totalMb = (total / 1048576).toFixed(1);
-      updateLoading(`Downloading Python ${PYTHON_VERSION}... ${mb}/${totalMb} MB (${pct}%)`, pct);
-    });
-  } else {
-    updateLoading('Using cached Python installer...', 0);
-  }
-
-  // Silent install: per-user, add to PATH, no test suite
-  updateLoading('Installing Python (this may take a minute)...', -1);
-
-  const installArgs = [
-    '/quiet',
-    'InstallAllUsers=0',
-    'PrependPath=1',
-    'Include_test=0',
-    'Include_launcher=1',
-    `TargetDir=${path.join(TEMP_DIR, 'python')}`,
-  ];
-
-  try {
-    await runCommandDetached(installerPath, installArgs, TEMP_DIR);
-  } catch (e) {
-    // The installer may exit with non-zero but still succeed, or need admin
-    console.log('Installer exit:', e.message);
-  }
-
-  // Wait a few seconds for files to settle
-  await new Promise((r) => setTimeout(r, 3000));
-
-  // Prefer the freshly installed interpreter: PATH may still point at an older one
-  const localPython = path.join(TEMP_DIR, 'python', 'python.exe');
-  if (fs.existsSync(localPython)) {
-    console.log(`Found local install: ${localPython}`);
-    return localPython;
-  }
-
-  // Try to find the freshly installed python
-  const freshPython = await findSystemPython();
-  if (freshPython) {
-    console.log(`Python installed successfully, found: ${freshPython}`);
-    return freshPython;
-  }
-
   throw new Error(
-    `Python installation completed but Python could not be found.\n\n` +
-    `Please restart the application. If the issue persists, install Python ${PYTHON_VERSION} manually\n` +
-    `from https://www.python.org/downloads/ and ensure "Add Python to PATH" is checked.`
+    `Python ${PYTHON_VERSION} is required but was not found. ` +
+    'Offline mode prevents downloading an installer. Install Python before starting Registry.'
   );
 }
 
 async function setupVirtualEnv({ appDir, dataDir, pythonPath, pipPath, requirementsPath, venvDir }) {
-  // Step 1: Find or install Python
-  updateLoading('Checking for Python installation...', -1);
-  let systemPython = await findSystemPython();
-  if (!systemPython) {
-    systemPython = await installPython();
-  }
-  console.log(`Using Python: ${systemPython}`);
+  throw new Error(
+    'No bundled Python runtime is available. Offline mode will not download ' +
+    'Python or install dependencies from the internet.'
+  );
 
+  /*
   // Step 2: Create virtual environment if missing, or repair a broken one
   if (fs.existsSync(pythonPath) && !(await pipWorks(pythonPath))) {
     updateLoading('Repairing Python environment...', -1);
@@ -832,6 +720,7 @@ async function setupVirtualEnv({ appDir, dataDir, pythonPath, pipPath, requireme
       );
     }
   }
+  */
 }
 
 async function ensurePythonEnvironment() {
@@ -1167,36 +1056,7 @@ function assertAppFiles() {
 }
 
 function openInBrowser() {
-  // Prefer https://registry (Apache reverse proxy) when it's configured;
-  // fall back to the direct URL if it doesn't resolve/respond.
-  let done = false;
-  const open = (url) => {
-    if (done) return;
-    done = true;
-    shell.openExternal(url);
-  };
-  try {
-    const probe = https.request({
-      host: 'registry',
-      port: 443,
-      path: '/',
-      method: 'GET',
-      timeout: 1500,
-      rejectUnauthorized: false,
-      headers: { Host: 'registry' },
-    }, (res) => {
-      res.resume();
-      open('https://registry');
-    });
-    probe.on('error', () => open(DJANGO_URL));
-    probe.on('timeout', () => {
-      probe.destroy();
-      open(DJANGO_URL);
-    });
-    probe.end();
-  } catch (e) {
-    open(DJANGO_URL);
-  }
+  shell.openExternal(DJANGO_URL);
 }
 
 function createTray() {
