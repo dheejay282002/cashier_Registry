@@ -41,14 +41,11 @@ def _serve_static(request, path):
     return django_serve(request, path, document_root=settings.BASE_DIR / 'static')
 
 
-desktop_mode = os.getenv('REGISTRY_DESKTOP_MODE', '').lower() in ('1', 'true', 'yes', 'on')
+urlpatterns += [
+    path('media/<path:path>', _serve_media),
+]
 
-if settings.DEBUG or desktop_mode:
-    urlpatterns += [
-        path('media/<path:path>', _serve_media),
-    ]
-
-if desktop_mode and not settings.DEBUG:
+if not settings.DEBUG:
     urlpatterns += [
         path('static/<path:path>', _serve_static),
     ]
