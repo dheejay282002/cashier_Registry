@@ -894,6 +894,8 @@ function startDjango() {
   console.log(`Working directory: ${dataDir}`);
 
   const env = Object.assign({}, process.env, {
+    // The desktop server must serve the bundled static and media assets.
+    REGISTRY_DEBUG: '1',
     REGISTRY_DATA_DIR: dataDir,
     REGISTRY_DB_PATH: path.join(dataDir, 'db.sqlite3'),
     REGISTRY_MEDIA_ROOT: path.join(dataDir, 'media'),
