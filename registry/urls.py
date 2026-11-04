@@ -36,7 +36,19 @@ def _serve_media(request, path):
     raise Http404
 
 
-if settings.DEBUG:
+def _serve_static(request, path):
+    """Serve the read-only assets bundled with the desktop application."""
+    return django_serve(request, path, document_root=settings.BASE_DIR / 'static')
+
+
+desktop_mode = os.getenv('REGISTRY_DESKTOP_MODE', '').lower() in ('1', 'true', 'yes', 'on')
+
+if settings.DEBUG or desktop_mode:
     urlpatterns += [
         path('media/<path:path>', _serve_media),
+    ]
+
+if desktop_mode and not settings.DEBUG:
+    urlpatterns += [
+        path('static/<path:path>', _serve_static),
     ]
