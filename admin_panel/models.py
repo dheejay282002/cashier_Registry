@@ -8,7 +8,7 @@ class SystemSetting(models.Model):
 	address = models.CharField(max_length=300, blank=True, default='')
 	system_logo = models.ImageField(upload_to="system_assets/", blank=True, null=True)
 	system_logo_hover = models.ImageField(upload_to="system_assets/", blank=True, null=True, help_text="Image shown when hovering over the login logo to prevent downloading")
-	last_cheque_number = models.CharField(max_length=6, blank=True, default='')
+	last_cheque_number = models.CharField(max_length=50, blank=True, default='')
 	last_report_number = models.CharField(max_length=20, blank=True, default='')
 	last_dv_payroll_no = models.CharField(max_length=20, blank=True, default='', help_text="Last DV/Payroll number sequence (YYYY-MM-NNNN)")
 	last_ors_burs_no = models.CharField(max_length=30, blank=True, default='', help_text="Last ORS/BURS number sequence")

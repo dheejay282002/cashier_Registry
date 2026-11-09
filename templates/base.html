@@ -7364,6 +7364,22 @@ function attachPasswordValidation(inputId) {
     const form = document.getElementById('createChequeKioskForm');
     const suppliers = window._kioskSelectedSuppliers || [];
     const isMultiMode = suppliers.length > 0;
+    const submitUrl = (form && form.getAttribute('action')) || '{% url "cheque_create" %}';
+
+    async function readChequeResponse(response) {
+      const responseText = await response.text();
+      let responseData = null;
+      try {
+        responseData = responseText ? JSON.parse(responseText) : null;
+      } catch (parseError) {
+        const detail = responseText.replace(/\s+/g, ' ').trim().slice(0, 180);
+        throw new Error(`Server returned ${response.status}${detail ? `: ${detail}` : '.'}`);
+      }
+      if (!response.ok) {
+        throw new Error((responseData && responseData.error) || `Server returned ${response.status}.`);
+      }
+      return responseData || {};
+    }
 
     try {
       let resp, data;
@@ -7377,28 +7393,30 @@ function attachPasswordValidation(inputId) {
         formData.delete('amount');
         formData.append('suppliers', JSON.stringify(suppliers));
 
-        resp = await fetch('/cheques/new/', {
+        resp = await fetch(submitUrl, {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             'X-CSRFToken': getCsrfToken(),
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: formData
         });
-        data = await resp.json();
+        data = await readChequeResponse(resp);
         console.log('[MultiCheque] Server response:', JSON.stringify(data));
       } else {
         // Single supplier mode
         const formData = new FormData(form);
-        resp = await fetch('/cheques/new/', {
+        resp = await fetch(submitUrl, {
           method: 'POST',
+          credentials: 'same-origin',
           headers: {
             'X-CSRFToken': getCsrfToken(),
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: formData
         });
-        data = await resp.json();
+        data = await readChequeResponse(resp);
       }
 
       if (resp.ok && data.ok) {
@@ -7475,10 +7493,12 @@ function attachPasswordValidation(inputId) {
         validateKioskForm();
       }
     } catch(err) {
+      console.error('[ChequeKiosk] Save failed:', err);
+      const message = err && err.message ? err.message : 'Unable to reach the server.';
       if (typeof showToast === 'function') {
-        showToast('error', 'Error', 'Network error. Please try again.');
+        showToast('error', 'Save Failed', message);
       } else {
-        alert('Network error. Please try again.');
+        alert('Save Failed: ' + message);
       }
     } finally {
       if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-print"></i> Save &amp; Print Cheque'; }
